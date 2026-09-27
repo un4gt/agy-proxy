@@ -8,7 +8,7 @@
 - **容器内 agy 自更新**：`/update` 页面一键升级容器内的 agy CLI，无需重建镜像
 
 ```bash
-docker pull tumuer/agy-proxy:v0.0.9
+docker pull tumuer/agy-proxy:v0.0.10
 ```
 
 任何支持自定义 base URL 的客户端（Cherry Studio、OpenWebUI、LobeChat、Continue、openai/gemini SDK 等）都能直接接入。
@@ -192,7 +192,7 @@ docker compose logs -f   # 确认启动正常
 
 浏览器打开 `http://<IP>:<PORT>/` → 跳转到 `/signin` → 填控制台密码 → 进入控制台。agy 未登录时先去 `http://<IP>:<PORT>/login` 完成授权。
 
-升级：改 `.env` 后 `docker compose up -d`；换镜像版本改 `docker-compose.yml` 里的 tag（如 `tumuer/agy-proxy:v0.0.9`）后 `docker compose pull && docker compose up -d`。
+升级：改 `.env` 后 `docker compose up -d`；换镜像版本改 `docker-compose.yml` 里的 tag（如 `tumuer/agy-proxy:v0.0.10`）后 `docker compose pull && docker compose up -d`。
 
 ### 手动 docker run（等价）
 
@@ -203,19 +203,19 @@ docker run -d --name agy-proxy -p 8317:8317 \
   -e AGY_PROXY_HTTP_PROXY=http://host.docker.internal:7890 \
   -e AGY_PROXY_PASSWORD=你的控制台密码 \
   --add-host=host.docker.internal:host-gateway \
-  tumuer/agy-proxy:v0.0.9
+  tumuer/agy-proxy:v0.0.10
 ```
 
 ### 容器内 agy 的 OAuth 登录（浏览器在你自己的电脑上完成）
 
 容器没有浏览器，代理内置了登录桥：用 PTY 驱动 agy 的登录界面，把 Google 授权链接透出到网页上。
 
-1. 打开 `http://<部署机IP>:8317/login`，点 **开始登录**
+1. 打开 `http://<部署机IP>:8317/login`，点 **开始连接**。网页会显示 CLI 当前画面；遇到登录方式、授权确认等菜单时，用 **↑ / ↓** 选择，核对选项后点 **回车确认**。需要勾选时用 **空格选择**，也支持 Tab、Esc 和 Y/N。
 2. 页面出现 **打开 Google 授权页** 按钮 → 在你自己的电脑浏览器里打开并完成授权
 3. 授权后浏览器会跳转到 `https://antigravity.google/oauth-callback?...`——从该页面（或地址栏的 `code=` 参数）复制授权码
-4. 粘回 `/login` 页面的输入框并提交；状态变为 **已登录 ✓** 即成功（凭据写入 volume）
+4. 粘回 `/login` 页面的输入框并提交；凭据保存后，如 CLI 还有确认提示可继续操作，最后点 **完成并关闭**（凭据写入 volume）
 
-说明：授权码无效会自动返回重试；整次登录有 15 分钟超时；登录进程只在登录期间存在。`/login` 与控制台同权限（需登录后才能访问）。
+说明：CLI 确认由用户手动操作，登录桥不会自动同意。可点击终端画面后使用键盘；浏览器 Tab 用于移出画面，发送 Tab 到 CLI 请使用按钮。点击「取消本次登录」会结束当前进程，之后可以重新连接。授权码无效时按 CLI 提示手动回车并重新提交；整次登录有 15 分钟超时；登录进程只在登录期间存在。`/login` 与控制台同权限（需登录后才能访问）。
 
 ### 容器内更新 agy CLI（无需重建镜像）
 

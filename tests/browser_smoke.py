@@ -89,12 +89,49 @@ def main():
                         assert page.evaluate("document.documentElement.scrollWidth <= innerWidth"), route
                         page.screenshot(path=str(screenshots / f"{route[1:]}-{width}.png"), full_page=True)
                 # Exercise the account code UI without launching an OAuth process.
-                page.route("**/login/status", lambda r: r.fulfill(json={"state": "waiting_code", "url": "https://accounts.google.com/", "tail": "Waiting for code"}))
-                page.route("**/login/code", lambda r: r.fulfill(json={"state": "done", "message": "Connected"}))
+                terminal = {"state": "interacting", "interactive": True, "session_id": "browser-session", "screen": [[{"text": "> Allow this connection?", "selected": True, "bold": True}]]}
+                presses = []
+                def handle_input(route):
+                    payload = route.request.post_data_json
+                    assert payload["session_id"] == "browser-session"
+                    presses.append(payload["key"])
+                    route.fulfill(json=terminal)
+                page.route("**/login/status", lambda r: r.fulfill(json=terminal))
+                page.route("**/login/input", handle_input)
+                page.route("**/login/stop", lambda r: r.fulfill(json={"state": "idle", "interactive": False}))
+                page.goto(origin + "/login")
+                expect(page.get_by_text("CLI 交互终端", exact=True)).to_be_visible()
+                page.get_by_role("button", name="↓ 下", exact=True).click()
+                expect(page.get_by_role("button", name="回车确认", exact=True)).to_be_enabled()
+                page.get_by_role("button", name="回车确认", exact=True).click()
+                expect(page.get_by_role("button", name="↑ 上", exact=True)).to_be_enabled()
+                screen = page.get_by_role("region", name="CLI 当前画面")
+                screen.focus()
+                screen.press("ArrowUp")
+                expect(page.get_by_role("button", name="↑ 上", exact=True)).to_be_enabled()
+                screen.press("Tab")
+                assert presses == ["down", "enter", "up"], presses
+                assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+                page.screenshot(path=str(screenshots / "login-interactive-mobile.png"), full_page=True)
+                page.get_by_role("button", name="取消本次登录", exact=True).click()
+                expect(page.get_by_role("button", name="开始连接", exact=True)).to_be_enabled()
+                terminal.update(state="waiting_code", url="https://accounts.google.com/", tail="Waiting for code")
+                def handle_code(route):
+                    terminal.update(state="authenticated", message="凭据已保存，请完成其余提示")
+                    route.fulfill(json=terminal)
+                page.route("**/login/code", handle_code)
+                def handle_finish(route):
+                    terminal.update(state="done", interactive=False)
+                    route.fulfill(json=terminal)
+                page.route("**/login/finish", handle_finish)
                 page.goto(origin + "/login")
                 expect(page.get_by_label("授权码", exact=True)).to_be_visible()
                 page.get_by_label("授权码", exact=True).fill("fake-code")
                 page.get_by_role("button", name="提交授权码").click()
+                expect(page.get_by_role("button", name="完成并关闭", exact=True)).to_be_enabled()
+                expect(page.get_by_role("button", name="回车确认", exact=True)).to_be_enabled()
+                page.get_by_role("button", name="完成并关闭", exact=True).click()
+                expect(page.get_by_role("button", name="回车确认", exact=True)).to_be_disabled()
                 page.get_by_role("button", name="退出登录").click()
                 expect(page).to_have_url(origin + "/signin")
                 page.goto(origin + "/update")

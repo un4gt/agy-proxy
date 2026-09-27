@@ -454,7 +454,7 @@ def test_web_ui_served_at_root(client):
 def test_about_endpoint(client):
     r = client.get("/about")
     assert r.status_code == 200
-    assert r.json()["version"] == "0.0.9"
+    assert r.json()["version"] == "0.0.10"
 
 
 # -- login bridge ---------------------------------------------------------------
@@ -506,6 +506,11 @@ def test_login_actions_require_auth(auth_client):
     assert r.status_code == 401
     r = auth_client.post("/login/code", json={"code": "x"}, headers={"x-api-key": "wrong"})
     assert r.status_code == 401
+
+    assert auth_client.post("/login/input", json={"key": "enter", "session_id": "x"}).status_code == 401
+    assert auth_client.post("/login/stop", json={"session_id": "x"}).status_code == 401
+    assert auth_client.post("/login/finish", json={"session_id": "x"}).status_code == 401
+    assert auth_client.post("/login/input", json={"key": "enter", "session_id": "x"}, headers={"Authorization": "Bearer secret1"}).status_code == 400
 
     r = auth_client.get("/login/status", headers={"Authorization": "Bearer secret1"})
     assert r.status_code == 200

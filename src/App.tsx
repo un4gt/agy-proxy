@@ -1,4 +1,10 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import {
   Activity,
   ArrowDownLeft,
@@ -905,7 +911,137 @@ type BridgeState = {
   tail?: string;
   output?: string;
   version?: string;
+  interactive?: boolean;
+  session_id?: string;
+  screen?: { text: string; selected: boolean; bold: boolean }[][];
 };
+const cliKeys = [
+  ["up", "↑ 上"],
+  ["down", "↓ 下"],
+  ["left", "← 左"],
+  ["right", "→ 右"],
+  ["enter", "回车确认"],
+  ["space", "空格选择"],
+  ["tab", "Tab 下一项"],
+  ["shift_tab", "Shift+Tab 上一项"],
+  ["escape", "Esc 返回"],
+  ["yes", "Y"],
+  ["no", "N"],
+] as const;
+function LoginTerminal({
+  state,
+  onChange,
+}: {
+  state: BridgeState;
+  onChange: (state: BridgeState) => void;
+}) {
+  const [pending, setPending] = useState(false);
+  const sending = useRef(false);
+  async function send(key: string) {
+    if (!state.interactive || sending.current) return;
+    sending.current = true;
+    setPending(true);
+    try {
+      const next = await api<BridgeState>("/login/input", {
+        method: "POST",
+        body: JSON.stringify({ key, session_id: state.session_id }),
+      });
+      onChange(next);
+    } catch (e) {
+      toast.error(message(e));
+    } finally {
+      sending.current = false;
+      setPending(false);
+    }
+  }
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>CLI 交互终端</CardTitle>
+        <CardDescription>
+          查看当前提示，用下方按键选择登录方式或授权选项。回车会确认当前选项，请先核对内容。
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex min-w-0 flex-col gap-4">
+        <div
+          role="region"
+          aria-label="CLI 当前画面"
+          tabIndex={0}
+          className="max-h-96 min-h-32 overflow-auto rounded-md border bg-muted/40 p-4 outline-offset-2"
+          onKeyDown={(e) => {
+            if (
+              e.target !== e.currentTarget ||
+              e.ctrlKey ||
+              e.metaKey ||
+              e.altKey
+            )
+              return;
+            const keys: Record<string, string> = {
+              ArrowUp: "up",
+              ArrowDown: "down",
+              ArrowLeft: "left",
+              ArrowRight: "right",
+              Enter: "enter",
+              " ": "space",
+              Escape: "escape",
+              y: "yes",
+              Y: "yes",
+              n: "no",
+              N: "no",
+            };
+            // Keep Tab available to leave this region; toolbar buttons send Tab to the CLI.
+            const key = keys[e.key];
+            if (key) {
+              e.preventDefault();
+              if (!e.repeat) void send(key);
+            }
+          }}
+        >
+          <pre className="w-max min-w-full font-mono text-xs leading-5">
+            {state.screen?.length
+              ? state.screen.map((line, i) => (
+                  <div key={i}>
+                    {line.map((run, j) => (
+                      <span
+                        key={j}
+                        className={cn(
+                          run.selected && "bg-primary text-primary-foreground",
+                          run.bold && "font-bold",
+                        )}
+                      >
+                        {run.text}
+                      </span>
+                    ))}
+                  </div>
+                ))
+              : state.tail || "正在等待 CLI 输出…"}
+          </pre>
+        </div>
+        <div
+          className="flex flex-wrap gap-2"
+          role="group"
+          aria-label="CLI 按键"
+        >
+          {cliKeys.map(([key, label]) => (
+            <Button
+              key={key}
+              variant={key === "enter" ? "default" : "outline"}
+              size="sm"
+              disabled={!state.interactive || pending}
+              onClick={() => send(key)}
+            >
+              {label}
+            </Button>
+          ))}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          也可以点击画面后使用键盘方向键、回车、空格和 Esc。Tab 可移出画面；向
+          CLI 发送 Tab 请用上方按钮。
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
 function Bridge({ update = false }: { update?: boolean }) {
   const base = update ? "/update" : "/login";
   const title = update ? "CLI 更新" : "账号连接";
@@ -942,7 +1078,7 @@ function Bridge({ update = false }: { update?: boolean }) {
     try {
       const d = await api<BridgeState>(base + path, {
         method: "POST",
-        body: body ? JSON.stringify(body) : undefined,
+        body: JSON.stringify({ ...body, session_id: state?.session_id }),
       });
       setState(d);
       if (path === "/code") setCode("");
@@ -958,6 +1094,8 @@ function Bridge({ update = false }: { update?: boolean }) {
   const label: Record<string, string> = {
     idle: "尚未开始",
     starting: "正在启动",
+    interacting: "等待手动操作",
+    authenticated: "凭据已保存，待完成",
     waiting_code: "等待授权",
     exchanging: "正在验证授权码",
     running: "正在更新",
@@ -1006,7 +1144,7 @@ function Bridge({ update = false }: { update?: boolean }) {
             )}
             {!update && (
               <ol className="grid grid-cols-3 gap-3 text-xs text-muted-foreground">
-                {["打开授权页面", "登录 Google 账号", "提交授权码"].map(
+                {["确认 CLI 提示", "登录 Google 账号", "提交授权码"].map(
                   (s, i) => (
                     <li key={s} className="flex flex-col gap-2">
                       <span className="flex size-7 items-center justify-center rounded-full border bg-muted">
@@ -1071,9 +1209,14 @@ function Bridge({ update = false }: { update?: boolean }) {
               </p>
             )}
           </CardContent>
-          <CardFooter>
+          <CardFooter className="flex-wrap gap-2">
+            {!update && state?.state === "authenticated" && (
+              <Button disabled={busy} onClick={() => action("/finish")}>
+                完成并关闭
+              </Button>
+            )}
             <Button
-              disabled={!state || running}
+              disabled={!state || running || (!update && state.interactive)}
               onClick={() => action("/start")}
             >
               {running ? (
@@ -1089,9 +1232,23 @@ function Bridge({ update = false }: { update?: boolean }) {
                     ? "开始连接"
                     : "重新连接"}
             </Button>
+            {!update && state?.interactive && (
+              <Button
+                variant="outline"
+                disabled={busy}
+                onClick={() => action("/stop")}
+              >
+                取消本次登录
+              </Button>
+            )}
           </CardFooter>
         </Card>
-        {(state?.output || state?.tail) && (
+        {!update &&
+        state &&
+        (state.interactive || state.screen?.length || state.tail) ? (
+          <LoginTerminal state={state} onChange={setState} />
+        ) : null}
+        {update && (state?.output || state?.tail) && (
           <Card>
             <CardHeader>
               <CardTitle>运行日志</CardTitle>
