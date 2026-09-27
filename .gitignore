@@ -1,0 +1,24 @@
+# Python-generated files
+__pycache__/
+*.pyc[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Secrets / local deployment config
+.env
+
+# Local runtime data (API keys + usage) and preview artifacts
+.devdata/
+.preview/
+
+# Frontend build chain: installed packages never go in the repo.
+# NOTE: app/static/app.css is deliberately NOT ignored — it is a compiled
+# artifact and IS committed, so running the app never needs Node.
+node_modules/
+npm-debug.log*
+app/static/*.css.map

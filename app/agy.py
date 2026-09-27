@@ -1,0 +1,473 @@
+"""agy CLI duplex stream-json process management.
+
+Protocol (per official headless docs + observed behaviour):
+- spawn: agy --input-format stream-json --output-format stream-json [--model slug ...]
+- each turn: write {"event": "user", "message": {"content": <str>}} + "\\n" to stdin
+- stdout: NDJSON events; "init" once, "step_update" (tool / agent_response with
+  text_delta fragments, DONE carries the cumulative step text), and exactly one
+  "result" event per turn with the authoritative envelope:
+  {conversation_id, status, response, error, num_turns, usage{...}}
+"""
+
+from __future__ import annotations
+
+import asyncio
+import hashlib
+import json
+import logging
+import os
+import re
+import shlex
+import time
+from collections import OrderedDict, deque
+from typing import Any
+
+from .config import Config
+
+log = logging.getLogger("agy_proxy.agy")
+
+_CLOSED = "__closed__"  # sentinel pushed to the event queue on stdout EOF
+
+_SLUG_RE = re.compile(r"\b[a-z0-9]+(?:-[a-z0-9._]+)+\b")
+
+
+class AgyError(Exception):
+    """Error that should surface to the API client with an HTTP status."""
+
+    def __init__(self, message: str, *, status_code: int = 502, detail: str | None = None):
+        super().__init__(message)
+        self.status_code = status_code
+        self.detail = detail
+
+
+def _agy_argv(cfg: Config, extra: list[str]) -> list[str]:
+    # AGY_BIN may be a bare binary name or a full command line ("python fake.py").
+    posix = os.name != "nt"
+    parts = shlex.split(cfg.agy_bin, posix=posix)
+    if not parts:
+        raise AgyError("AGY_PROXY_BIN is empty", status_code=500)
+    return parts + extra
+
+
+def _child_env(cfg: Config) -> dict[str, str] | None:
+    """Environment for agy child processes (adds the outbound proxy if set)."""
+    if not cfg.http_proxy:
+        return None
+    env = os.environ.copy()
+    for name in ("HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy"):
+        env[name] = cfg.http_proxy
+    return env
+
+
+class AgySession:
+    """One persistent duplex agy process == one agy-side conversation."""
+
+    def __init__(self, cfg: Config, *, model: str | None, effort: str | None):
+        self.cfg = cfg
+        self.model = model
+        self.effort = effort
+        self.proc: asyncio.subprocess.Process | None = None
+        self.events: asyncio.Queue[Any] = asyncio.Queue()
+        self.stderr_tail: deque[str] = deque(maxlen=30)
+        self.lock = asyncio.Lock()  # one in-flight turn per session
+        self.created_at = time.monotonic()
+        self.last_used = self.created_at
+        self.turns = 0
+        self.conversation_id: str | None = None
+        self._tasks: list[asyncio.Task] = []
+        self._dead = False
+
+    # -- lifecycle ---------------------------------------------------------
+
+    async def start(self) -> None:
+        extra = ["--input-format", "stream-json", "--output-format", "stream-json"]
+        if self.model:
+            extra += ["--model", self.model]
+        if self.effort:
+            extra += ["--effort", self.effort]
+        if self.cfg.agent:
+            extra += ["--agent", self.cfg.agent]
+        if self.cfg.sandbox:
+            extra += ["--sandbox"]
+        if self.cfg.skip_permissions:
+            extra += ["--dangerously-skip-permissions"]
+        argv = _agy_argv(self.cfg, extra)
+        try:
+            self.proc = await asyncio.create_subprocess_exec(
+                *argv,
+                stdin=asyncio.subprocess.PIPE,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                limit=4 * 1024 * 1024,
+                env=_child_env(self.cfg),
+                cwd=self.cfg.agy_cwd or None,
+            )
+        except (FileNotFoundError, PermissionError) as exc:
+            raise AgyError(
+                f"failed to start agy binary ({self.cfg.agy_bin!r}): {exc}",
+                status_code=503,
+            ) from exc
+        self._tasks = [
+            asyncio.create_task(self._read_stdout(), name="agy-stdout"),
+            asyncio.create_task(self._read_stderr(), name="agy-stderr"),
+        ]
+
+    @property
+    def alive(self) -> bool:
+        return not self._dead and self.proc is not None and self.proc.returncode is None
+
+    @property
+    def busy(self) -> bool:
+        return self.lock.locked()
+
+    async def kill(self) -> None:
+        self._dead = True
+        try:
+            for task in self._tasks:
+                task.cancel()
+            if self.proc is not None and self.proc.returncode is None:
+                try:
+                    self.proc.terminate()
+                except ProcessLookupError:
+                    pass
+                try:
+                    await asyncio.wait_for(self.proc.wait(), timeout=5)
+                except asyncio.TimeoutError:
+                    try:
+                        self.proc.kill()
+                    except ProcessLookupError:
+                        pass
+            # Close pipes while the loop is still alive to avoid noisy
+            # "Event loop is closed" warnings from transport finalizers.
+            if self.proc is not None:
+                for pipe in (self.proc.stdin, self.proc.stdout, self.proc.stderr):
+                    if pipe is not None:
+                        try:
+                            pipe.close()
+                        except Exception:
+                            pass
+        except Exception:
+            log.debug("error while killing agy session", exc_info=True)
+
+    # -- pipe readers ------------------------------------------------------
+
+    async def _read_stdout(self) -> None:
+        assert self.proc is not None and self.proc.stdout is not None
+        try:
+            while True:
+                line = await self.proc.stdout.readline()
+                if not line:
+                    break
+                line = line.decode("utf-8", errors="replace").strip()
+                if not line:
+                    continue
+                try:
+                    await self.events.put(json.loads(line))
+                except json.JSONDecodeError:
+                    log.debug("agy: non-JSON stdout line: %.200s", line)
+        finally:
+            await self.events.put(_CLOSED)
+
+    async def _read_stderr(self) -> None:
+        assert self.proc is not None and self.proc.stderr is not None
+        try:
+            while True:
+                line = await self.proc.stderr.readline()
+                if not line:
+                    break
+                text = line.decode("utf-8", errors="replace").rstrip()
+                if text:
+                    self.stderr_tail.append(text)
+                    log.debug("agy stderr: %s", text)
+        except asyncio.CancelledError:
+            raise
+
+    # -- one turn ----------------------------------------------------------
+
+    async def send_turn(self, prompt: str) -> Any:
+        """Async generator yielding parsed events until the turn's result."""
+        async with self.lock:
+            self.last_used = time.monotonic()
+            if not self.alive:
+                raise AgyError("agy session is not running", status_code=502)
+
+            payload = json.dumps({"event": "user", "message": {"content": prompt}}, ensure_ascii=False)
+            try:
+                assert self.proc is not None and self.proc.stdin is not None
+                self.proc.stdin.write((payload + "\n").encode("utf-8"))
+                await self.proc.stdin.drain()
+            except (BrokenPipeError, ConnectionResetError) as exc:
+                raise AgyError(
+                    "agy process closed its stdin: " + self._stderr_text(),
+                    status_code=502,
+                ) from exc
+
+            self.turns += 1
+            deadline = time.monotonic() + self.cfg.turn_timeout
+            while True:
+                overall_left = deadline - time.monotonic()
+                if overall_left <= 0:
+                    await self.kill()
+                    raise AgyError(f"agy turn timed out after {self.cfg.turn_timeout:.0f}s", status_code=504)
+                try:
+                    event = await asyncio.wait_for(
+                        self.events.get(), timeout=min(self.cfg.idle_timeout, overall_left)
+                    )
+                except asyncio.TimeoutError:
+                    await self.kill()
+                    raise AgyError(
+                        f"no agy output for {self.cfg.idle_timeout:.0f}s", status_code=504
+                    ) from None
+                if event is _CLOSED or event == _CLOSED:
+                    await self.kill()
+                    code = self.proc.returncode if self.proc else None
+                    raise AgyError(
+                        f"agy process exited before replying (code {code}): " + self._stderr_text(),
+                        status_code=502,
+                    )
+                if isinstance(event, dict) and event.get("event") == "init":
+                    self.conversation_id = event.get("conversation_id") or self.conversation_id
+                self.last_used = time.monotonic()
+                yield event
+                if isinstance(event, dict) and event.get("event") == "result":
+                    return
+
+    def _stderr_text(self) -> str:
+        return " | ".join(list(self.stderr_tail)[-3:])
+
+
+# -- session manager --------------------------------------------------------
+
+
+class SessionManager:
+    """Keeps agy sessions addressable by a hash of the conversation state."""
+
+    def __init__(self, cfg: Config):
+        self.cfg = cfg
+        self._sessions: OrderedDict[str, AgySession] = OrderedDict()
+
+    @staticmethod
+    def key(model: str | None, effort: str | None, system: str, history: list[tuple[str, str]]) -> str:
+        blob = json.dumps(
+            {"model": model, "effort": effort, "system": system, "history": history},
+            ensure_ascii=False,
+            sort_keys=True,
+        )
+        return hashlib.sha256(blob.encode("utf-8")).hexdigest()
+
+    async def acquire(self, before_key: str, *, model: str | None, effort: str | None) -> tuple[AgySession, bool]:
+        """Return (session, is_new): reuse the idle session at before_key or spawn one."""
+        existing = self._sessions.get(before_key)
+        if existing is not None and existing.alive and not existing.busy:
+            self._sessions.move_to_end(before_key)
+            return existing, False
+
+        session = AgySession(self.cfg, model=model, effort=effort)
+        await session.start()
+        await self._register(before_key, session)
+        return session, True
+
+    async def _register(self, key: str, session: AgySession) -> None:
+        self._sessions[key] = session
+        while len(self._sessions) > self.cfg.max_sessions:
+            victim_key, victim = self._oldest_evictable(prefer_key=key)
+            if victim is None:
+                break
+            log.info("evicting agy session (limit %d)", self.cfg.max_sessions)
+            self._sessions.pop(victim_key, None)
+            await victim.kill()
+
+    def _oldest_evictable(self, *, prefer_key: str) -> tuple[str | None, AgySession | None]:
+        # Prefer dead or idle sessions; never evict the just-registered one.
+        for k, s in self._sessions.items():
+            if k != prefer_key and (not s.alive or not s.busy):
+                return k, s
+        for k, s in self._sessions.items():
+            if k != prefer_key:
+                return k, s
+        return None, None
+
+    def rekey(self, before_key: str, after_key: str, session: AgySession) -> None:
+        if not session.alive:
+            for k in [k for k, s in self._sessions.items() if s is session]:
+                del self._sessions[k]
+            return
+        if self._sessions.get(before_key) is session:
+            del self._sessions[before_key]
+        self._sessions[after_key] = session
+        self._sessions.move_to_end(after_key)
+
+    async def drop(self, session: AgySession) -> None:
+        """Remove a session from the pool entirely and kill its process."""
+        for k in [k for k, s in self._sessions.items() if s is session]:
+            del self._sessions[k]
+        await session.kill()
+
+    async def sweep(self) -> None:
+        now = time.monotonic()
+        for k, s in list(self._sessions.items()):
+            if not s.alive or (not s.busy and now - s.last_used > self.cfg.session_ttl):
+                self._sessions.pop(k, None)
+                await s.kill()
+
+    async def ensure_prewarm(self) -> None:
+        """Keep one idle empty-history session alive per configured prewarm model.
+
+        The empty-history key is exactly what a first chat message resolves to,
+        so prewarmed sessions skip the ~seconds-long agy process cold start.
+        """
+        for model in self.cfg.prewarm_models:
+            key = self.key(model, None, "", [])
+            existing = self._sessions.get(key)
+            if existing is not None and existing.alive and not existing.busy:
+                continue
+            try:
+                session = AgySession(self.cfg, model=model, effort=None)
+                await session.start()
+                self._sessions.pop(key, None)
+                await self._register(key, session)
+                log.info("prewarmed agy session for model=%s", model)
+            except AgyError as exc:
+                log.warning("prewarm failed for model=%s: %s", model, exc)
+
+    async def close_all(self) -> None:
+        for s in list(self._sessions.values()):
+            await s.kill()
+        self._sessions.clear()
+
+    async def close_idle(self) -> int:
+        """Kill every idle (not mid-turn) session; returns how many.
+
+        Used before an in-place `agy update`: idle sessions are cheap to
+        respawn, but a running process may block replacement of its binary.
+        """
+        killed = 0
+        for k, s in list(self._sessions.items()):
+            if s.alive and not s.busy:
+                self._sessions.pop(k, None)
+                await s.kill()
+                killed += 1
+        return killed
+
+    def busy_count(self) -> int:
+        return sum(1 for s in self._sessions.values() if s.alive and s.busy)
+
+    @property
+    def live_count(self) -> int:
+        return sum(1 for s in self._sessions.values() if s.alive)
+
+
+# -- model discovery --------------------------------------------------------
+
+# cache keyed by agy_bin: (timestamp, slugs, error message or None)
+_model_caches: dict[str, tuple[float, list[str], str | None]] = {}
+# cache keyed by agy_bin: slug -> human label from `agy models`
+_model_labels: dict[str, dict[str, str]] = {}
+_MODELS_NEGATIVE_TTL = 60.0
+
+_ANSI_RE = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]")
+_SPINNER_CHARS = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
+
+
+def _clean_stream_error(raw: bytes) -> str:
+    """Extract the human-readable error from stderr noise (ANSI codes, spinner)."""
+    text = _ANSI_RE.sub("", raw.decode("utf-8", errors="replace")).replace("\r", "\n")
+    lines = []
+    for line in text.split("\n"):
+        line = line.strip(_SPINNER_CHARS).strip()
+        if line and "fetching" not in line.lower():
+            lines.append(line)
+    return " ".join(lines[-2:])[:300]
+
+
+async def list_models(cfg: Config, *, force: bool = False) -> list[str]:
+    """Run `agy models` and cache the slug list (failures cached briefly).
+
+    A previously-successful list past its TTL is served immediately while a
+    refresh runs in the background, so the periodic `agy models` round-trip
+    never blocks chat requests.
+    """
+    now = time.monotonic()
+    cached = _model_caches.get(cfg.agy_bin)
+    if cached is not None and not force:
+        ts, slugs, error = cached
+        if now - ts < (cfg.models_ttl if error is None else _MODELS_NEGATIVE_TTL):
+            if error is not None:
+                raise AgyError(error, status_code=502)
+            return slugs
+        if slugs:
+            _spawn_models_refresh(cfg)
+            return slugs
+
+    argv = _agy_argv(cfg, ["models"])
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            *argv,
+            stdin=asyncio.subprocess.DEVNULL,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+            env=_child_env(cfg),
+            cwd=cfg.agy_cwd or None,
+        )
+        out, err = await asyncio.wait_for(proc.communicate(), timeout=45)
+    except (FileNotFoundError, PermissionError) as exc:
+        raise AgyError(f"failed to start agy binary ({cfg.agy_bin!r}): {exc}", status_code=503) from exc
+    except asyncio.TimeoutError:
+        proc.kill()
+        raise AgyError("`agy models` timed out", status_code=504) from None
+
+    text = out.decode("utf-8", errors="replace")
+    slugs: list[str] = []
+    labels: dict[str, str] = {}
+    for line in text.splitlines():
+        # `agy models` prints "<slug>\t<Human Label>"; remember the label so the
+        # dashboard can show a friendly name next to the slug.
+        fields = [f.strip() for f in line.split("\t") if f.strip()]
+        if len(fields) >= 2 and _SLUG_RE.fullmatch(fields[0]):
+            labels[fields[0]] = fields[1]
+    for token in _SLUG_RE.findall(text):
+        if token not in slugs and (any(c.isdigit() for c in token) or token.startswith(("gemini", "auto"))):
+            slugs.append(token)
+
+    if not slugs:
+        message = _clean_stream_error(err) or f"`agy models` returned no models (rc={proc.returncode})"
+        log.warning("`agy models` failed (rc=%s): %.300s", proc.returncode, message)
+        _model_caches[cfg.agy_bin] = (now, [], message)
+        raise AgyError(message, status_code=502)
+
+    _model_caches[cfg.agy_bin] = (now, slugs, None)
+    _model_labels[cfg.agy_bin] = labels
+    return slugs
+
+
+def model_labels(cfg: Config) -> dict[str, str]:
+    """slug -> human label, empty until a successful `agy models` run."""
+    return dict(_model_labels.get(cfg.agy_bin, {}))
+
+
+def _spawn_models_refresh(cfg: Config) -> None:
+    """Refresh the models cache in the background (deduplicated per config)."""
+    for task in getattr(_spawn_models_refresh, "_tasks", []):
+        if not task.done():
+            return
+    try:
+        task = asyncio.create_task(list_models(cfg, force=True))
+    except RuntimeError:  # no running loop (shouldn't happen inside a request)
+        return
+    _spawn_models_refresh._tasks = [task]
+
+
+def resolve_model(requested: str | None, cfg: Config, slugs: list[str]) -> str | None:
+    """Map a client-requested model name onto an agy slug (or None for agy default)."""
+    if not requested or requested.lower() in ("default", "(default)"):
+        return cfg.default_model
+    if requested in cfg.model_map:
+        return cfg.model_map[requested]
+    if requested in slugs:
+        return requested
+    if slugs:
+        norm = requested.lower()
+        matches = [s for s in slugs if norm in s or s in norm]
+        if matches:
+            return sorted(matches, key=len)[0]
+    return cfg.default_model if cfg.default_model else requested

@@ -1,0 +1,28 @@
+.git
+.venv
+__pycache__
+**/__pycache__
+tests
+*.pyc
+.pytest_cache
+.gitignore
+.python-version
+.env
+.preview
+
+# Frontend build chain — build-time only. The image ships the compiled
+# app/static/app.css via `COPY app ./app`, so no Node ever enters the image.
+node_modules
+package.json
+package-lock.json
+assets
+.claude
+*.log
+
+# React sources and build config; production bundles are under app/static.
+src
+components.json
+tsconfig.json
+vite.config.ts
+index.html
+.devdata
