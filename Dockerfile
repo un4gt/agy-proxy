@@ -27,7 +27,7 @@ ENV AGY_PROXY_CWD=/workspace-empty \
 
 LABEL org.opencontainers.image.title="agy-proxy" \
       org.opencontainers.image.description="Gemini / OpenAI compatible reverse proxy backed by the Antigravity CLI (agy) stream-json duplex mode" \
-      org.opencontainers.image.version="0.0.10" \
+      org.opencontainers.image.version="0.0.11" \
       org.opencontainers.image.source="https://github.com/un4gt/agy-proxy"
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \

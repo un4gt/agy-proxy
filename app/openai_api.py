@@ -13,6 +13,7 @@ from fastapi.responses import JSONResponse, Response, StreamingResponse
 
 from .agy import AgyError, list_models, resolve_model
 from .auth import api_key_record, is_authorized, openai_error
+from .external_tools import ExternalTools
 from .runner import TurnProfile, TurnResult, chain_events, record_dashboard_usage, run_turn
 
 log = logging.getLogger("agy_proxy.openai")
@@ -122,6 +123,12 @@ async def chat_completions(request: Request) -> Response:
     if body is None:
         return openai_error(400, "Request body is not valid JSON", "invalid_request_error")
 
+    try:
+        external = ExternalTools.from_body(body)
+    except AgyError as exc:
+        return openai_error(exc.status_code, str(exc), _err_type(exc.status_code))
+    if external and len(json.dumps(body, ensure_ascii=False)) > cfg.max_prompt_chars:
+        return openai_error(413, "Prompt and tool definitions too long for this proxy", "invalid_request_error")
     system, history, final_user = _parse_messages(body)
     if not history and final_user is None:
         return openai_error(400, "Request has no messages with text content", "invalid_request_error")
@@ -139,7 +146,7 @@ async def chat_completions(request: Request) -> Response:
     effort = _effort(body)
 
     state = request.app.state
-    turn = run_turn(
+    turn = external.run(state.sessions, model=model, effort=effort, profile=profile) if external else run_turn(
         cfg, state.sessions,
         system=system, history=history, final_user=final_user,
         model=model, effort=effort, profile=profile,
@@ -186,7 +193,8 @@ async def chat_completions(request: Request) -> Response:
                 "created": created,
                 "model": requested_model or model or "agy-default",
                 "choices": [
-                    {"index": 0, "message": {"role": "assistant", "content": text}, "finish_reason": "stop"}
+                    {"index": 0, "message": result.message() if result else {"role": "assistant", "content": text},
+                     "finish_reason": result.finish_reason if result else "stop"}
                 ],
                 "usage": usage,
             },
@@ -226,7 +234,10 @@ async def chat_completions(request: Request) -> Response:
                     yield encode(chunk({"content": payload}, None))
                 else:
                     await account(payload.usage, "SUCCESS")
-                    yield encode(chunk({}, "stop"))
+                    if payload.tool_calls:
+                        yield encode(chunk({"tool_calls": [dict(call, index=i)
+                                                           for i, call in enumerate(payload.tool_calls)]}, None))
+                    yield encode(chunk({}, payload.finish_reason))
                     if include_usage:
                         yield encode(
                             {

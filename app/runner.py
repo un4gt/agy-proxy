@@ -74,6 +74,17 @@ class TurnResult:
     status: str = "SUCCESS"
     conversation_id: str | None = None
     num_turns: int | None = None
+    tool_calls: list[dict] = field(default_factory=list)
+
+    @property
+    def finish_reason(self) -> str:
+        return "tool_calls" if self.tool_calls else "stop"
+
+    def message(self) -> dict:
+        message = {"role": "assistant", "content": self.text or (None if self.tool_calls else "")}
+        if self.tool_calls:
+            message["tool_calls"] = self.tool_calls
+        return message
 
 
 async def chain_events(first_events: list, agen) -> AsyncIterator[TurnEvent]:

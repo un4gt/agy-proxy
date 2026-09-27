@@ -4,11 +4,11 @@
 
 - **内置控制台**：打开首页即可看 agy 当前可用模型、token 用量（取自 agy 自己的 usage 计数），并**创建/吊销上游 API Key**
 - **Gemini API** 兼容：`POST /v1beta/models/{model}:generateContent`、`:streamGenerateContent`（SSE）、`GET /v1beta/models`、`:countTokens`
-- **OpenAI API** 兼容：`POST /v1/chat/completions`（支持流式与 `stream_options.include_usage`）、`GET /v1/models`
+- **OpenAI API** 兼容：`POST /v1/chat/completions`（支持流式、`stream_options.include_usage` 和客户端 `tools/tool_calls`）、`GET /v1/models`
 - **容器内 agy 自更新**：`/update` 页面一键升级容器内的 agy CLI，无需重建镜像
 
 ```bash
-docker pull tumuer/agy-proxy:v0.0.10
+docker pull tumuer/agy-proxy:v0.0.11
 ```
 
 任何支持自定义 base URL 的客户端（Cherry Studio、OpenWebUI、LobeChat、Continue、openai/gemini SDK 等）都能直接接入。
@@ -107,6 +107,42 @@ openai SDK 接入：`OpenAI(base_url="http://127.0.0.1:8317/v1", api_key="任意
 
 兼容路径变体：`:generateContent` 与 `/generateContent`、`/v1beta/` 与 `/v1/`、带或不带 `models/` 前缀均可。
 
+### Pi coding agent 与客户端工具
+
+带 `tools`、`tool_choice` 或工具历史的 OpenAI 请求自动进入**客户端工具模式**（已实测 agy 1.2.12、Pi 0.87.1）：
+
+1. 代理为 agy 创建独立临时工作目录，选择仅允许 `finish` 的自定义主 Agent；`PreToolUse` hook 拒绝其余服务端工具。`finish` 只负责提交结构化结果，必须保留。
+2. 把客户端工具定义和消息交给 agy，使用 `--json-schema` 获取调用请求。校验工具名、JSON 参数和 `tool_choice` 后返回 OpenAI `tool_calls`，结束原因为 `tool_calls`。
+3. **Pi 在运行 Pi 的机器上执行** `read`、`write`、`edit`、shell 等工具，然后回传 `role: tool` 和 `tool_call_id`。代理保留完整调用参数与结果，支持多轮及多个工具结果，会话复用也会发送所有新增结果。
+
+这是一层结构化输出适配，不是 agy 原生 function calling 直通。不会把 agy 的 `tool_info` 执行记录转交 Pi 再执行；发现意外服务端工具调用会丢弃响应并返回错误。CLI 的 `init.tools` 仍可能列出内置工具，不能用这份列表判断实际允许执行的工具。临时目录与 hook 是 CLI 级限制，不是操作系统安全沙箱；不会修改全局 agy 设置，且客户端工具模式不使用 `AGY_PROXY_AGENT` / `SKIP_PERMISSIONS`。
+
+Pi 的 `%USERPROFILE%\.pi\agent\models.json`（Linux/macOS 为 `~/.pi/agent/models.json`）使用独立 provider，模型 ID 使用 `/v1/models` 返回的 agy slug：
+
+```json
+{
+  "providers": {
+    "agy-proxy": {
+      "baseUrl": "http://你的服务器:8317/v1",
+      "apiKey": "控制台创建的API密钥",
+      "api": "openai-completions",
+      "authHeader": true,
+      "models": [
+        { "id": "gemini-3.8-flash-high", "name": "Gemini 3.8 Flash High", "reasoning": false, "input": ["text"] }
+      ]
+    }
+  }
+}
+```
+
+```bash
+pi --provider agy-proxy --model gemini-3.8-flash-high --thinking off
+```
+
+启用工具时不要加之前用于连通测试的 `--no-tools`。不要覆盖内置 `openrouter` provider，也不要使用 `google/gemini-3.8-flash` 作为模型 ID。
+
+支持 `tool_choice: auto/none/required/指定函数` 和 `parallel_tool_calls: false`。工具模式的 SSE 会等完整结构化结果校验完成再发送内容与调用，参数不逐字符流出。当前仅支持文本、function 类型工具和 `n=1`，参数 schema 支持本地 `$ref`，不加载外部引用；不支持与 `response_format: json_object/json_schema` 叠加。`tools: []` 可显式使用无客户端工具的受限模式。普通不带工具字段或历史的请求保留原有 agy 行为。
+
 ## 鉴权（公网部署必读）
 
 两把**互不通用**的凭据，职责分开：
@@ -137,9 +173,9 @@ openai SDK 接入：`OpenAI(base_url="http://127.0.0.1:8317/v1", api_key="任意
 
 ## 已知限制
 
-- **内置 agent 开销无法去除**：每次请求约 13.5k token 上下文（agy 内置 agent 系统提示 + 57 个工具定义），实测换 cwd、`--disable-slash-commands`、`GEMINI_SYSTEM_MD`、`--agent` 均无法剥离。好消息是其中约 8k 是 `cache_read_tokens`（缓存命中，计费约为常规输入的 1/4），且多轮会话复用会让缓存占比更高。真要"干净"的模型需走官方 Gemini API
-- **非文本内容**（图片 inlineData、function calling）不透传，记日志后以占位文本替代；`tools`/`temperature` 等参数忽略
-- agy 是 agent，回复可能包含其工具使用过程（受其自身权限策略约束）；纯问答一般不触发
+- **仍经过 agy 的 Agent 层**：客户端工具模式使用自定义主 Agent 限制工具；系统上下文、模型行为与原生模型 API 不完全相同。
+- **非文本内容**（图片 inlineData 等）不透传；Gemini API 的 function calling 暂未实现。OpenAI 客户端工具模式遇到非文本内容返回 400；`temperature` 等采样参数仍不透传。
+- 普通不带工具字段或历史的请求仍可能让 agy 使用其服务端工具（受自身权限策略约束）；需要限制时显式发送 `tools: []`。
 - 每个新会话首轮有进程冷启动开销（秒级）
 - 需遵守 Antigravity 服务条款与账号额度，本代理不做额外限流（按 key 只做统计，不做配额；可用 `MAX_SESSIONS` 约束并发）
 - 控制台用量只保留**最近 500 条**请求明细（更早的只进总量与按模型聚合），且首次启动前的历史不可追溯
@@ -192,7 +228,7 @@ docker compose logs -f   # 确认启动正常
 
 浏览器打开 `http://<IP>:<PORT>/` → 跳转到 `/signin` → 填控制台密码 → 进入控制台。agy 未登录时先去 `http://<IP>:<PORT>/login` 完成授权。
 
-升级：改 `.env` 后 `docker compose up -d`；换镜像版本改 `docker-compose.yml` 里的 tag（如 `tumuer/agy-proxy:v0.0.10`）后 `docker compose pull && docker compose up -d`。
+升级：改 `.env` 后 `docker compose up -d`；换镜像版本改 `docker-compose.yml` 里的 tag（如 `tumuer/agy-proxy:v0.0.11`）后 `docker compose pull && docker compose up -d`。
 
 ### 手动 docker run（等价）
 
@@ -203,7 +239,7 @@ docker run -d --name agy-proxy -p 8317:8317 \
   -e AGY_PROXY_HTTP_PROXY=http://host.docker.internal:7890 \
   -e AGY_PROXY_PASSWORD=你的控制台密码 \
   --add-host=host.docker.internal:host-gateway \
-  tumuer/agy-proxy:v0.0.10
+  tumuer/agy-proxy:v0.0.11
 ```
 
 ### 容器内 agy 的 OAuth 登录（浏览器在你自己的电脑上完成）
@@ -258,6 +294,8 @@ app/
 ├── dashboard.py  # 控制台数据与 API Key 管理接口
 ├── gemini_api.py # Gemini 路由与格式转换
 ├── openai_api.py # OpenAI 路由与格式转换
+├── external_tools.py # 客户端工具协议：schema 校验、工具调用/结果与会话复用
+├── tool_guard.py # 客户端工具模式的 PreToolUse hook，仅允许 finish
 ├── login.py      # 容器内 agy OAuth 登录桥（PTY + /login 页面）
 ├── update.py     # 容器内 agy 自更新桥（agy update + /update 页面）
 └── static/       # 控制台页面 + 编译好的 app.css（构建产物，已入库）
