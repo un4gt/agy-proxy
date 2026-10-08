@@ -1,5 +1,6 @@
 # agy-proxy：`docker compose up -d` 一条命令启动
 # 配置放同目录 .env（模板见 .env.example，服务器上至少填 AGY_PROXY_PASSWORD）
+# pull 只更新镜像，不更新服务器上的此文件；旧部署升级前应确认两个数据卷均已挂载。
 services:
   agy-proxy:
     image: tumuer/agy-proxy:v0.0.12   # 建议生产固定版本，如 tumuer/agy-proxy:v0.0.12
@@ -10,7 +11,7 @@ services:
       - "${PORT:-8317}:8317"
     volumes:
       - agy-gemini:/root/.gemini     # agy OAuth 凭据，一次登录长期有效
-      - agy-data:/root/.agy-proxy    # 控制台创建的 API Key 与用量记录
+      - agy-data:/root/.agy-proxy    # 必须持久化 API Key 与用量；旧部署补挂载前先备份 data.json
     environment:
       AGY_PROXY_PASSWORD: ${AGY_PROXY_PASSWORD:-}
       AGY_PROXY_API_KEYS: ${AGY_PROXY_API_KEYS:-}
