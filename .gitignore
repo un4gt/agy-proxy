@@ -11,6 +11,8 @@ wheels/
 
 # Secrets / local deployment config
 .env
+.test.env
+.codex/
 
 # Local runtime data (API keys + usage) and preview artifacts
 .devdata/
