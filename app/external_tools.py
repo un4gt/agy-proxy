@@ -41,14 +41,14 @@ def _text(value) -> str:
     raise _invalid("The external-tool bridge currently accepts text content only")
 
 
-def _arguments(value: str, *, response: bool = False) -> dict:
+def _arguments(value: str) -> dict:
     try:
         args = json.loads(value)
         if isinstance(args, dict):
             return args
     except (ValueError, TypeError):
         pass
-    raise AgyError("Tool arguments must be a JSON object", status_code=502 if response else 400)
+    raise _invalid("Tool arguments must be a JSON object")
 
 
 def _local_refs_only(value) -> None:
@@ -191,9 +191,12 @@ class ExternalTools:
         calls = {"type": "array", "items": {
             "type": "object", "properties": {
                 "name": {"type": "string", **({"enum": names} if names else {})},
-                # Keep arbitrary client schemas (including local $refs) outside
-                # agy's finish schema. Validate the decoded JSON ourselves.
-                "arguments": {"type": "string", "description": "JSON-encoded argument object"},
+                # Let finish enforce JSON object syntax. Asking the model to
+                # encode JSON inside a string leaves escaping/shape unchecked.
+                # Client schemas (including local $refs) stay separate and are
+                # validated below, before serialization to the OpenAI wire format.
+                "arguments": {"type": "object", "additionalProperties": True,
+                              "description": "Tool argument object, never a JSON-encoded string"},
             }, "required": ["name", "arguments"], "additionalProperties": False,
         }}
         if not can_call:
@@ -213,7 +216,7 @@ class ExternalTools:
 
     @property
     def context(self) -> str:
-        return _json({"protocol": "external-tools-v1", "tools": list(self.functions.values()),
+        return _json({"protocol": "external-tools-v2", "tools": list(self.functions.values()),
                       "tool_choice": self.choice, "parallel_tool_calls": self.parallel})
 
     def prompt(self, messages: list[dict], *, fresh: bool) -> str:
@@ -225,7 +228,8 @@ class ExternalTools:
             "Do not call native file, shell, web, MCP, scheduling or agent tools. "
             "Use finish exactly once to submit the required structured output. "
             "For a tool request use kind=tool_calls, content as an optional explanation, "
-            "and tool_calls with each function name and a JSON-encoded arguments string. "
+            "and tool_calls with each function name and an arguments JSON object. "
+            "Pass arguments directly as an object, never as a JSON-encoded string. "
             "Use only declared functions with valid parameters. Stop after requesting "
             "tools and wait for real client results; never invent their output. "
             "For a final answer use kind=message, content as the answer, tool_calls=[]. "
@@ -248,6 +252,8 @@ class ExternalTools:
         try:
             Draft202012Validator(self.schema).validate(output)
         except ValidationError as exc:
+            log.warning("Invalid agy tool response: path=%s constraint=%s",
+                        "/".join(str(part) for part in exc.absolute_path), exc.validator)
             raise AgyError("agy returned output that does not match the tool protocol") from exc
         calls = output["tool_calls"]
         if (output["kind"] == "tool_calls") != bool(calls):
@@ -257,7 +263,7 @@ class ExternalTools:
             name = call["name"]
             if name not in self.validators:
                 raise AgyError("agy requested an undeclared client tool")
-            arguments = _arguments(call["arguments"], response=True)
+            arguments = call["arguments"]
             try:
                 self.validators[name].validate(arguments)
             except Exception as exc:

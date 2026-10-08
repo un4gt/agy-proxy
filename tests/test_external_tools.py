@@ -86,6 +86,73 @@ def test_streamed_tool_calls_have_indexes_and_no_internal_json(client):
     assert response.text.count("data: [DONE]") == 1
 
 
+@pytest.mark.parametrize("stream", [False, True])
+@pytest.mark.parametrize("arguments", [
+    {"path": "D:\\workspace\\NirsWisdom-Next\\index.html"},
+    {"path": "teaching.js", "offset": 1, "limit": 100},
+])
+def test_first_read_accepts_object_arguments(client, stream, arguments):
+    read = deepcopy(READ)
+    read["function"]["parameters"]["properties"].update({
+        "offset": {"type": "integer", "minimum": 1}, "limit": {"type": "integer", "minimum": 1},
+    })
+    body = request("ECHO_ARGUMENTS\n" + json.dumps(arguments), tools=[read], stream=stream)
+    response = send(client, body)
+    assert response.status_code == 200, response.text
+    if stream:
+        chunks = [json.loads(line[6:]) for line in response.text.splitlines()
+                  if line.startswith("data: ") and line != "data: [DONE]"]
+        calls = [call for chunk in chunks for choice in chunk.get("choices", [])
+                 for call in choice["delta"].get("tool_calls", [])]
+    else:
+        calls = response.json()["choices"][0]["message"]["tool_calls"]
+    assert len(calls) == 1
+    assert calls[0]["function"]["name"] == "read"
+    assert json.loads(calls[0]["function"]["arguments"]) == arguments
+
+
+@pytest.mark.parametrize("stream", [False, True])
+def test_object_arguments_preserve_file_content_and_roundtrip(client, stream):
+    content = (
+        '<!doctype html>\r\n<html lang="zh-CN">\n'
+        '<script>const config = {"path": "C:\\\\project\\\\index.html"};\n'
+        'const template = `first line\n${config.path}\nsecond line`;\n'
+        'const pattern = /\\s+\\n/g;</script>\n'
+        '<p title="他说：\'你好\'">测试页面 🧪\t1920 × 1080</p>\n</html>'
+    ) * 60
+    arguments = {"path": "C:\\project\\index-v2.html", "content": content}
+    write = {"type": "function", "function": {"name": "write", "parameters": {
+        "type": "object", "properties": {"path": {"type": "string"}, "content": {"type": "string"}},
+        "required": ["path", "content"], "additionalProperties": False,
+    }}}
+    body = request("ECHO_ARGUMENTS\n" + json.dumps(arguments), tools=[write], stream=stream)
+    response = send(client, body)
+    assert response.status_code == 200, response.text
+    if stream:
+        chunks = [json.loads(line[6:]) for line in response.text.splitlines()
+                  if line.startswith("data: ") and line != "data: [DONE]"]
+        choices = [chunk["choices"][0] for chunk in chunks if chunk.get("choices")]
+        calls = [call for choice in choices for call in choice["delta"].get("tool_calls", [])]
+        assert choices[-1]["finish_reason"] == "tool_calls"
+        assert "".join(choice["delta"].get("content", "") for choice in choices) == ""
+        message = {"role": "assistant", "content": None, "tool_calls": calls}
+    else:
+        choice = response.json()["choices"][0]
+        assert choice["finish_reason"] == "tool_calls"
+        message = choice["message"]
+        calls = message["tool_calls"]
+    assert len(calls) == 1
+    assert calls[0]["function"]["name"] == "write"
+    assert isinstance(calls[0]["function"]["arguments"], str)
+    assert json.loads(calls[0]["function"]["arguments"]) == arguments
+
+    body["stream"] = False
+    body["messages"] += [message, {"role": "tool", "tool_call_id": calls[0]["id"], "content": "FILE_WRITTEN"}]
+    result = send(client, body)
+    assert result.status_code == 200, result.text
+    assert result.json()["choices"][0]["message"]["content"] == "turn=2; FILE_WRITTEN"
+
+
 @pytest.mark.parametrize("choice", ["auto", "required", {"type": "function", "function": {"name": "read"}}])
 def test_tool_choices(client, choice):
     response = send(client, request(tool_choice=choice))
@@ -105,6 +172,7 @@ def test_no_tools_still_uses_isolated_agent(client, kwargs):
     ("BAD_ARGS", {}), ("BAD_JSON", {}), ("UNKNOWN_TOOL", {}), ("WRONG_KIND", {}),
     ("MALFORMED", {}), ("NATIVE_TOOL", {}), ("NO_CALL", {"tool_choice": "required"}),
     ("MULTI", {"parallel_tool_calls": False}),
+    ("JSON_STRING_ARGS", {}), ("ARRAY_ARGS", {}), ("NULL_ARGS", {}),
 ])
 def test_bad_model_output_fails_and_drops_session(client, text, extra):
     response = send(client, request(text, **extra))
@@ -132,6 +200,21 @@ def test_unresolved_and_duplicate_tool_results_rejected(client):
     result = {"role": "tool", "tool_call_id": message["tool_calls"][0]["id"], "content": "data"}
     body["messages"] += [result, result]
     assert send(client, body).status_code == 400
+
+
+@pytest.mark.parametrize("arguments", [{"path": "client.txt"}, "[]", "null", '"client.txt"', "{oops"])
+def test_client_history_still_requires_json_encoded_object(client, arguments):
+    body = request()
+    body["messages"] += [
+        {"role": "assistant", "content": None, "tool_calls": [{
+            "id": "call_invalid_history", "type": "function",
+            "function": {"name": "read", "arguments": arguments},
+        }]},
+        {"role": "tool", "tool_call_id": "call_invalid_history", "content": "data"},
+    ]
+    response = send(client, body)
+    assert response.status_code == 400, response.text
+    assert client.app.state.sessions.live_count == 0
 
 
 def test_parameter_schema_validation_and_local_references(client):

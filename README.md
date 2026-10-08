@@ -109,10 +109,10 @@ openai SDK 接入：`OpenAI(base_url="http://127.0.0.1:8317/v1", api_key="任意
 
 ### Pi coding agent 与客户端工具
 
-带 `tools`、`tool_choice` 或工具历史的 OpenAI 请求自动进入**客户端工具模式**（已实测 agy 1.2.12、Pi 0.87.1）：
+带 `tools`、`tool_choice` 或工具历史的 OpenAI 请求自动进入**客户端工具模式**（工具参数对象协议已实测 agy 1.2.16；下方 Pi 配置适用于 0.87.1）：
 
 1. 代理为 agy 创建独立临时工作目录，选择仅允许 `finish` 的自定义主 Agent；`PreToolUse` hook 拒绝其余服务端工具。`finish` 只负责提交结构化结果，必须保留。
-2. 把客户端工具定义和消息交给 agy，使用 `--json-schema` 获取调用请求。校验工具名、JSON 参数和 `tool_choice` 后返回 OpenAI `tool_calls`，结束原因为 `tool_calls`。
+2. 把客户端工具定义和消息交给 agy，使用 `--json-schema` 获取调用请求。内部工具参数直接使用 JSON 对象，校验工具名、参数 schema 和 `tool_choice` 后，由代理序列化成 OpenAI `tool_calls[].function.arguments` 字符串，结束原因为 `tool_calls`。这样避免让模型在 JSON 字符串里再次编码参数，减少文件路径、代码中的引号与换行造成的解析错误。
 3. **Pi 在运行 Pi 的机器上执行** `read`、`write`、`edit`、shell 等工具，然后回传 `role: tool` 和 `tool_call_id`。代理保留完整调用参数与结果，支持多轮及多个工具结果，会话复用也会发送所有新增结果。
 
 这是一层结构化输出适配，不是 agy 原生 function calling 直通。不会把 agy 的 `tool_info` 执行记录转交 Pi 再执行；发现意外服务端工具调用会丢弃响应并返回错误。CLI 的 `init.tools` 仍可能列出内置工具，不能用这份列表判断实际允许执行的工具。临时目录与 hook 是 CLI 级限制，不是操作系统安全沙箱；不会修改全局 agy 设置，且客户端工具模式不使用 `AGY_PROXY_AGENT` / `SKIP_PERMISSIONS`。

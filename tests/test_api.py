@@ -461,7 +461,7 @@ def test_about_endpoint(client):
 
 SAMPLE_OSC8 = (
     b"\x1b]8;id=jkf24282d;https://accounts.google.com/o/oauth2/auth?access_type=offline&"
-    b"client_id=1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com&"
+    b"client_id=&"
     b"code_challenge=E_nkcODZfv6YXGvM5iiLVjQexOWIhKUuz0pIZggbBxE&code_challenge_method=S256&"
     b"redirect_uri=https%3A%2F%2Fantigravity.google%2Foauth-callback&state=0hi9r3WvOiS8BSYcJoGy-w"
     b"\x1b\\Click here to authenticate\x1b]8;;\x1b\\"

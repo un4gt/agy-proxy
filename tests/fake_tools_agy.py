@@ -40,13 +40,21 @@ def main():
             output = {"kind": "message", "content": content, "tool_calls": []}
         else:
             name = choice["function"]["name"] if isinstance(choice, dict) else tools[0]["name"]
-            calls = [{"name": name, "arguments": json.dumps({"path": "client.txt"})}]
+            calls = [{"name": name, "arguments": {"path": "client.txt"}}]
+            if text.startswith("ECHO_ARGUMENTS\n"):
+                calls[0]["arguments"] = json.loads(text.split("\n", 1)[1])
             if text == "MULTI":
-                calls.append({"name": name, "arguments": json.dumps({"path": "second.txt"})})
+                calls.append({"name": name, "arguments": {"path": "second.txt"}})
             if text == "BAD_ARGS":
-                calls[0]["arguments"] = '{"path": 42}'
+                calls[0]["arguments"] = {"path": 42}
             if text == "BAD_JSON":
                 calls[0]["arguments"] = '{oops'
+            if text == "JSON_STRING_ARGS":
+                calls[0]["arguments"] = '{"path": "client.txt"}'
+            if text == "ARRAY_ARGS":
+                calls[0]["arguments"] = [{"path": "client.txt"}]
+            if text == "NULL_ARGS":
+                calls[0]["arguments"] = None
             if text == "UNKNOWN_TOOL":
                 calls[0]["name"] = "undeclared"
             output = {"kind": "tool_calls", "content": "", "tool_calls": calls}
