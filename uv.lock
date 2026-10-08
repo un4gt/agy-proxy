@@ -8,6 +8,7 @@ version = "0.0.12"
 source = { virtual = "." }
 dependencies = [
     { name = "fastapi" },
+    { name = "httpx" },
     { name = "jsonschema" },
     { name = "pyte" },
     { name = "uvicorn" },
@@ -22,6 +23,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "fastapi", specifier = ">=0.115" },
+    { name = "httpx", specifier = ">=0.27,<1" },
     { name = "jsonschema", specifier = ">=4.23,<5" },
     { name = "pyte", specifier = ">=0.8.2,<0.9" },
     { name = "uvicorn", specifier = ">=0.30" },

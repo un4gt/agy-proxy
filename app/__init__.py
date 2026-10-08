@@ -11,7 +11,7 @@ from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
 
-from . import anthropic_api, dashboard, gemini_api, login, openai_api, responses_api, update
+from . import account, anthropic_api, dashboard, gemini_api, login, openai_api, responses_api, update
 from .agy import SessionManager
 from .auth import panel_authorized, signin_router
 from .config import Config, load_config
@@ -96,6 +96,7 @@ def create_app(cfg: Config | None = None) -> FastAPI:
     app.include_router(login.router)
     app.include_router(update.router)
     app.include_router(dashboard.router)
+    app.include_router(account.router)
     app.include_router(signin_router)
 
     @app.get("/", include_in_schema=False)
@@ -192,7 +193,7 @@ def create_app(cfg: Config | None = None) -> FastAPI:
                 "status": "ok",
                 "version": "0.0.12",
                 "auth_required": cfg.auth_enabled,
-                "signed_in": (Path.home() / ".gemini" / "oauth_creds.json").exists(),
+                "signed_in": account.credentials_present(),
             }
         )
 

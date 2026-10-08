@@ -21,6 +21,7 @@ from pydantic import BaseModel
 from .agy import AgyError, _agy_argv, _child_env
 from .auth import panel_authorized
 from .config import Config
+from .account import credentials_path
 
 log = logging.getLogger("agy_proxy.login")
 router = APIRouter()
@@ -49,7 +50,7 @@ _KEYS = {
 
 
 def _creds_path() -> Path:
-    return Path.home() / ".gemini" / "oauth_creds.json"
+    return credentials_path()
 
 
 class LoginBridge:

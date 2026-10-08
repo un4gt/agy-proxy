@@ -22,7 +22,47 @@ export async function api<T = unknown>(
 export const message = (error: unknown) =>
   error instanceof Error ? error.message : "操作失败，请重试";
 export async function copy(text: string) {
-  await navigator.clipboard.writeText(text);
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return;
+    } catch {
+      // HTTP deployments and denied clipboard permissions need the fallback.
+    }
+  }
+  const active =
+    document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null;
+  const selection = window.getSelection();
+  const ranges = selection
+    ? Array.from({ length: selection.rangeCount }, (_, i) =>
+        selection.getRangeAt(i).cloneRange(),
+      )
+    : [];
+  const field = document.createElement("textarea");
+  field.value = text;
+  field.readOnly = true;
+  field.style.cssText =
+    "position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;pointer-events:none";
+  // Keep focus inside the active Radix dialog; body would trigger its focus trap.
+  const host =
+    active?.closest('[role="dialog"], [role="alertdialog"]') || document.body;
+  host.appendChild(field);
+  try {
+    field.focus({ preventScroll: true });
+    field.select();
+    field.setSelectionRange(0, text.length);
+    if (!document.execCommand("copy"))
+      throw new Error("复制失败，请手动选择并复制");
+  } finally {
+    field.remove();
+    active?.focus({ preventScroll: true });
+    if (selection) {
+      selection.removeAllRanges();
+      ranges.forEach((range) => selection.addRange(range));
+    }
+  }
 }
 export type Usage = {
   input_tokens: number;

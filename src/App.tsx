@@ -84,6 +84,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Toaster } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
+import { Accounts } from "@/components/accounts";
 import {
   api,
   copy,
@@ -320,11 +321,11 @@ function Shell({ children, page }: { children: ReactNode; page: string }) {
               </a>
             </Button>
             <Button
-              variant={page === "账号连接" ? "secondary" : "ghost"}
+              variant={page === "账号详情" ? "secondary" : "ghost"}
               size="sm"
               asChild
             >
-              <a href="/login">账号连接</a>
+              <a href="/login">账号详情</a>
             </Button>
             <Button
               variant={page === "CLI 更新" ? "secondary" : "ghost"}
@@ -1042,9 +1043,15 @@ function LoginTerminal({
     </Card>
   );
 }
-function Bridge({ update = false }: { update?: boolean }) {
+function Bridge({
+  update = false,
+  embedded = false,
+}: {
+  update?: boolean;
+  embedded?: boolean;
+}) {
   const base = update ? "/update" : "/login";
-  const title = update ? "CLI 更新" : "账号连接";
+  const title = update ? "CLI 更新" : "账号授权";
   const [state, setState] = useState<BridgeState | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -1102,167 +1109,170 @@ function Bridge({ update = false }: { update?: boolean }) {
     done: update ? "更新完成" : "账号已连接",
     error: "操作失败",
   };
-  return (
-    <Shell page={title}>
-      <div className="mx-auto flex max-w-2xl flex-col gap-6">
-        <Button variant="ghost" size="sm" asChild className="self-start">
-          <a href="/">
-            <ArrowLeft data-icon="inline-start" />
-            返回概览
-          </a>
-        </Button>
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
+  const content = (
+    <div className="mx-auto flex max-w-2xl flex-col gap-6">
+      {!embedded && (
+        <>
+          <Button variant="ghost" size="sm" asChild className="self-start">
+            <a href="/">
+              <ArrowLeft data-icon="inline-start" />
+              返回概览
+            </a>
+          </Button>
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {update
+                ? "检查并更新 Antigravity CLI，无需重新部署服务。"
+                : "连接 Google 账号，让你的应用开始使用 Antigravity 模型。"}
+            </p>
+          </div>
+        </>
+      )}
+      <ErrorNotice error={error} />
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>
+              {update ? "Antigravity CLI" : "Antigravity 账号"}
+            </CardTitle>
+            <Badge
+              variant={state?.state === "error" ? "destructive" : "secondary"}
+            >
+              {state ? label[state.state] || state.state : "正在检查…"}
+            </Badge>
+          </div>
+          <CardDescription>
             {update
-              ? "检查并更新 Antigravity CLI，无需重新部署服务。"
-              : "连接 Google 账号，让你的应用开始使用 Antigravity 模型。"}
-          </p>
-        </div>
-        <ErrorNotice error={error} />
+              ? `当前版本：${state?.version ? "v" + state.version : "读取中…"}`
+              : "授权信息保存在当前服务，无需每次重新登录。"}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-5">
+          {state?.message && (
+            <p className="text-sm text-muted-foreground">{state.message}</p>
+          )}
+          {!update && (
+            <ol className="grid grid-cols-3 gap-3 text-xs text-muted-foreground">
+              {["确认 CLI 提示", "登录 Google 账号", "提交授权码"].map(
+                (s, i) => (
+                  <li key={s} className="flex flex-col gap-2">
+                    <span className="flex size-7 items-center justify-center rounded-full border bg-muted">
+                      {i + 1}
+                    </span>
+                    {s}
+                  </li>
+                ),
+              )}
+            </ol>
+          )}
+          {state?.url && !update && (
+            <div className="flex flex-wrap gap-2">
+              <Button asChild>
+                <a
+                  href={/^https:\/\//.test(state.url) ? state.url : "#"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  打开 Google 授权页
+                  <ExternalLink data-icon="inline-end" />
+                </a>
+              </Button>
+              <Button variant="outline" onClick={() => copyText(state.url!)}>
+                <Copy data-icon="inline-start" />
+                复制链接
+              </Button>
+            </div>
+          )}
+          {!update &&
+            ["waiting_code", "exchanging"].includes(state?.state || "") && (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  action("/code", { code });
+                }}
+              >
+                <FieldGroup>
+                  <Field>
+                    <FieldLabel htmlFor="code">授权码</FieldLabel>
+                    <Input
+                      id="code"
+                      value={code}
+                      onChange={(e) => setCode(e.target.value)}
+                      placeholder="粘贴 Google 授权后的 code"
+                      required
+                    />
+                    <FieldDescription>
+                      完成授权后，从跳转页面复制授权码并粘贴到这里。
+                    </FieldDescription>
+                  </Field>
+                  <Button disabled={running || !code.trim()}>
+                    提交授权码
+                    <ArrowRight data-icon="inline-end" />
+                  </Button>
+                </FieldGroup>
+              </form>
+            )}
+          {update && (
+            <p className="text-sm leading-6 text-muted-foreground">
+              更新会释放空闲会话；正在进行的请求会继续完成。
+            </p>
+          )}
+        </CardContent>
+        <CardFooter className="flex-wrap gap-2">
+          {!update && state?.state === "authenticated" && (
+            <Button disabled={busy} onClick={() => action("/finish")}>
+              完成并关闭
+            </Button>
+          )}
+          <Button
+            disabled={!state || running || (!update && state.interactive)}
+            onClick={() => action("/start")}
+          >
+            {running ? (
+              <Loader2 data-icon="inline-start" className="animate-spin" />
+            ) : (
+              <RefreshCw data-icon="inline-start" />
+            )}
+            {running
+              ? "处理中…"
+              : update
+                ? "检查并更新"
+                : state?.state === "idle"
+                  ? "开始连接"
+                  : "重新连接"}
+          </Button>
+          {!update && state?.interactive && (
+            <Button
+              variant="outline"
+              disabled={busy}
+              onClick={() => action("/stop")}
+            >
+              取消本次登录
+            </Button>
+          )}
+        </CardFooter>
+      </Card>
+      {!update &&
+      state &&
+      (state.interactive || state.screen?.length || state.tail) ? (
+        <LoginTerminal state={state} onChange={setState} />
+      ) : null}
+      {update && (state?.output || state?.tail) && (
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>
-                {update ? "Antigravity CLI" : "Antigravity 账号"}
-              </CardTitle>
-              <Badge
-                variant={state?.state === "error" ? "destructive" : "secondary"}
-              >
-                {state ? label[state.state] || state.state : "正在检查…"}
-              </Badge>
-            </div>
-            <CardDescription>
-              {update
-                ? `当前版本：${state?.version ? "v" + state.version : "读取中…"}`
-                : "授权信息保存在当前服务，无需每次重新登录。"}
-            </CardDescription>
+            <CardTitle>运行日志</CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-col gap-5">
-            {state?.message && (
-              <p className="text-sm text-muted-foreground">{state.message}</p>
-            )}
-            {!update && (
-              <ol className="grid grid-cols-3 gap-3 text-xs text-muted-foreground">
-                {["确认 CLI 提示", "登录 Google 账号", "提交授权码"].map(
-                  (s, i) => (
-                    <li key={s} className="flex flex-col gap-2">
-                      <span className="flex size-7 items-center justify-center rounded-full border bg-muted">
-                        {i + 1}
-                      </span>
-                      {s}
-                    </li>
-                  ),
-                )}
-              </ol>
-            )}
-            {state?.url && !update && (
-              <div className="flex flex-wrap gap-2">
-                <Button asChild>
-                  <a
-                    href={/^https:\/\//.test(state.url) ? state.url : "#"}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    打开 Google 授权页
-                    <ExternalLink data-icon="inline-end" />
-                  </a>
-                </Button>
-                <Button variant="outline" onClick={() => copyText(state.url!)}>
-                  <Copy data-icon="inline-start" />
-                  复制链接
-                </Button>
-              </div>
-            )}
-            {!update &&
-              ["waiting_code", "exchanging"].includes(state?.state || "") && (
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    action("/code", { code });
-                  }}
-                >
-                  <FieldGroup>
-                    <Field>
-                      <FieldLabel htmlFor="code">授权码</FieldLabel>
-                      <Input
-                        id="code"
-                        value={code}
-                        onChange={(e) => setCode(e.target.value)}
-                        placeholder="粘贴 Google 授权后的 code"
-                        required
-                      />
-                      <FieldDescription>
-                        完成授权后，从跳转页面复制授权码并粘贴到这里。
-                      </FieldDescription>
-                    </Field>
-                    <Button disabled={running || !code.trim()}>
-                      提交授权码
-                      <ArrowRight data-icon="inline-end" />
-                    </Button>
-                  </FieldGroup>
-                </form>
-              )}
-            {update && (
-              <p className="text-sm leading-6 text-muted-foreground">
-                更新会释放空闲会话；正在进行的请求会继续完成。
-              </p>
-            )}
+          <CardContent>
+            <pre className="max-h-80 overflow-auto rounded-md bg-muted p-4 font-mono text-xs leading-6 whitespace-pre-wrap break-all">
+              {state.output || state.tail}
+            </pre>
           </CardContent>
-          <CardFooter className="flex-wrap gap-2">
-            {!update && state?.state === "authenticated" && (
-              <Button disabled={busy} onClick={() => action("/finish")}>
-                完成并关闭
-              </Button>
-            )}
-            <Button
-              disabled={!state || running || (!update && state.interactive)}
-              onClick={() => action("/start")}
-            >
-              {running ? (
-                <Loader2 data-icon="inline-start" className="animate-spin" />
-              ) : (
-                <RefreshCw data-icon="inline-start" />
-              )}
-              {running
-                ? "处理中…"
-                : update
-                  ? "检查并更新"
-                  : state?.state === "idle"
-                    ? "开始连接"
-                    : "重新连接"}
-            </Button>
-            {!update && state?.interactive && (
-              <Button
-                variant="outline"
-                disabled={busy}
-                onClick={() => action("/stop")}
-              >
-                取消本次登录
-              </Button>
-            )}
-          </CardFooter>
         </Card>
-        {!update &&
-        state &&
-        (state.interactive || state.screen?.length || state.tail) ? (
-          <LoginTerminal state={state} onChange={setState} />
-        ) : null}
-        {update && (state?.output || state?.tail) && (
-          <Card>
-            <CardHeader>
-              <CardTitle>运行日志</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <pre className="max-h-80 overflow-auto rounded-md bg-muted p-4 font-mono text-xs leading-6 whitespace-pre-wrap break-all">
-                {state.output || state.tail}
-              </pre>
-            </CardContent>
-          </Card>
-        )}
-      </div>
-    </Shell>
+      )}
+    </div>
   );
+  return embedded ? content : <Shell page={title}>{content}</Shell>;
 }
 export default function App() {
   const path = location.pathname;
@@ -1271,7 +1281,9 @@ export default function App() {
       {path === "/signin" ? (
         <SignIn />
       ) : path === "/login" ? (
-        <Bridge />
+        <Shell page="账号详情">
+          <Accounts login={<Bridge embedded />} />
+        </Shell>
       ) : path === "/update" ? (
         <Bridge update />
       ) : (
