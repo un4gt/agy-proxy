@@ -12,7 +12,6 @@ Protocol (per official headless docs + observed behaviour):
 from __future__ import annotations
 
 import asyncio
-import hashlib
 import json
 import logging
 import os
@@ -77,6 +76,7 @@ class AgySession:
         self.events: asyncio.Queue[Any] = asyncio.Queue()
         self.stderr_tail: deque[str] = deque(maxlen=30)
         self.lock = asyncio.Lock()  # one in-flight turn per session
+        self.leased = False  # reserved from acquire until drop, including between events
         self.created_at = time.monotonic()
         self.last_used = self.created_at
         self.turns = 0
@@ -160,7 +160,7 @@ class AgySession:
 
     @property
     def busy(self) -> bool:
-        return self.lock.locked()
+        return self.leased or self.lock.locked()
 
     async def kill(self) -> None:
         self._dead = True
@@ -287,101 +287,85 @@ class AgySession:
 
 
 class SessionManager:
-    """Keeps agy sessions addressable by a hash of the conversation state."""
+    """Owns request-exclusive processes; only untouched prewarms may be reused."""
 
     def __init__(self, cfg: Config):
         self.cfg = cfg
-        self._sessions: OrderedDict[str, AgySession] = OrderedDict()
+        self._sessions: OrderedDict[AgySession, None] = OrderedDict()
+        self._lock = asyncio.Lock()
 
-    @staticmethod
-    def key(model: str | None, effort: str | None, system: str, history: list[tuple[str, str]]) -> str:
-        blob = json.dumps(
-            {"model": model, "effort": effort, "system": system, "history": history},
-            ensure_ascii=False,
-            sort_keys=True,
-        )
-        return hashlib.sha256(blob.encode("utf-8")).hexdigest()
+    async def acquire(self, *, model: str | None, effort: str | None,
+                      output_schema: dict | None = None) -> AgySession:
+        """Reserve a clean process atomically, or reject excess concurrency.
 
-    async def acquire(self, before_key: str, *, model: str | None, effort: str | None,
-                      output_schema: dict | None = None) -> tuple[AgySession, bool]:
-        """Return (session, is_new): reuse the idle session at before_key or spawn one."""
-        existing = self._sessions.get(before_key)
-        if existing is not None and existing.alive and not existing.busy:
-            self._sessions.move_to_end(before_key)
-            return existing, False
+        Chat Completions supplies the complete history but no trustworthy client
+        session identity. Equal histories must never imply a shared conversation.
+        """
+        async with self._lock:
+            for session in self._sessions:
+                if (session.alive and not session.busy and session.turns == 0
+                        and session.model == model and session.effort == effort
+                        and session.output_schema == output_schema):
+                    session.leased = True
+                    return session
+            while len(self._sessions) >= self.cfg.max_sessions:
+                victim = next((s for s in self._sessions if not s.busy), None)
+                if victim is None:
+                    raise AgyError("All agy request slots are busy; retry later", status_code=429)
+                await victim.kill()
+                del self._sessions[victim]
+            return await self._start(model=model, effort=effort,
+                                     output_schema=output_schema, leased=True)
 
+    async def _start(self, *, model: str | None, effort: str | None,
+                     output_schema: dict | None = None, leased: bool) -> AgySession:
+        # Caller holds _lock through startup, so no other request/prewarm can
+        # steal a slot while create_subprocess_exec yields to the event loop.
         session = AgySession(self.cfg, model=model, effort=effort, output_schema=output_schema)
-        await session.start()
-        await self._register(before_key, session)
-        return session, True
-
-    async def _register(self, key: str, session: AgySession) -> None:
-        self._sessions[key] = session
-        while len(self._sessions) > self.cfg.max_sessions:
-            victim_key, victim = self._oldest_evictable(prefer_key=key)
-            if victim is None:
-                break
-            log.info("evicting agy session (limit %d)", self.cfg.max_sessions)
-            self._sessions.pop(victim_key, None)
-            await victim.kill()
-
-    def _oldest_evictable(self, *, prefer_key: str) -> tuple[str | None, AgySession | None]:
-        # Prefer dead or idle sessions; never evict the just-registered one.
-        for k, s in self._sessions.items():
-            if k != prefer_key and (not s.alive or not s.busy):
-                return k, s
-        for k, s in self._sessions.items():
-            if k != prefer_key:
-                return k, s
-        return None, None
-
-    def rekey(self, before_key: str, after_key: str, session: AgySession) -> None:
-        if not session.alive:
-            for k in [k for k, s in self._sessions.items() if s is session]:
-                del self._sessions[k]
-            return
-        if self._sessions.get(before_key) is session:
-            del self._sessions[before_key]
-        self._sessions[after_key] = session
-        self._sessions.move_to_end(after_key)
+        session.leased = leased
+        self._sessions[session] = None
+        try:
+            await session.start()
+        except BaseException:
+            await session.kill()
+            self._sessions.pop(session, None)
+            raise
+        return session
 
     async def drop(self, session: AgySession) -> None:
         """Remove a session from the pool entirely and kill its process."""
-        for k in [k for k, s in self._sessions.items() if s is session]:
-            del self._sessions[k]
-        await session.kill()
+        async with self._lock:
+            await session.kill()
+            self._sessions.pop(session, None)
 
     async def sweep(self) -> None:
         now = time.monotonic()
-        for k, s in list(self._sessions.items()):
-            if not s.alive or (not s.busy and now - s.last_used > self.cfg.session_ttl):
-                self._sessions.pop(k, None)
-                await s.kill()
+        async with self._lock:
+            for s in list(self._sessions):
+                if not s.busy and (not s.alive or now - s.last_used > self.cfg.session_ttl):
+                    await s.kill()
+                    del self._sessions[s]
 
     async def ensure_prewarm(self) -> None:
-        """Keep one idle empty-history session alive per configured prewarm model.
-
-        The empty-history key is exactly what a first chat message resolves to,
-        so prewarmed sessions skip the ~seconds-long agy process cold start.
-        """
-        for model in self.cfg.prewarm_models:
-            key = self.key(model, None, "", [])
-            existing = self._sessions.get(key)
-            if existing is not None and existing.alive and not existing.busy:
-                continue
-            try:
-                session = AgySession(self.cfg, model=model, effort=None)
-                await session.start()
-                self._sessions.pop(key, None)
-                await self._register(key, session)
-                log.info("prewarmed agy session for model=%s", model)
-            except AgyError as exc:
-                log.warning("prewarm failed for model=%s: %s", model, exc)
+        """Prewarm untouched processes without taking slots from active requests."""
+        async with self._lock:
+            for model in self.cfg.prewarm_models:
+                if len(self._sessions) >= self.cfg.max_sessions:
+                    return
+                if any(s.alive and not s.busy and s.turns == 0 and s.model == model
+                       and s.effort is None and s.output_schema is None for s in self._sessions):
+                    continue
+                try:
+                    await self._start(model=model, effort=None, leased=False)
+                    log.info("prewarmed agy session for model=%s", model)
+                except AgyError as exc:
+                    log.warning("prewarm failed for model=%s: %s", model, exc)
 
     async def close_all(self) -> None:
-        for s in list(self._sessions.values()):
-            await s.kill()
-        self._sessions.clear()
+        async with self._lock:
+            for s in list(self._sessions):
+                await s.kill()
+            self._sessions.clear()
 
     async def close_idle(self) -> int:
         """Kill every idle (not mid-turn) session; returns how many.
@@ -389,20 +373,21 @@ class SessionManager:
         Used before an in-place `agy update`: idle sessions are cheap to
         respawn, but a running process may block replacement of its binary.
         """
-        killed = 0
-        for k, s in list(self._sessions.items()):
-            if s.alive and not s.busy:
-                self._sessions.pop(k, None)
-                await s.kill()
-                killed += 1
-        return killed
+        async with self._lock:
+            killed = 0
+            for s in list(self._sessions):
+                if not s.busy:
+                    await s.kill()
+                    del self._sessions[s]
+                    killed += 1
+            return killed
 
     def busy_count(self) -> int:
-        return sum(1 for s in self._sessions.values() if s.alive and s.busy)
+        return sum(1 for s in self._sessions if s.alive and s.busy)
 
     @property
     def live_count(self) -> int:
-        return sum(1 for s in self._sessions.values() if s.alive)
+        return sum(1 for s in self._sessions if s.alive)
 
 
 # -- model discovery --------------------------------------------------------

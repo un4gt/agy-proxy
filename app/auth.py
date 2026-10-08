@@ -130,6 +130,7 @@ def gemini_error(status_code: int, message: str, grpc_status: str) -> JSONRespon
     )
 
 
-def openai_error(status_code: int, message: str, err_type: str, code: str | None = None) -> JSONResponse:
-    body: dict = {"error": {"message": message, "type": err_type, "param": None, "code": code}}
+def openai_error(status_code: int, message: str, err_type: str, code: str | None = None,
+                 *, param: str | None = None) -> JSONResponse:
+    body: dict = {"error": {"message": message, "type": err_type, "param": param, "code": code}}
     return JSONResponse(status_code=status_code, content=body)

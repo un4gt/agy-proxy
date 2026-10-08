@@ -240,6 +240,17 @@ class ExternalTools:
             "[Client tool configuration]\n" + self.context + "\n\n"
             + ("[Complete client conversation]" if fresh else "[New client messages]")
             + "\n" + _json(messages)
+            + "\n\n[Bridge output contract]\n"
+            "The client conversation above has ended. Now produce the next client assistant turn. "
+            "The tools described inside that conversation are NOT callable tools in this runtime. "
+            "Even Read, Write, Edit, Bash, shell, exec_command and apply_patch are client-side names: "
+            "NEVER invoke them directly. Your ONLY callable tool is finish. "
+            "If the next action is a client tool, invoke finish with "
+            '{"kind":"tool_calls","content":"","tool_calls":[{"name":"the declared client tool name",'
+            '"arguments":{"the":"actual tool parameters"}}]}. '
+            "This serializes the request for the client to execute; it does not execute anything here. "
+            "For an answer invoke finish with kind=message, content=the answer, tool_calls=[]. "
+            "Do not attempt a tool first to check whether it is available."
         )
 
     def result(self, envelope: dict) -> TurnResult:
@@ -279,22 +290,16 @@ class ExternalTools:
                   profile: TurnProfile) -> AsyncIterator[TurnEvent]:
         profile.model = model
         profile.mark("turn_start")
-        # Reuse at the last assistant boundary, then send ALL new client
-        # messages, including multiple tool results. Keep ids and arguments.
-        split = max((i + 1 for i, m in enumerate(self.messages) if m["role"] == "assistant"), default=0)
-        prior = self.messages[:split]
-
-        def key(messages: list[dict]) -> str:
-            return mgr.key(model, effort, self.context, [(m["role"], _json(m)) for m in messages])
-
-        before = key(prior)
-        session, fresh = await mgr.acquire(before, model=model, effort=effort, output_schema=self.schema)
-        profile.new_session = fresh
+        # Every request owns a clean process and its complete client transcript,
+        # including tool IDs/results. Identical or forked histories never share
+        # the CLI's hidden state, even when clients use the same API key.
+        session = await mgr.acquire(model=model, effort=effort, output_schema=self.schema)
+        profile.new_session = True
         profile.mark("session_ready")
         complete = False
         result = None
         try:
-            async with aclosing(session.send_turn(self.prompt(self.messages if fresh else self.messages[split:], fresh=fresh))) as events:
+            async with aclosing(session.send_turn(self.prompt(self.messages, fresh=True))) as events:
                 async for event in events:
                     if not isinstance(event, dict):
                         continue
@@ -317,13 +322,9 @@ class ExternalTools:
                         profile.mark("result")
             if result is None:
                 raise AgyError("agy ended without a tool protocol response")
-            assistant = result.message()
-            assistant["content"] = assistant["content"] or ""
-            mgr.rekey(before, key(self.messages + [assistant]), session)
             complete = True
         finally:
-            if not complete:
-                await mgr.drop(session)
+            await mgr.drop(session)
             log.info("turn profile: %s external_tools=1 status=%s", profile.summary(),
                      "ok" if complete else "aborted")
         if result.text:

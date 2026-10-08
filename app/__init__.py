@@ -11,7 +11,7 @@ from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
 
-from . import dashboard, gemini_api, login, openai_api, update
+from . import anthropic_api, dashboard, gemini_api, login, openai_api, responses_api, update
 from .agy import SessionManager
 from .auth import panel_authorized, signin_router
 from .config import Config, load_config
@@ -90,6 +90,8 @@ def create_app(cfg: Config | None = None) -> FastAPI:
     # OpenAI router first: its exact /v1/chat/completions route must win over
     # the Gemini catch-all POST /v1/{rest:path}.
     app.include_router(openai_api.router)
+    app.include_router(responses_api.router)
+    app.include_router(anthropic_api.router)
     app.include_router(gemini_api.router)
     app.include_router(login.router)
     app.include_router(update.router)
@@ -172,6 +174,9 @@ def create_app(cfg: Config | None = None) -> FastAPI:
                     "/ (dashboard)",
                     "/login (agy OAuth)",
                     "/v1/chat/completions",
+                    "/v1/responses",
+                    "/v1/messages",
+                    "/v1/messages/count_tokens",
                     "/v1/models",
                     "/v1beta/models/{model}:generateContent",
                     "/v1beta/models/{model}:streamGenerateContent",

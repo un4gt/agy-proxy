@@ -32,6 +32,14 @@ def emit(obj: dict) -> None:
     sys.stdout.flush()
 
 
+def record_invocation() -> None:
+    """Optional child-process argv trace for parameter forwarding regressions."""
+    path = os.environ.get("FAKE_AGY_ARGV_FILE")
+    if path:
+        with open(path, "a", encoding="utf-8") as output:
+            output.write(json.dumps({"argv": sys.argv[1:], "pid": os.getpid()}) + "\n")
+
+
 # Simulated update state, so tests can exercise the real check→download→install
 # flow across processes: 9.9.9 by default, 9.9.10 after a successful "update".
 def version_file() -> str:
@@ -115,6 +123,7 @@ def main() -> None:
     parser.add_argument("--dangerously-skip-permissions", action="store_true")
     parser.add_argument("--print-timeout")
     args, _unknown = parser.parse_known_args()
+    record_invocation()
 
     conv = f"fake-{os.getpid()}"
     emit(

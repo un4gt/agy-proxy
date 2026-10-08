@@ -6,15 +6,20 @@ import json
 import logging
 import time
 import uuid
+from dataclasses import replace
 from typing import AsyncIterator
 
+from anyio import CancelScope
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse, Response, StreamingResponse
 
 from .agy import AgyError, list_models, resolve_model
 from .auth import api_key_record, is_authorized, openai_error
+from .config import Config
+from .reasoning import ReasoningError, apply_effort, model_families, parse_effort
 from .external_tools import ExternalTools
 from .runner import TurnProfile, TurnResult, chain_events, record_dashboard_usage, run_turn
+from .structured_output import ResponseFormat
 
 log = logging.getLogger("agy_proxy.openai")
 
@@ -87,17 +92,6 @@ def _parse_messages(body: dict) -> tuple[str, list[tuple[str, str]], str | None]
     return "\n\n".join(system_parts), history, final_user
 
 
-def _effort(body: dict) -> str | None:
-    raw = body.get("reasoning_effort")
-    if isinstance(raw, str):
-        level = raw.lower()
-        if level == "minimal":
-            return "low"
-        if level in ("low", "medium", "high"):
-            return level
-    return None
-
-
 def _usage(usage: dict) -> dict:
     inp = usage.get("input_tokens") or 0
     out = usage.get("output_tokens") or 0
@@ -113,6 +107,21 @@ async def _read_json(request: Request) -> dict | None:
     return body if isinstance(body, dict) else None
 
 
+def _resolve_model(requested: str, cfg: Config, slugs: list[str]) -> str | None:
+    # Explicit defaults and configured custom aliases remain supported. An
+    # unknown explicit name must never silently fall back to the default model.
+    if requested in cfg.model_map:
+        return cfg.model_map[requested]
+    if not requested or requested.lower() in ("default", "(default)"):
+        return cfg.default_model
+    if requested.lower() == "auto":
+        return "auto"
+    resolved = resolve_model(requested, replace(cfg, default_model=None), slugs)
+    if slugs and resolved not in slugs:
+        raise AgyError(f"Model '{requested}' not found", status_code=404)
+    return resolved
+
+
 @router.post("/v1/chat/completions")
 async def chat_completions(request: Request) -> Response:
     cfg = request.app.state.cfg
@@ -124,10 +133,33 @@ async def chat_completions(request: Request) -> Response:
         return openai_error(400, "Request body is not valid JSON", "invalid_request_error")
 
     try:
+        effort = parse_effort(body.get("reasoning_effort"))
+    except ReasoningError as exc:
+        return openai_error(400, str(exc), "invalid_request_error", "invalid_value", param="reasoning_effort")
+    if effort is None and cfg.effort:
+        try:
+            effort = parse_effort(cfg.effort)
+        except ReasoningError:
+            return openai_error(500, "AGY_PROXY_EFFORT is invalid", "server_error")
+
+    try:
+        if body.get("model") is not None and not isinstance(body["model"], str):
+            raise AgyError("model must be a string", status_code=400)
+        messages = body.get("messages")
+        if not isinstance(messages, list) or not messages or not all(isinstance(m, dict) for m in messages):
+            raise AgyError("messages must be a nonempty array of objects", status_code=400)
+        if "stream" in body and not isinstance(body["stream"], bool):
+            raise AgyError("stream must be a boolean", status_code=400)
+        options = body.get("stream_options")
+        if options is not None and (not isinstance(options, dict) or (
+            "include_usage" in options and not isinstance(options["include_usage"], bool)
+        )):
+            raise AgyError("stream_options.include_usage must be a boolean", status_code=400)
+        response_format = ResponseFormat.from_body(body)
         external = ExternalTools.from_body(body)
     except AgyError as exc:
         return openai_error(exc.status_code, str(exc), _err_type(exc.status_code))
-    if external and len(json.dumps(body, ensure_ascii=False)) > cfg.max_prompt_chars:
+    if (external or response_format) and len(json.dumps(body, ensure_ascii=False)) > cfg.max_prompt_chars:
         return openai_error(413, "Prompt and tool definitions too long for this proxy", "invalid_request_error")
     system, history, final_user = _parse_messages(body)
     if not history and final_user is None:
@@ -139,18 +171,37 @@ async def chat_completions(request: Request) -> Response:
     profile = TurnProfile()
     try:
         slugs = await list_models(cfg)
-    except AgyError:
+    except AgyError as exc:
+        if effort is not None:
+            # A base name cannot be mapped safely when the model catalog is
+            # unavailable. Do not silently select a different effort/model.
+            return openai_error(exc.status_code, str(exc), _err_type(exc.status_code))
         slugs = []
     profile.mark("models_done")
-    model = resolve_model(requested_model, cfg, slugs)
-    effort = _effort(body)
+    try:
+        model = _resolve_model(requested_model, cfg, slugs)
+    except AgyError as exc:
+        return openai_error(404, str(exc), "invalid_request_error", "model_not_found", param="model")
+    try:
+        model, effort = apply_effort(model, effort, slugs)
+    except ReasoningError as exc:
+        return openai_error(400, str(exc), "invalid_request_error", "unsupported_value", param="reasoning_effort")
 
     state = request.app.state
-    turn = external.run(state.sessions, model=model, effort=effort, profile=profile) if external else run_turn(
-        cfg, state.sessions,
-        system=system, history=history, final_user=final_user,
-        model=model, effort=effort, profile=profile,
-    )
+    if external:
+        turn = external.run(state.sessions, model=model, effort=effort, profile=profile)
+    elif response_format:
+        turn = response_format.run(
+            state.sessions,
+            system=system, history=history, final_user=final_user,
+            model=model, effort=effort, profile=profile,
+        )
+    else:
+        turn = run_turn(
+            cfg, state.sessions,
+            system=system, history=history, final_user=final_user,
+            model=model, effort=effort, profile=profile,
+        )
 
     completion_id = "chatcmpl-" + uuid.uuid4().hex[:24]
     created = int(time.time())
@@ -227,8 +278,8 @@ async def chat_completions(request: Request) -> Response:
                 duration_ms=(time.monotonic() - t0) * 1000, status=status,
             )
 
-        yield encode(chunk({"role": "assistant", "content": ""}, None))
         try:
+            yield encode(chunk({"role": "assistant", "content": ""}, None))
             async for kind, payload in chain_events([] if first is None else [first], turn):
                 if kind == "delta":
                     yield encode(chunk({"content": payload}, None))
@@ -261,6 +312,11 @@ async def chat_completions(request: Request) -> Response:
             # honest so the dashboard shows aborted turns too.
             await account(None, "ABORTED")
             raise
+        finally:
+            # Closing the HTTP iterator must release the upstream lease even
+            # when the client disconnects after the initial role-only chunk.
+            with CancelScope(shield=True):
+                await turn.aclose()
 
     return StreamingResponse(
         sse(),
@@ -281,7 +337,8 @@ async def models_list(request: Request) -> Response:
     return JSONResponse(
         {
             "object": "list",
-            "data": [{"id": s, "object": "model", "created": 0, "owned_by": "antigravity"} for s in slugs],
+            "data": [{"id": s, "object": "model", "created": 0, "owned_by": "antigravity"}
+                     for s in dict.fromkeys([*slugs, *model_families(slugs)])],
         }
     )
 
@@ -295,7 +352,10 @@ async def model_detail(model_id: str, request: Request) -> Response:
         slugs = await list_models(cfg)
     except AgyError as exc:
         return openai_error(exc.status_code, str(exc), _err_type(exc.status_code))
-    resolved = resolve_model(model_id, cfg, slugs)
+    try:
+        resolved = _resolve_model(model_id, cfg, slugs)
+    except AgyError:
+        resolved = None
     if model_id in slugs or resolved in slugs:
         return JSONResponse({"id": model_id, "object": "model", "created": 0, "owned_by": "antigravity"})
     return openai_error(404, f"Model '{model_id}' not found", "invalid_request_error", "model_not_found")

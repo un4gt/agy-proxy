@@ -1,8 +1,7 @@
 """Shared turn executor used by both the Gemini and OpenAI routers.
 
-Flattens a full client-side conversation into one agy turn, reusing a warm agy
-session whenever the incoming history matches that session's history prefix
-(agy keeps native multi-turn context inside the process).
+Flattens a full client-side conversation into one request-private agy turn.
+No process that has seen client messages is reused by another request.
 """
 
 from __future__ import annotations
@@ -196,31 +195,21 @@ async def run_turn(
     if profile is not None:
         profile.model = model
         profile.mark("turn_start")
-    before = mgr.key(model, effort, system, history)
-    full_history: History = list(history)
-    if final_user is not None:
-        full_history.append(("user", final_user))
-
-    session, is_new = await mgr.acquire(before, model=model, effort=effort)
+    session = await mgr.acquire(model=model, effort=effort)
     if profile is not None:
-        profile.new_session = is_new
+        profile.new_session = True
         profile.mark("session_ready")
-    if is_new:
-        # With no prior history and no system prompt there is nothing to
-        # replay: send the user message as-is so the model sees exactly what
-        # the client sent.
-        if not history and not system and final_user is not None:
-            prompt = final_user
-        else:
-            prompt = build_seed_prompt(system, history, final_user)
+    if not history and not system and final_user is not None:
+        prompt = final_user
     else:
-        prompt = final_user if final_user is not None else "(Continue the conversation.)"
+        prompt = build_seed_prompt(system, history, final_user)
 
     tracker = DeltaTracker()
     completed = False
     reply_text: str | None = None
+    events = session.send_turn(prompt)
     try:
-        async for event in session.send_turn(prompt):
+        async for event in events:
             if not isinstance(event, dict):
                 continue
             kind = event.get("event")
@@ -282,12 +271,7 @@ async def run_turn(
                 profile.summary(),
                 "ok" if completed else "aborted",
             )
-        if completed:
-            # The client will echo the assistant reply back in its next
-            # request, so the reusable key must include it.
-            after = mgr.key(model, effort, system, full_history + [("assistant", reply_text or "")])
-            mgr.rekey(before, after, session)
-        else:
-            # Aborted turn (client disconnect, timeout, error): the agy-side
-            # conversation is in an unknown state — drop the session.
+        try:
+            await events.aclose()
+        finally:
             await mgr.drop(session)

@@ -6,7 +6,7 @@ import os
 import sys
 from pathlib import Path
 
-from fake_agy import emit, main as plain_main, usage_of
+from fake_agy import emit, main as plain_main, record_invocation, usage_of
 
 
 def main():
@@ -16,6 +16,7 @@ def main():
     parser.add_argument("--json-schema")
     parser.add_argument("--agent")
     args, unknown = parser.parse_known_args()
+    record_invocation()
     assert "--dangerously-skip-permissions" not in unknown
     assert "--disable-slash-commands" in unknown
     assert Path(".agents/hooks.json").exists()
@@ -27,9 +28,34 @@ def main():
     history = []
     for turn, line in enumerate(sys.stdin, 1):
         prompt = json.loads(line)["message"]["content"]
+        if "[Client tool configuration]" not in prompt:
+            output = {"name": "Budi", "age": 20}
+            if "BAD_TYPE" in prompt:
+                output["age"] = "twenty"
+            if "EXTRA_FIELD" in prompt:
+                output["extra"] = True
+            emit({"event": "step_update", "step_update": {
+                "step_type": "agent_response", "state": "ACTIVE", "text_delta": "not valid JSON"}})
+            if "NATIVE_TOOL" in prompt:
+                emit({"event": "step_update", "step_update": {"step_type": "tool", "tool_name": "run_command"}})
+            envelope = {"status": "SUCCESS", "structured_output": output,
+                        "response": "not JSON", "usage": usage_of(prompt, json.dumps(output))}
+            if "MALFORMED" in prompt:
+                envelope.pop("structured_output")
+            if "SCHEMA_ECHO" in prompt:
+                envelope["structured_output"] = {"schema": schema, "prompt": prompt}
+            if "json" in schema.get("properties", {}) and "structured_output" in envelope:
+                envelope["structured_output"] = {"json": json.dumps(output)}
+                if "JSON_ARRAY" in prompt:
+                    envelope["structured_output"] = {"json": "[]"}
+                if "JSON_INVALID" in prompt:
+                    envelope["structured_output"] = {"json": "not JSON"}
+            emit({"event": "result", "result": envelope})
+            continue
         config = json.loads(prompt.split("[Client tool configuration]\n")[1].split("\n\n")[0])
         fresh = "[Complete client conversation]" in prompt
-        incoming = json.loads(prompt.split("conversation]\n" if fresh else "[New client messages]\n")[1])
+        incoming = json.loads(prompt.split("conversation]\n" if fresh else "[New client messages]\n")[1]
+                              .split("\n\n[Bridge output contract]\n")[0])
         history = incoming if fresh else history + incoming
         last = incoming[-1]
         text = last["content"]
@@ -37,6 +63,9 @@ def main():
         tools = config["tools"]
         if choice == "none" or not tools or last["role"] == "tool":
             content = f"turn={turn}; " + "; ".join(m["content"] for m in incoming)
+            if text.startswith("INSPECT_CONTEXT"):
+                content = json.dumps({"turn": turn, "pid": os.getpid(), "cwd": os.getcwd(),
+                                      "history": history})
             output = {"kind": "message", "content": content, "tool_calls": []}
         else:
             name = choice["function"]["name"] if isinstance(choice, dict) else tools[0]["name"]

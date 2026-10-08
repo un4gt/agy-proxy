@@ -8,6 +8,7 @@ import time
 import uuid
 from typing import AsyncIterator
 
+from anyio import CancelScope
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse, Response, StreamingResponse
 
@@ -253,6 +254,9 @@ async def gemini_action(rest: str, request: Request) -> Response:
         except BaseException:
             await account(None, "ABORTED")
             raise
+        finally:
+            with CancelScope(shield=True):
+                await turn.aclose()
 
     return StreamingResponse(
         sse(),

@@ -245,10 +245,10 @@ def test_openai_message_shapes(client):
     assert "sys-prompt" in text and "PING" in text
 
 
-# -- session reuse -----------------------------------------------------------
+# -- request isolation -------------------------------------------------------
 
 
-def test_session_reused_across_turns(client):
+def test_followup_replays_history_in_fresh_session(client):
     first = client.post(
         "/v1/chat/completions",
         json={"model": "gemini-3-pro-high", "messages": [{"role": "user", "content": "first question"}]},
@@ -266,9 +266,11 @@ def test_session_reused_across_turns(client):
             ],
         },
     ).json()
-    # Same warm agy session: only "second question" is sent as a new turn.
-    assert "turn 2]" in second["choices"][0]["message"]["content"]
+    # Complete history is replayed, but no hidden CLI conversation is reused.
+    assert second["choices"][0]["message"]["content"].startswith("[turn 1]")
+    assert "first question" in second["choices"][0]["message"]["content"]
     assert "second question" in second["choices"][0]["message"]["content"]
+    assert client.app.state.sessions.live_count == 0
 
 
 def test_divergent_history_gets_new_session(client):
@@ -329,6 +331,7 @@ def test_auth_accepts_all_key_conventions(auth_client):
 
 
 def test_error_model(client):
+    client.app.state.cfg.model_map["error-model"] = "error-model"
     r = client.post(
         "/v1beta/models/error-model:generateContent",
         json={"contents": [{"role": "user", "parts": [{"text": "PING"}]}]},
@@ -360,6 +363,7 @@ def test_idle_timeout(monkeypatch):
     os.environ["AGY_PROXY_IDLE_TIMEOUT"] = "1.0"
     try:
         with make_client() as c:
+            c.app.state.cfg.model_map["slow-model"] = "slow-model"
             r = c.post(
                 "/v1/chat/completions",
                 json={"model": "slow-model", "messages": [{"role": "user", "content": "PING"}]},
@@ -752,7 +756,7 @@ def test_update_status_reports_version(client, fresh_update_env):
 
 
 def test_update_full_flow(client, fresh_update_env):
-    # A finished chat leaves an idle session behind; the update must kill it.
+    # Finished requests have already released their private process.
     assert (
         client.post(
             "/v1/chat/completions",
@@ -770,7 +774,7 @@ def test_update_full_flow(client, fresh_update_env):
     assert s["before_version"] == "9.9.9"
     assert s["after_version"] == "9.9.10"
     assert s["version"] == "9.9.10"
-    assert s["sessions_killed"] == 1
+    assert s["sessions_killed"] == 0
 
     # chat still works after the update (session respawned from the new binary)
     r = client.post(
@@ -809,6 +813,7 @@ def test_update_failure_surfaces_error(client, fresh_update_env):
 
 
 def test_update_kills_only_idle_sessions(client, fresh_update_env):
+    client.app.state.cfg.model_map["slow-model"] = "slow-model"
     # Hold one busy session (a slow in-flight turn) while updating.
     result = {}
 
