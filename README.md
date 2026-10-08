@@ -8,7 +8,7 @@
 - **容器内 agy 自更新**：`/update` 页面一键升级容器内的 agy CLI，无需重建镜像
 
 ```bash
-docker pull tumuer/agy-proxy:v0.0.11
+docker pull tumuer/agy-proxy:v0.0.12
 ```
 
 任何支持自定义 base URL 的客户端（Cherry Studio、OpenWebUI、LobeChat、Continue、openai/gemini SDK 等）都能直接接入。
@@ -228,7 +228,7 @@ docker compose logs -f   # 确认启动正常
 
 浏览器打开 `http://<IP>:<PORT>/` → 跳转到 `/signin` → 填控制台密码 → 进入控制台。agy 未登录时先去 `http://<IP>:<PORT>/login` 完成授权。
 
-升级：改 `.env` 后 `docker compose up -d`；换镜像版本改 `docker-compose.yml` 里的 tag（如 `tumuer/agy-proxy:v0.0.11`）后 `docker compose pull && docker compose up -d`。
+升级：改 `.env` 后 `docker compose up -d`；换镜像版本改 `docker-compose.yml` 里的 tag（如 `tumuer/agy-proxy:v0.0.12`）后 `docker compose pull && docker compose up -d`。
 
 ### 手动 docker run（等价）
 
@@ -239,7 +239,7 @@ docker run -d --name agy-proxy -p 8317:8317 \
   -e AGY_PROXY_HTTP_PROXY=http://host.docker.internal:7890 \
   -e AGY_PROXY_PASSWORD=你的控制台密码 \
   --add-host=host.docker.internal:host-gateway \
-  tumuer/agy-proxy:v0.0.11
+  tumuer/agy-proxy:v0.0.12
 ```
 
 ### 容器内 agy 的 OAuth 登录（浏览器在你自己的电脑上完成）

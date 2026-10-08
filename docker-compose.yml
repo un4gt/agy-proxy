@@ -2,7 +2,7 @@
 # 配置放同目录 .env（模板见 .env.example，服务器上至少填 AGY_PROXY_PASSWORD）
 services:
   agy-proxy:
-    image: tumuer/agy-proxy:v0.0.11   # 建议生产固定版本，如 tumuer/agy-proxy:v0.0.11
+    image: tumuer/agy-proxy:v0.0.12   # 建议生产固定版本，如 tumuer/agy-proxy:v0.0.12
     # 本地开发想直接从源码构建时，注释掉上面的 image，取消下一行注释：
     # build: .
     container_name: agy-proxy
