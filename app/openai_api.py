@@ -18,6 +18,7 @@ from .auth import api_key_record, is_authorized, openai_error
 from .config import Config
 from .reasoning import ReasoningError, apply_effort, model_families, parse_effort
 from .external_tools import ExternalTools
+from .images import ImageInput, MAX_REQUEST_BYTES
 from .runner import TurnProfile, TurnResult, chain_events, record_dashboard_usage, run_turn
 from .structured_output import ResponseFormat
 
@@ -100,9 +101,17 @@ def _usage(usage: dict) -> dict:
 
 
 async def _read_json(request: Request) -> dict | None:
+    chunks, size = [], 0
     try:
-        body = await request.json()
-    except Exception:
+        async for chunk in request.stream():
+            size += len(chunk)
+            if size > MAX_REQUEST_BYTES:
+                raise AgyError("Request body exceeds the 32 MiB limit", status_code=413)
+            chunks.append(chunk)
+        body = json.loads(b"".join(chunks))
+    except AgyError:
+        raise
+    except (ValueError, UnicodeError):
         return None
     return body if isinstance(body, dict) else None
 
@@ -128,7 +137,10 @@ async def chat_completions(request: Request) -> Response:
     if not is_authorized(cfg, request):
         return openai_error(401, "Invalid API key", "authentication_error", "invalid_api_key")
 
-    body = await _read_json(request)
+    try:
+        body = await _read_json(request)
+    except AgyError as exc:
+        return openai_error(exc.status_code, str(exc), _err_type(exc.status_code))
     if body is None:
         return openai_error(400, "Request body is not valid JSON", "invalid_request_error")
 
@@ -156,12 +168,14 @@ async def chat_completions(request: Request) -> Response:
         )):
             raise AgyError("stream_options.include_usage must be a boolean", status_code=400)
         response_format = ResponseFormat.from_body(body)
-        external = ExternalTools.from_body(body)
+        images = await ImageInput.prepare(body, cfg.max_prompt_chars)
+        execution = dict(body, messages=images.messages)
+        if images.attachments and not response_format:
+            execution.setdefault("tools", [])
+        external = ExternalTools.from_body(execution)
     except AgyError as exc:
         return openai_error(exc.status_code, str(exc), _err_type(exc.status_code))
-    if (external or response_format) and len(json.dumps(body, ensure_ascii=False)) > cfg.max_prompt_chars:
-        return openai_error(413, "Prompt and tool definitions too long for this proxy", "invalid_request_error")
-    system, history, final_user = _parse_messages(body)
+    system, history, final_user = _parse_messages(execution)
     if not history and final_user is None:
         return openai_error(400, "Request has no messages with text content", "invalid_request_error")
     if len(system) + sum(len(t) for _, t in history) + len(final_user or "") > cfg.max_prompt_chars:
@@ -189,12 +203,12 @@ async def chat_completions(request: Request) -> Response:
 
     state = request.app.state
     if external:
-        turn = external.run(state.sessions, model=model, effort=effort, profile=profile)
+        turn = external.run(state.sessions, model=model, effort=effort, profile=profile, images=images)
     elif response_format:
         turn = response_format.run(
             state.sessions,
             system=system, history=history, final_user=final_user,
-            model=model, effort=effort, profile=profile,
+            model=model, effort=effort, profile=profile, images=images,
         )
     else:
         turn = run_turn(

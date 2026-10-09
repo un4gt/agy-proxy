@@ -1,0 +1,34 @@
+{
+  "models": [
+    {
+      "slug": "gemini-3.8-flash",
+      "display_name": "AGY Gemini 3.8 Flash",
+      "description": "Gemini through agy-proxy Responses, with image inputs and client tools",
+      "default_reasoning_level": "low",
+      "supported_reasoning_levels": [
+        {"effort": "low", "description": "Low reasoning effort"},
+        {"effort": "medium", "description": "Medium reasoning effort"},
+        {"effort": "high", "description": "High reasoning effort"}
+      ],
+      "shell_type": "unified_exec",
+      "visibility": "list",
+      "supported_in_api": true,
+      "priority": 0,
+      "model_messages": {
+        "instructions_template": "You are a coding assistant. Follow the supplied instructions, inspect attached images, use the available client tools, and verify your changes."
+      },
+      "include_apps_usage_instructions": false,
+      "supports_reasoning_summary_parameter": false,
+      "default_reasoning_summary": "none",
+      "support_verbosity": false,
+      "truncation_policy": {"mode": "bytes", "limit": 10000},
+      "supports_image_detail_original": true,
+      "context_window": 200000,
+      "max_context_window": 200000,
+      "experimental_supported_tools": [],
+      "input_modalities": ["text", "image"],
+      "supports_search_tool": false,
+      "use_responses_lite": false
+    }
+  ]
+}

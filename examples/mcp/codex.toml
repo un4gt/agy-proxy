@@ -1,0 +1,22 @@
+model = "gemini-3.8-flash"
+model_provider = "agy"
+model_reasoning_effort = "low"
+model_context_window = 200000
+web_search = "disabled"
+
+[model_providers.agy]
+name = "AGY Proxy"
+base_url = "http://127.0.0.1:8317/v1"
+env_key = "OPENAI_API_KEY"
+wire_api = "responses"
+supports_websockets = false
+
+[mcp_servers.exa]
+url = "https://mcp.exa.ai/mcp"
+bearer_token_env_var = "EXA_API_KEY"
+startup_timeout_sec = 30
+
+[mcp_servers.filesystem]
+command = 'C:\Users\MT308\AppData\Roaming\fnm\aliases\default\npx.cmd'
+args = ["-y", "@modelcontextprotocol/server-filesystem", 'E:\mcp-workspace']
+startup_timeout_sec = 30

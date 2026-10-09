@@ -15,6 +15,7 @@ from fastapi import Request
 
 from .agy import AgyError, list_models
 from .external_tools import ExternalTools
+from .images import ImageInput
 from .openai_api import _parse_messages, _resolve_model
 from .reasoning import apply_effort, parse_effort
 from .runner import TurnProfile, TurnResult, record_dashboard_usage
@@ -123,8 +124,8 @@ class PreparedTurn:
 
 async def prepare(request: Request, body: dict) -> PreparedTurn:
     cfg = request.app.state.cfg
-    if len(json.dumps(body, ensure_ascii=False)) > cfg.max_prompt_chars:
-        raise AgyError("Prompt and tool definitions too long for this proxy", status_code=413)
+    images = await ImageInput.prepare(body, cfg.max_prompt_chars)
+    execution = dict(body, messages=images.messages)
     requested = string(body.get("model"), "model", nonempty=True)
     boolean(body, "stream")
     effort = parse_effort(body.get("reasoning_effort"))
@@ -135,25 +136,25 @@ async def prepare(request: Request, body: dict) -> PreparedTurn:
     if response_format and not body.get("tools"):
         # Keep history validation even when the structured-output executor is
         # selected (including role order and orphan tool results).
-        validation = dict(body, tools=[])
+        validation = dict(execution, tools=[])
         validation.pop("response_format", None)
         ExternalTools.from_body(validation)
-        plain = dict(body)
+        plain = dict(execution)
         plain.pop("tools", None)
         plain.pop("tool_choice", None)
         external = ExternalTools.from_body(plain)
     else:
-        external = ExternalTools.from_body(body)
+        external = ExternalTools.from_body(execution)
     profile = TurnProfile()
     slugs = await list_models(cfg)
     model, effort = apply_effort(_resolve_model(requested, cfg, slugs), effort, slugs)
     profile.mark("models_done")
     if external:
-        turn = external.run(request.app.state.sessions, model=model, effort=effort, profile=profile)
+        turn = external.run(request.app.state.sessions, model=model, effort=effort, profile=profile, images=images)
     elif response_format:
-        system, history, final_user = _parse_messages(body)
+        system, history, final_user = _parse_messages(execution)
         turn = response_format.run(request.app.state.sessions, system=system, history=history,
-                                   final_user=final_user, model=model, effort=effort, profile=profile)
+                                   final_user=final_user, model=model, effort=effort, profile=profile, images=images)
     else:
         raise invalid("A client-tool execution context is required")
     return PreparedTurn(request, body, model, profile, turn)

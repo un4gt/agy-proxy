@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import hashlib
 import os
 import sys
 from pathlib import Path
@@ -20,7 +21,9 @@ def main():
     assert "--dangerously-skip-permissions" not in unknown
     assert "--disable-slash-commands" in unknown
     assert Path(".agents/hooks.json").exists()
-    assert "tools: [finish]" in Path(".agents/agents/proxy-external.md").read_text()
+    image_paths = json.loads(Path("image-permissions.json").read_text()) if Path("image-permissions.json").exists() else []
+    expected_tools = "tools: [finish, view_file]" if image_paths else "tools: [finish]"
+    assert expected_tools in Path(".agents/agents/proxy-external.md").read_text()
     schema = json.loads(Path(args.json_schema).read_text())
     conv = f"fake-tools-{os.getpid()}"
     emit({"event": "init", "conversation_id": conv,
@@ -28,6 +31,13 @@ def main():
     history = []
     for turn, line in enumerate(sys.stdin, 1):
         prompt = json.loads(line)["message"]["content"]
+        image_hashes = []
+        for image_path in image_paths:
+            image_hashes.append(hashlib.sha256(Path(image_path).read_bytes()).hexdigest())
+            if "SKIP_IMAGE_READ" not in prompt:
+                emit({"event": "step_update", "step_update": {"step_type": "tool", "state": "DONE",
+                      "tool_info": {"name": "view_file", "parameters": {
+                          "AbsolutePath": "/etc/passwd" if "WRONG_IMAGE_READ" in prompt else image_path}}}})
         if "[Client tool configuration]" not in prompt:
             output = {"name": "Budi", "age": 20}
             if "BAD_TYPE" in prompt:
@@ -65,7 +75,8 @@ def main():
             content = f"turn={turn}; " + "; ".join(m["content"] for m in incoming)
             if text.startswith("INSPECT_CONTEXT"):
                 content = json.dumps({"turn": turn, "pid": os.getpid(), "cwd": os.getcwd(),
-                                      "history": history})
+                                      "history": history, "image_hashes": image_hashes, "image_paths": image_paths,
+                                      "image_path_fingerprints": [hashlib.sha256(p.encode()).hexdigest() for p in image_paths]})
             output = {"kind": "message", "content": content, "tool_calls": []}
         else:
             name = choice["function"]["name"] if isinstance(choice, dict) else tools[0]["name"]

@@ -13,6 +13,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 
 from .agy import AgyError
+from .images import normalize_content
 from .auth import extract_key, is_authorized, openai_error
 from .openai_api import _err_type, _read_json
 from .protocol_common import array, boolean, encode, invalid, obj, optional_obj, prepare, string, text_content
@@ -123,7 +124,7 @@ def convert_input(raw):
             role = item.get("role")
             if role not in ("system", "developer", "user", "assistant"):
                 raise invalid("Unsupported input message role")
-            messages.append({"role": role, "content": text_content(item.get("content"))})
+            messages.append({"role": role, "content": normalize_content(item.get("content"), protocol="responses", role=role)})
         elif kind in ("function_call", "custom_tool_call"):
             name = tool_alias(item.get("name"), item.get("namespace"))
             args = (json.dumps({"input": string(item.get("input"), "custom_tool_call.input")})
@@ -228,8 +229,6 @@ async def responses(request: Request):
         body = await _read_json(request)
         if body is None:
             raise invalid("Request body must be a JSON object")
-        if len(json.dumps(body, ensure_ascii=False)) > request.app.state.cfg.max_prompt_chars:
-            raise AgyError("Request too large", status_code=413)
         if boolean(body, "background") or body.get("conversation"):
             raise invalid("background and conversation resources are not supported; use previous_response_id")
         if body.get("truncation", "disabled") != "disabled":
@@ -268,7 +267,10 @@ async def responses(request: Request):
         if store:
             # Request instructions do not carry to the next response. Input system
             # messages do, and each branch gets a deep copy, never shared mutation.
-            history = previous + convert_input(body.get("input", [])) + [result.message()]
+            # Store the resolved image bytes, not a mutable remote URL or a
+            # request's temporary filesystem path. Ownership/TTL/bounds apply.
+            history = chat["messages"][1:] if body.get("instructions") is not None else chat["messages"]
+            history = history + [result.message()]
             cache.put(owner, final, history)
         return final
 

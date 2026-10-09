@@ -10,6 +10,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 
 from .agy import AgyError
+from .images import ImageInput, normalize_content
 from .auth import is_authorized
 from .openai_api import _read_json
 from .protocol_common import array, boolean, encode, invalid, obj, optional_obj, prepare, string, text_content
@@ -50,7 +51,9 @@ def translate(body, *, count_only=False):
             block = obj(block, "content block")
             kind = block.get("type")
             if kind == "text":
-                text.append(string(block.get("text"), "text"))
+                text.append({"type": "text", "text": string(block.get("text"), "text")})
+            elif kind == "image" and role == "user":
+                text.extend(normalize_content([block], protocol="messages", role=role))
             elif kind == "tool_use" and role == "assistant":
                 calls.append({"id": string(block.get("id"), "tool_use.id", nonempty=True), "type": "function",
                               "function": {"name": string(block.get("name"), "tool_use.name"),
@@ -71,7 +74,7 @@ def translate(body, *, count_only=False):
                 raise invalid(f"Unsupported Messages content block: {kind}")
         messages.extend(results)
         if text or calls or not results:
-            item = {"role": role, "content": "\n".join(text)}
+            item = {"role": role, "content": text}
             if calls:
                 item["tool_calls"] = calls
             messages.append(item)
@@ -162,8 +165,6 @@ async def messages(request: Request):
         body = await _read_json(request)
         if body is None:
             raise invalid("Request body must be a JSON object")
-        if len(json.dumps(body, ensure_ascii=False)) > request.app.state.cfg.max_prompt_chars:
-            raise AgyError("Request too large", status_code=413)
         chat = translate(body)
         prepared = await prepare(request, chat)
     except AgyError as exc:
@@ -212,12 +213,14 @@ async def count_tokens(request: Request):
         if body is None:
             raise invalid("Request body must be a JSON object")
         chat = translate(body, count_only=True)
-        serialized = json.dumps({"messages": chat["messages"], "tools": chat["tools"]}, ensure_ascii=False)
-        if len(serialized) > request.app.state.cfg.max_prompt_chars:
-            raise AgyError("Request too large", status_code=413)
+        images = await ImageInput.prepare(chat, request.app.state.cfg.max_prompt_chars)
+        serialized = json.dumps({"messages": images.messages, "tools": chat["tools"]}, ensure_ascii=False)
         # agy exposes usage only after generation, not a tokenizer. Mark this
         # explicitly as an estimate; never use it for accounting or quota.
         estimated = max(1, math.ceil(sum(1 if ord(c) < 128 else 3 for c in serialized) / 3))
+        # Approximate pixels, not the length of base64 encoding. The upstream
+        # CLI's real image/token accounting is only available after generation.
+        estimated += sum(math.ceil(image.pixels / 750) for image in images.attachments)
         return JSONResponse({"input_tokens": estimated}, headers={"request-id": request_id,
                             "X-Agy-Token-Count": "estimate"})
     except AgyError as exc:

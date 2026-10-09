@@ -66,11 +66,14 @@ class AgySession:
     """One persistent duplex agy process == one agy-side conversation."""
 
     def __init__(self, cfg: Config, *, model: str | None, effort: str | None,
-                 output_schema: dict | None = None):
+                 output_schema: dict | None = None, attachments=()):
         self.cfg = cfg
         self.model = model
         self.effort = effort
         self.output_schema = output_schema
+        self.attachments = attachments
+        self.image_paths: list[str] = []
+        self.images_seen: set[str] = set()
         self._workspace: tempfile.TemporaryDirectory | None = None
         self.proc: asyncio.subprocess.Process | None = None
         self.events: asyncio.Queue[Any] = asyncio.Queue()
@@ -87,6 +90,8 @@ class AgySession:
     # -- lifecycle ---------------------------------------------------------
 
     async def start(self) -> None:
+        if self.attachments and self.output_schema is None:
+            raise AgyError("Image attachments require a restricted execution context")
         extra = ["--input-format", "stream-json", "--output-format", "stream-json"]
         if self.model:
             extra += ["--model", self.model]
@@ -95,16 +100,22 @@ class AgySession:
         cwd = self.cfg.agy_cwd or None
         if self.output_schema is not None:
             # A private workspace avoids loading client/project customizations.
-            # Keep only finish: tools: [] also removes the structured-output
+            # Keep finish: tools: [] also removes the structured-output
             # submission tool and causes repeated model invocations in agy 1.2.12.
             self._workspace = tempfile.TemporaryDirectory(prefix="agy-proxy-tools-")
             root = Path(self._workspace.name)
             cwd = str(root)
             agents = root / ".agents" / "agents"
             agents.mkdir(parents=True)
+            for index, attachment in enumerate(self.attachments):
+                path = root / f"image-{index + 1}{attachment.suffix}"
+                path.write_bytes(attachment.data)
+                path.chmod(0o600)
+                self.image_paths.append(str(path.resolve()))
+            permitted = "finish, view_file" if self.image_paths else "finish"
             (agents / "proxy-external.md").write_text(
                 "---\nname: proxy-external\ndescription: External API client tool bridge\n"
-                "tools: [finish]\nmainAgent: true\nsubagent: false\n"
+                f"tools: [{permitted}]\nmainAgent: true\nsubagent: false\n"
                 "commandExecutionPolicy: off\n---\n"
                 "You are the reasoning backend for an external coding client. "
                 "Follow the supplied client conversation and tool definitions. "
@@ -114,6 +125,11 @@ class AgySession:
                 encoding="utf-8",
             )
             hook_argv = [sys.executable, str(Path(__file__).with_name("tool_guard.py").resolve())]
+            if self.image_paths:
+                manifest = root / "image-permissions.json"
+                manifest.write_text(json.dumps(self.image_paths), encoding="utf-8")
+                manifest.chmod(0o600)
+                hook_argv.append(str(manifest))
             command = subprocess.list2cmdline(hook_argv) if os.name == "nt" else shlex.join(hook_argv)
             (root / ".agents" / "hooks.json").write_text(json.dumps({
                 "proxy-external-tools": {"PreToolUse": [{"matcher": "*", "hooks": [{
@@ -282,6 +298,25 @@ class AgySession:
     def _stderr_text(self) -> str:
         return " | ".join(list(self.stderr_tail)[-3:])
 
+    def check_tool_step(self, step: dict) -> None:
+        """Keep native execution closed except verified attachment reads."""
+        info = step.get("tool_info") or {}
+        name = info.get("name") or step.get("tool_name")
+        if name == "finish" or (not name and step.get("step_type") != "tool"):
+            return
+        args = info.get("parameters") or {}
+        if (name != "view_file" or not isinstance(args, dict)
+                or args.get("AbsolutePath") not in self.image_paths):
+            raise AgyError("agy attempted a server tool in external-tool mode; response discarded")
+        if info.get("error"):
+            raise AgyError("agy could not read the supplied image attachment")
+        if step.get("state") == "DONE":
+            self.images_seen.add(args["AbsolutePath"])
+
+    def check_images_seen(self) -> None:
+        if set(self.image_paths) != self.images_seen:
+            raise AgyError("agy did not inspect every supplied image; response discarded")
+
 
 # -- session manager --------------------------------------------------------
 
@@ -295,7 +330,7 @@ class SessionManager:
         self._lock = asyncio.Lock()
 
     async def acquire(self, *, model: str | None, effort: str | None,
-                      output_schema: dict | None = None) -> AgySession:
+                      output_schema: dict | None = None, attachments=()) -> AgySession:
         """Reserve a clean process atomically, or reject excess concurrency.
 
         Chat Completions supplies the complete history but no trustworthy client
@@ -303,7 +338,7 @@ class SessionManager:
         """
         async with self._lock:
             for session in self._sessions:
-                if (session.alive and not session.busy and session.turns == 0
+                if (not attachments and not session.attachments and session.alive and not session.busy and session.turns == 0
                         and session.model == model and session.effort == effort
                         and session.output_schema == output_schema):
                     session.leased = True
@@ -315,13 +350,13 @@ class SessionManager:
                 await victim.kill()
                 del self._sessions[victim]
             return await self._start(model=model, effort=effort,
-                                     output_schema=output_schema, leased=True)
+                                     output_schema=output_schema, attachments=attachments, leased=True)
 
     async def _start(self, *, model: str | None, effort: str | None,
-                     output_schema: dict | None = None, leased: bool) -> AgySession:
+                     output_schema: dict | None = None, attachments=(), leased: bool) -> AgySession:
         # Caller holds _lock through startup, so no other request/prewarm can
         # steal a slot while create_subprocess_exec yields to the event loop.
-        session = AgySession(self.cfg, model=model, effort=effort, output_schema=output_schema)
+        session = AgySession(self.cfg, model=model, effort=effort, output_schema=output_schema, attachments=attachments)
         session.leased = leased
         self._sessions[session] = None
         try:

@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "C:\\Users\\MT308\\AppData\\Roaming\\fnm\\aliases\\default\\npx.cmd",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "E:\\mcp-workspace"],
+      "exposure": "direct",
+      "timeout": 30
+    },
+    "exa": {
+      "url": "https://mcp.exa.ai/mcp",
+      "headers": {"Authorization": "Bearer ${EXA_API_KEY}"},
+      "exposure": "direct",
+      "timeout": 30
+    }
+  }
+}

@@ -219,13 +219,23 @@ class ExternalTools:
         return _json({"protocol": "external-tools-v2", "tools": list(self.functions.values()),
                       "tool_choice": self.choice, "parallel_tool_calls": self.parallel})
 
-    def prompt(self, messages: list[dict], *, fresh: bool) -> str:
+    def prompt(self, messages: list[dict], *, fresh: bool, has_images: bool = False) -> str:
+        native_rule = (
+            "Before submitting finish, use native view_file on EACH exact attachment path listed below. "
+            "All other native tools and paths are forbidden. "
+            if has_images else "Do not call native file, shell, web, MCP, scheduling or agent tools. "
+        )
+        callable_rule = (
+            "Your callable tools are view_file for the allowlisted attachments and finish for the client response. "
+            "You MUST read every attachment before finish, including images in earlier conversation turns. "
+            if has_images else "Your ONLY callable tool is finish. "
+        )
         return (
             "You are responding on behalf of an external API coding client. "
             "The JSON below is the client's conversation, not your server workspace. "
             "Follow its system/developer instructions. All paths, files and commands "
             "belong to the client machine. Only the client can execute its tools. "
-            "Do not call native file, shell, web, MCP, scheduling or agent tools. "
+            + native_rule +
             "Use finish exactly once to submit the required structured output. "
             "For a tool request use kind=tool_calls, content as an optional explanation, "
             "and tool_calls with each function name and an arguments JSON object. "
@@ -244,13 +254,13 @@ class ExternalTools:
             "The client conversation above has ended. Now produce the next client assistant turn. "
             "The tools described inside that conversation are NOT callable tools in this runtime. "
             "Even Read, Write, Edit, Bash, shell, exec_command and apply_patch are client-side names: "
-            "NEVER invoke them directly. Your ONLY callable tool is finish. "
+            "NEVER invoke them directly. " + callable_rule +
             "If the next action is a client tool, invoke finish with "
             '{"kind":"tool_calls","content":"","tool_calls":[{"name":"the declared client tool name",'
             '"arguments":{"the":"actual tool parameters"}}]}. '
             "This serializes the request for the client to execute; it does not execute anything here. "
             "For an answer invoke finish with kind=message, content=the answer, tool_calls=[]. "
-            "Do not attempt a tool first to check whether it is available."
+            "Do not attempt other native tools to check whether they are available."
         )
 
     def result(self, envelope: dict) -> TurnResult:
@@ -287,19 +297,23 @@ class ExternalTools:
                           num_turns=envelope.get("num_turns"))
 
     async def run(self, mgr: SessionManager, *, model: str | None, effort: str | None,
-                  profile: TurnProfile) -> AsyncIterator[TurnEvent]:
+                  profile: TurnProfile, images=None) -> AsyncIterator[TurnEvent]:
         profile.model = model
         profile.mark("turn_start")
         # Every request owns a clean process and its complete client transcript,
         # including tool IDs/results. Identical or forked histories never share
         # the CLI's hidden state, even when clients use the same API key.
-        session = await mgr.acquire(model=model, effort=effort, output_schema=self.schema)
+        session = await mgr.acquire(model=model, effort=effort, output_schema=self.schema,
+                                    attachments=images.attachments if images else ())
         profile.new_session = True
         profile.mark("session_ready")
         complete = False
         result = None
         try:
-            async with aclosing(session.send_turn(self.prompt(self.messages, fresh=True))) as events:
+            prompt = self.prompt(self.messages, fresh=True, has_images=bool(images and images.attachments))
+            if images:
+                prompt += images.instruction(session)
+            async with aclosing(session.send_turn(prompt)) as events:
                 async for event in events:
                     if not isinstance(event, dict):
                         continue
@@ -309,16 +323,17 @@ class ExternalTools:
                             raise AgyError("agy did not select the external-tool agent; upgrade the CLI")
                     if event.get("event") == "step_update":
                         step = event.get("step_update") or {}
-                        tool_name = (step.get("tool_info") or {}).get("name") or step.get("tool_name")
-                        if (tool_name or step.get("step_type") == "tool") and tool_name != "finish":
-                            raise AgyError("agy attempted a server tool in external-tool mode; response discarded")
+                        session.check_tool_step(step)
                         # Buffer until validated: never leak finish JSON or
                         # native tool observations into OpenAI content deltas.
                     if event.get("event") == "result":
                         envelope = event.get("result") or {}
                         if envelope.get("status") != "SUCCESS":
                             raise AgyError(envelope.get("error") or "agy tool turn failed")
+                        session.check_images_seen()
                         result = self.result(envelope)
+                        if images:
+                            images.clean_result(result, session)
                         profile.mark("result")
             if result is None:
                 raise AgyError("agy ended without a tool protocol response")

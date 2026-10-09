@@ -100,11 +100,12 @@ class ResponseFormat:
 
     async def run(self, mgr: SessionManager, *, system: str, history: list,
                   final_user: str | None, model: str | None, effort: str | None,
-                  profile: TurnProfile) -> AsyncIterator[TurnEvent]:
+                  profile: TurnProfile, images=None) -> AsyncIterator[TurnEvent]:
         profile.model = model
         profile.mark("turn_start")
         # A request-private session prevents schema and conversation state mixing.
-        session = await mgr.acquire(model=model, effort=effort, output_schema=self.output_schema)
+        session = await mgr.acquire(model=model, effort=effort, output_schema=self.output_schema,
+                                    attachments=images.attachments if images else ())
         profile.new_session = True
         profile.mark("session_ready")
         instruction = (
@@ -115,6 +116,8 @@ class ResponseFormat:
             "Use finish to submit the object itself, without Markdown or commentary."
         )
         prompt = instruction + "\n\n" + build_seed_prompt(system, history, final_user)
+        if images:
+            prompt += images.instruction(session)
         result = None
         try:
             async with aclosing(session.send_turn(prompt)) as events:
@@ -127,14 +130,15 @@ class ResponseFormat:
                             raise AgyError("agy did not select the structured-output agent; upgrade the CLI")
                     if event.get("event") == "step_update":
                         step = event.get("step_update") or {}
-                        name = (step.get("tool_info") or {}).get("name") or step.get("tool_name")
-                        if (name or step.get("step_type") == "tool") and name != "finish":
-                            raise AgyError("agy attempted a server tool in structured-output mode")
+                        session.check_tool_step(step)
                     if event.get("event") == "result":
                         envelope = event.get("result") or {}
                         if envelope.get("status") != "SUCCESS":
                             raise AgyError(envelope.get("error") or "agy structured-output turn failed")
+                        session.check_images_seen()
                         result = self.result(envelope)
+                        if images:
+                            images.check_structured_result(result, session)
                         profile.mark("result")
             if result is None:
                 raise AgyError("agy ended without a structured response")
