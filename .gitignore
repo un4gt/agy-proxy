@@ -28,3 +28,4 @@ app/static/*.css.map
 # Private integration notes stay local
 /docs/mcp.md
 /docs/vision.md
+/docs/skills.md
