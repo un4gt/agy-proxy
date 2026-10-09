@@ -122,6 +122,8 @@ def test_refresh_expired_token_in_memory(credential, monkeypatch):
         calls.append(request.url.path)
         if request.url.host == "oauth2.googleapis.com":
             assert b"PRIVATE_REFRESH" in request.content
+            assert b"client_id=TEST_CLIENT_ID" in request.content
+            assert b"client_secret=TEST_CLIENT_SECRET" in request.content
             return httpx.Response(
                 200, json={"access_token": "FRESH_ACCESS", "expires_in": 3600}
             )
@@ -131,7 +133,7 @@ def test_refresh_expired_token_in_memory(credential, monkeypatch):
     mocked(monkeypatch, handler)
 
     async def run():
-        service = account.AccountService(Config())
+        service = account.AccountService(Config(oauth_client_id="TEST_CLIENT_ID", oauth_client_secret="TEST_CLIENT_SECRET"))
         assert (await service.snapshot())["status"] == "connected"
         service._cached_at -= 61
         assert (await service.snapshot(refresh=True))["status"] == "connected"
@@ -248,10 +250,38 @@ def test_rejected_token_is_refreshed_and_retried_once(credential, monkeypatch):
 
     mocked(monkeypatch, handler)
     assert (
-        asyncio.run(account.AccountService(Config()).snapshot())["status"]
+        asyncio.run(account.AccountService(Config(oauth_client_id="TEST_CLIENT_ID", oauth_client_secret="TEST_CLIENT_SECRET")).snapshot())["status"]
         == "connected"
     )
     assert len(refreshes) == 1
+
+
+@pytest.mark.parametrize("client_id,secret", [(None, None), ("TEST_CLIENT_ID", None), (None, "TEST_CLIENT_SECRET")])
+def test_expired_token_requires_configured_oauth_client(credential, monkeypatch, client_id, secret):
+    data = json.loads(credential.read_text())
+    data["token"]["expiry"] = "2020-01-01T00:00:00Z"
+    credential.write_text(json.dumps(data))
+
+    def unexpected(request):
+        pytest.fail("Do not send refresh credentials without a configured OAuth client")
+
+    mocked(monkeypatch, unexpected)
+    cfg = Config(oauth_client_id=client_id, oauth_client_secret=secret)
+    result = asyncio.run(account.AccountService(cfg).snapshot())
+    assert result["status"] == "unauthorized"
+    assert "OAuth" in result["message"]
+    assert "PRIVATE" not in json.dumps(result)
+    assert "TEST_CLIENT_SECRET" not in repr(cfg)
+
+
+def test_oauth_client_loaded_from_deployment_environment(monkeypatch):
+    from app.config import load_config
+
+    monkeypatch.setenv("AGY_PROXY_OAUTH_CLIENT_ID", "TEST_CLIENT_ID")
+    monkeypatch.setenv("AGY_PROXY_OAUTH_CLIENT_SECRET", "TEST_CLIENT_SECRET")
+    cfg = load_config()
+    assert cfg.oauth_client_id == "TEST_CLIENT_ID"
+    assert cfg.oauth_client_secret == "TEST_CLIENT_SECRET"
 
 
 def test_prod_fallback_for_wrong_host(credential, monkeypatch):

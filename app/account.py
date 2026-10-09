@@ -25,9 +25,6 @@ from .dashboard import _panel_denied
 
 router = APIRouter()
 _HOSTS = ("daily-cloudcode-pa.googleapis.com", "cloudcode-pa.googleapis.com")
-# Installed application OAuth client, shared by the CLI (not a user secret).
-_CLIENT_ID = ""
-_CLIENT_SECRET = ""
 
 
 def credentials_path() -> Path:
@@ -249,13 +246,18 @@ class AccountService:
             refresh = token.get("refresh_token")
             if not isinstance(refresh, str) or not refresh:
                 raise AccountError("unauthorized", "登录已失效，请重新授权。")
+            if not self.cfg.oauth_client_id or not self.cfg.oauth_client_secret:
+                raise AccountError(
+                    "unauthorized",
+                    "账号凭据需要刷新，请配置 OAuth 客户端信息或通过 agy 重新授权。",
+                )
             response = await client.post(
                 "https://oauth2.googleapis.com/token",
                 data={
                     "grant_type": "refresh_token",
                     "refresh_token": refresh,
-                    "client_id": _CLIENT_ID,
-                    "client_secret": _CLIENT_SECRET,
+                    "client_id": self.cfg.oauth_client_id,
+                    "client_secret": self.cfg.oauth_client_secret,
                 },
             )
             if response.status_code in (400, 401):

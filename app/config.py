@@ -57,6 +57,8 @@ class Config:
     skip_permissions: bool = False
     sandbox: bool = False
     http_proxy: str | None = None
+    oauth_client_id: str | None = None
+    oauth_client_secret: str | None = field(default=None, repr=False)
     agy_cwd: str | None = None
     prewarm_models: tuple[str, ...] = ()
     max_prompt_chars: int = 200_000
@@ -116,6 +118,8 @@ def load_config() -> Config:
         skip_permissions=_bool("SKIP_PERMISSIONS", False),
         sandbox=_bool("SANDBOX", False),
         http_proxy=http_proxy,
+        oauth_client_id=_env("OAUTH_CLIENT_ID"),
+        oauth_client_secret=_env("OAUTH_CLIENT_SECRET"),
         agy_cwd=_env("CWD"),
         prewarm_models=prewarm,
     )

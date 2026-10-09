@@ -315,6 +315,8 @@ uv run --with playwright python tests/browser_smoke.py
 
 镜像内置 agy CLI（官方 install.sh 安装）。部署需要两个数据卷：`agy-gemini`（`/root/.gemini`）保存 AGY 登录凭据，`agy-data`（`/root/.agy-proxy`）保存控制台创建的 API 密钥与用量记录。只挂载前者，容器重建后仍能登录 AGY，但密钥和用量可能丢失。镜像已发布：`docker.io/tumuer/agy-proxy`。
 
+账号详情刷新过期 OAuth 凭据时，需要通过本地 `.env` 配置 `AGY_PROXY_OAUTH_CLIENT_ID` 和 `AGY_PROXY_OAUTH_CLIENT_SECRET`，其值必须匹配签发当前凭据的 CLI OAuth 客户端。未配置时仍可查询未过期凭据，过期后页面会提示配置或重新授权。真实值不应提交到仓库或写入镜像。
+
 ### 一条命令启动（docker compose + .env）
 
 服务器上只需两个文件（都在本仓库里）：
