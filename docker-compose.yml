@@ -3,7 +3,7 @@
 # pull 只更新镜像，不更新服务器上的此文件；旧部署升级前应确认两个数据卷均已挂载。
 services:
   agy-proxy:
-    image: tumuer/agy-proxy:v0.0.12   # 建议生产固定版本，如 tumuer/agy-proxy:v0.0.12
+    image: tumuer/agy-proxy:v0.0.13   # 建议生产固定版本，如 tumuer/agy-proxy:v0.0.13
     # 本地开发想直接从源码构建时，注释掉上面的 image，取消下一行注释：
     # build: .
     container_name: agy-proxy

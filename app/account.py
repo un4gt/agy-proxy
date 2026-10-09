@@ -277,7 +277,7 @@ class AccountService:
     async def _query(self, client: httpx.AsyncClient, access: str) -> tuple[dict, dict]:
         headers = {
             "Authorization": f"Bearer {access}",
-            "User-Agent": "antigravity-agy-proxy/0.0.12",
+            "User-Agent": "antigravity-agy-proxy/0.0.13",
         }
         for host in _HOSTS:
             try:

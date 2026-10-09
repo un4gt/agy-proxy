@@ -5,10 +5,11 @@
 - **内置控制台**：打开首页即可看 agy 当前可用模型、token 用量（取自 agy 自己的 usage 计数），并**创建/吊销上游 API Key**
 - **Gemini API** 兼容：`POST /v1beta/models/{model}:generateContent`、`:streamGenerateContent`（SSE）、`GET /v1beta/models`、`:countTokens`
 - **OpenAI API** 兼容：`POST /v1/chat/completions`（支持流式、`stream_options.include_usage` 和客户端 `tools/tool_calls`）、`GET /v1/models`
+- **图片输入**：Chat Completions、Responses、Anthropic Messages 支持用户附图、图文混排和多图
 - **容器内 agy 自更新**：`/update` 页面一键升级容器内的 agy CLI，无需重建镜像
 
 ```bash
-docker pull tumuer/agy-proxy:v0.0.12
+docker pull tumuer/agy-proxy:v0.0.13
 ```
 
 任何支持自定义 base URL 的客户端（Cherry Studio、OpenWebUI、LobeChat、Continue、openai/gemini SDK 等）都能直接接入。
@@ -225,7 +226,19 @@ claude --effort low
 
 两个新接口始终使用受限的客户端工具执行模式，含无工具请求。SSE 在等待期间发送心跳，工具结果校验通过后发送内容；目前不是逐 token 输出。断开连接会取消上游进程并释放工作目录。
 
-兼容范围：目前仅文本和客户端工具，不支持多模态、内置服务端搜索、后台任务、WebSocket、Responses conversation 资源或外部加密 reasoning。custom 工具的 grammar 会交给模型指导生成，代理仅校验返回的是字符串，不实现 grammar 解析器。`cache_control` 不建立 Anthropic prompt cache；缓存创建/读取计数为 0。`POST /v1/messages/count_tokens` 提供明确标记为 `X-Agy-Token-Count: estimate` 的近似值，不用于 dashboard 记账。agy CLI 尚不暴露 token 上限或采样参数，`max_tokens` / `max_output_tokens` / thinking budget 不能作为硬性限额，`temperature` / `top_p` 不透传；实际 usage 来自上游。JSON Schema 输出暂不与客户端工具调用叠加。
+兼容范围：支持文本、用户图片输入和客户端工具；不支持音视频、图片生成、工具返回图片、内置服务端搜索、后台任务、WebSocket、Responses conversation 资源或外部加密 reasoning。custom 工具的 grammar 会交给模型指导生成，代理仅校验返回的是字符串，不实现 grammar 解析器。`cache_control` 不建立 Anthropic prompt cache；缓存创建/读取计数为 0。`POST /v1/messages/count_tokens` 提供明确标记为 `X-Agy-Token-Count: estimate` 的近似值，图片按像素粗估，不把 Base64 长度当 Token，也不用于 dashboard 记账。agy CLI 尚不暴露 token 上限或采样参数，`max_tokens` / `max_output_tokens` / thinking budget 不能作为硬性限额，`temperature` / `top_p` 不透传；实际 usage 来自上游。JSON Schema 输出暂不与客户端工具调用叠加。
+
+### MCP：stdio / Streamable HTTP
+
+Pi、Codex、Claude Code、OpenCode 可以在客户端连接 MCP，通过上面的 Chat Completions / Responses / Messages 接口完成工具调用。[examples/mcp](examples/mcp) 提供 Exa Streamable HTTP 和 Windows filesystem stdio 的四套配置；真实客户端验收脚本位于 [tests/mcp_smoke.py](tests/mcp_smoke.py)。
+
+### 图片输入
+
+三个接口共用图片校验、下载和隔离执行逻辑，支持 PNG、JPEG、WebP、静态 GIF，接受 Base64 或公网 HTTP(S) 图片。图片可与客户端工具调用、无工具的 JSON Schema 输出及历史续接配合使用。单张图片最多 10 MiB、1600 万像素，每次请求最多 8 张、合计 20 MiB／3200 万像素。真实 API 和客户端验收脚本分别为 [tests/vision_api_smoke.py](tests/vision_api_smoke.py) 和 [tests/vision_smoke.py](tests/vision_smoke.py)。
+
+### 客户端 Skills
+
+Pi、Codex、Claude Code、OpenCode 在客户端发现和加载 `SKILL.md`，代理保留技能指令、引用内容和工具调用；脚本在客户端执行，无需安装到代理服务器。支持自动选择以及客户端各自的显式调用方式。验收脚本 [tests/skills_smoke.py](tests/skills_smoke.py) 覆盖技能加载、引用读取、脚本执行及独立会话数据检查，使用 `uv run python tests/skills_smoke.py` 运行。
 
 ## 鉴权（公网部署必读）
 
@@ -264,8 +277,8 @@ Docker 中支持当前 CLI 的 `~/.gemini/antigravity-cli/antigravity-oauth-toke
 ## 已知限制
 
 - **仍经过 agy 的 Agent 层**：客户端工具模式使用自定义主 Agent 限制工具；系统上下文、模型行为与原生模型 API 不完全相同。
-- **非文本内容**（图片 inlineData 等）不透传；Gemini API 的 function calling 暂未实现。OpenAI 客户端工具模式遇到非文本内容返回 400；`temperature` 等采样参数仍不透传。
-- 普通不带工具字段或历史的请求仍可能让 agy 使用其服务端工具（受自身权限策略约束）；需要限制时显式发送 `tools: []`。
+- **Gemini 原生接口**的图片 `inlineData` 与 function calling 暂未实现；图片请使用上述三个 `/v1` 接口。工具/MCP 返回图片暂不支持；`temperature` 等采样参数仍不透传。
+- 普通纯文本且不带工具字段或历史的 Chat 请求仍可能让 agy 使用其服务端工具（受自身权限策略约束）；需要限制时显式发送 `tools: []`。带图片的请求自动使用受限执行上下文，只允许读取本次图片附件和提交结果。
 - 每次请求都使用干净的上游进程，未命中未使用的预热进程时有秒级冷启动开销
 - 需遵守 Antigravity 服务条款与账号额度，本代理不做额外限流（按 key 只做统计，不做配额；可用 `MAX_SESSIONS` 约束并发）
 - 控制台用量只保留**最近 500 条**请求明细（更早的只进总量与按模型聚合），且首次启动前的历史不可追溯
@@ -349,7 +362,7 @@ agy_backup_dir=$(mktemp -d /tmp/agy-proxy-backup.XXXXXX)
 docker cp agy-proxy:/root/.agy-proxy/data.json "$agy_backup_dir/data.json"
 ```
 
-确认备份成功后再迁移，并在服务停止时将备份恢复到新数据卷的 `data.json`。已有正确挂载的部署，修改镜像 tag（如 `tumuer/agy-proxy:v0.0.12`）后执行：
+确认备份成功后再迁移，并在服务停止时将备份恢复到新数据卷的 `data.json`。已有正确挂载的部署，修改镜像 tag（如 `tumuer/agy-proxy:v0.0.13`）后执行：
 
 ```bash
 docker compose pull
@@ -371,7 +384,7 @@ docker run -d --name agy-proxy -p 8317:8317 \
   -e AGY_PROXY_HTTP_PROXY=http://host.docker.internal:7890 \
   -e AGY_PROXY_PASSWORD=你的控制台密码 \
   --add-host=host.docker.internal:host-gateway \
-  tumuer/agy-proxy:v0.0.12
+  tumuer/agy-proxy:v0.0.13
 ```
 
 ### 容器内 agy 的 OAuth 登录（浏览器在你自己的电脑上完成）
@@ -427,7 +440,8 @@ app/
 ├── gemini_api.py # Gemini 路由与格式转换
 ├── openai_api.py # OpenAI 路由与格式转换
 ├── external_tools.py # 客户端工具协议：schema 校验、工具调用/结果与请求隔离
-├── tool_guard.py # 客户端工具模式的 PreToolUse hook，仅允许 finish
+├── images.py     # 三协议图片校验、下载、历史快照与附件映射
+├── tool_guard.py # PreToolUse hook：finish 与本次图片精确路径白名单
 ├── login.py      # 容器内 agy OAuth 登录桥（PTY + /login 页面）
 ├── update.py     # 容器内 agy 自更新桥（agy update + /update 页面）
 └── static/       # 控制台页面 + 编译好的 app.css（构建产物，已入库）

@@ -76,7 +76,7 @@ def create_app(cfg: Config | None = None) -> FastAPI:
 
     app = FastAPI(
         title="agy-proxy",
-        version="0.0.12",
+        version="0.0.13",
         lifespan=lifespan,
         docs_url=None,
         redoc_url=None,
@@ -170,7 +170,7 @@ def create_app(cfg: Config | None = None) -> FastAPI:
         return JSONResponse(
             {
                 "service": "agy-proxy",
-                "version": "0.0.12",
+                "version": "0.0.13",
                 "endpoints": [
                     "/ (dashboard)",
                     "/login (agy OAuth)",
@@ -191,7 +191,7 @@ def create_app(cfg: Config | None = None) -> FastAPI:
         return JSONResponse(
             {
                 "status": "ok",
-                "version": "0.0.12",
+                "version": "0.0.13",
                 "auth_required": cfg.auth_enabled,
                 "signed_in": account.credentials_present(),
             }
