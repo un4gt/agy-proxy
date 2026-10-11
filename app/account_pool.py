@@ -9,11 +9,13 @@ import hashlib
 import math
 import os
 import re
+import shutil
 import tempfile
 import threading
 import time
 import uuid
 from dataclasses import dataclass, replace
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -118,12 +120,14 @@ class AccountPool:
         self.root = (Path(cfg.data_dir).expanduser() if cfg.data_dir else Path.home() / ".agy-proxy").resolve()
         self.path = self.root / "accounts.json"
         self._lock = threading.RLock()
+        self._removing: set[str] = set()
         self.data = {"version": 1, "accounts": [], "bindings": {}, "exhausted": {}}
         if self.path.exists():
             try:
                 data = json.loads(self.path.read_bytes())
                 if (data.get("version") != 1 or not isinstance(data.get("accounts"), list)
-                        or not isinstance(data.get("bindings"), dict) or not isinstance(data.get("exhausted"), dict)):
+                        or not isinstance(data.get("bindings"), dict) or not isinstance(data.get("exhausted"), dict)
+                        or type(data.get("managed", False)) is not bool):
                     raise ValueError()
                 for entry in data["accounts"]:
                     if (not isinstance(entry, dict) or not isinstance(entry.get("id"), str)
@@ -152,7 +156,8 @@ class AccountPool:
 
     @property
     def enabled(self) -> bool:
-        return bool(self.data["accounts"])
+        # Removing the last managed account must not reactivate legacy credentials.
+        return bool(self.data["accounts"]) or self.data.get("managed", False)
 
     def _save(self) -> None:
         payload = json.dumps(self.data)
@@ -233,8 +238,59 @@ class AccountPool:
         except (OSError, ValueError, KeyError, TypeError, AttributeError):
             raise AccountPoolError("账号 state.json 无效；请恢复原机器标识，不能重新生成。") from None
 
+    def rename(self, account_id: str, name: str) -> dict:
+        if not isinstance(name, str) or not name.strip() or len(name) > 100:
+            raise AccountPoolError("账号名称须为 1–100 个字符。")
+        with self._lock:
+            self.get(account_id)
+            if account_id in self._removing:
+                raise AccountPoolError("账号正在删除，请稍后重试。")
+            entry = next(a for a in self.data["accounts"] if a["id"] == account_id)
+            entry["name"] = name.strip()
+            self._save()
+            return self.public(account_id)
+
+    @contextmanager
+    def removing(self, account_id: str):
+        """Block new logins/discovery while idle sessions are being closed."""
+        with self._lock:
+            self.get(account_id)
+            if account_id in self._removing:
+                raise AccountPoolError("账号正在删除，请稍后重试。")
+            self._removing.add(account_id)
+        try:
+            yield
+        finally:
+            with self._lock:
+                self._removing.discard(account_id)
+
+    def remove(self, account_id: str) -> dict:
+        """Explicit admin deletion releases bindings, unlike automatic failover."""
+        with self._lock:
+            profile = self.get(account_id)
+            directory = profile.home.parent
+            if (directory.is_symlink() or not directory.resolve().is_relative_to(self.root)
+                    or directory.resolve().parent != (self.root / "accounts").resolve()):
+                raise AccountPoolError("账号数据目录无效，无法删除。")
+            released = sum(value == account_id for value in self.data["bindings"].values())
+            self.data["accounts"] = [a for a in self.data["accounts"] if a["id"] != account_id]
+            self.data["bindings"] = {k: v for k, v in self.data["bindings"].items() if v != account_id}
+            self.data["exhausted"].pop(account_id, None)
+            self.data["managed"] = True
+            # Persist first: failed writes must leave credentials and identity intact.
+            self._save()
+            result = {"deleted": account_id, "released_clients": released}
+            try:
+                if directory.exists():
+                    shutil.rmtree(directory)
+            except OSError:
+                result["warning"] = "账号已移除，但部分本地数据未能清理，请检查服务器目录权限。"
+            return result
+
     def prepare(self, profile: AccountProfile) -> None:
         """Materialize identity once; keep all other native state account-local."""
+        if profile.id in self._removing:
+            raise AccountPoolError("账号正在删除，请稍后重试。")
         machine_id = self._machine_id(profile)
         for base in (profile.home / ".gemini", profile.home / ".gemini/antigravity-cli"):
             base.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -269,6 +325,8 @@ class AccountPool:
             key = hashlib.sha256((owner or "default").encode()).hexdigest()
             bound = self.data["bindings"].get(key)
             if bound:
+                if bound in self._removing:
+                    raise AgyError("绑定账号正在删除，请稍后重试。", status_code=503)
                 try:
                     profile = self.get(bound)
                 except AccountPoolError:
@@ -281,7 +339,8 @@ class AccountPool:
             if bound:
                 index = next(i for i, p in enumerate(profiles) if p.id == bound)
                 profiles = profiles[index + 1:] + profiles[:index + 1]
-            profile = next((p for p in profiles if p.credentials.is_file() and not self._blocked(p.id, model)), None)
+            profile = next((p for p in profiles if p.id not in self._removing
+                            and p.credentials.is_file() and not self._blocked(p.id, model)), None)
             if profile is None:
                 raise AgyError("没有可用额度的已登录账号，请刷新额度或添加账号。", status_code=429)
             self.data["bindings"][key] = profile.id

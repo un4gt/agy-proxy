@@ -99,15 +99,24 @@ import {
 } from "@/lib/api";
 
 function Brand() {
+  const [version, setVersion] = useState<string | null>(null);
+  useEffect(() => {
+    const controller = new AbortController();
+    api<{ version: string }>("/about", { signal: controller.signal })
+      .then((data) => { if (!controller.signal.aborted) setVersion(data.version); })
+      .catch(() => {});
+    return () => controller.abort();
+  }, []);
   return (
     <a
       href="/"
-      className="flex items-center gap-2.5 font-semibold tracking-tight"
+      className="flex flex-wrap items-center gap-2.5 font-semibold tracking-tight"
     >
       <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
         <Layers className="size-4" />
       </span>
       <span>agy-proxy</span>
+      {version && <Badge variant="outline" aria-label={`部署版本 v${version}`} title="当前部署的 agy-proxy 版本">v{version}</Badge>}
     </a>
   );
 }

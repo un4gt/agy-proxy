@@ -4,7 +4,7 @@
 
 ## Docker 部署
 
-首次启动见 [README 快速开始](../README.md#docker-快速开始)。镜像发布于 `docker.io/tumuer/agy-proxy`，当前 Compose 固定为 `v0.0.14`，镜像构建会校验 agy CLI 为 `1.3.3`。运行环境无需安装 Python、Node 或 agy。
+首次启动见 [README 快速开始](../README.md#docker-快速开始)。镜像发布于 `docker.io/tumuer/agy-proxy`，当前 Compose 固定为 `v0.0.15`，镜像构建会校验 agy CLI 为 `1.3.3`。运行环境无需安装 Python、Node 或 agy。
 
 服务器上保留 `docker-compose.yml` 和由 `.env.example` 创建的 `.env` 即可部署。至少设置 `AGY_PROXY_PASSWORD`；需要代理访问 Google 时配置 `AGY_PROXY_HTTP_PROXY`。查看启动状态：
 
@@ -25,7 +25,7 @@ docker run -d --name agy-proxy -p 8317:8317 \
   -v agy-data:/root/.agy-proxy \
   --add-host=host.docker.internal:host-gateway \
   --restart unless-stopped \
-  tumuer/agy-proxy:v0.0.14
+  tumuer/agy-proxy:v0.0.15
 ```
 
 Compose 默认给卷名加项目名前缀，如 `agy-proxy_agy-data`；上例的 `agy-data` 是另一个卷。从 Compose 切换部署方式时，应显式复用原卷。
@@ -53,6 +53,8 @@ API 支持 `Authorization: Bearer <key>`、Basic（`curl -u :key`）、`x-api-ke
 
 控制台数据保存在 `AGY_PROXY_DATA_DIR/data.json`，页面每 5 秒刷新。管理接口包括 `GET /dashboard`、`GET /api/models`、`POST /api/keys`、`PATCH|DELETE /api/keys/{id}`。
 
+页面顶部品牌旁显示后端 `/about` 返回的 agy-proxy 部署版本；CLI 版本在更新页面单独显示。
+
 ## 添加账号与授权登录
 
 在「账号详情」（`/login`）添加账号，可导入 agy 原生 `antigravity-oauth-token` 或含 `token` 的 agy-switch 完整账号 JSON，也可先创建空账号，再在该账号卡片中授权。交互登录桥需要 Linux / Docker。
@@ -69,6 +71,8 @@ API 支持 `Authorization: Bearer <key>`、Basic（`curl -u :key`）、`x-api-ke
 账号卡片显示身份、套餐、连接状态与检查时间。「查看 Usage」查询 Gemini、Claude/GPT 等模型组的额度，并支持刷新。额度来自 Cloud Code 查询，正常缓存 60 秒、失败缓存 10 秒；查询失败或未知值不会显示为 0%。接口为 `GET /api/accounts`、`POST /api/accounts`、`GET /api/accounts/{id}/usage?refresh=true`；`current` 仅用于尚未启用隔离账号的旧模式。
 
 账号查询模块刷新过期令牌需要配置匹配的 `AGY_PROXY_OAUTH_CLIENT_ID` 和 `AGY_PROXY_OAUTH_CLIENT_SECRET`。该模块的刷新结果仅保存在内存中，CLI 自身的凭据管理独立。配置含义见[环境变量](configuration.md)，账号绑定与耗尽后切换规则见[隔离说明](account-isolation.md)。
+
+隔离账号卡片右上角提供编辑名称和删除操作。重命名保留原凭据、安装标识与绑定；删除需确认，会移除该账号的本地数据并解除其客户端绑定，后续请求重新选择可用账号。正在处理请求或登录的账号会拒绝删除，需等待请求结束或完成/取消登录。删除最后一个账号后保持无账号状态，不回退到旧的本机凭据。管理接口为 `PATCH /api/accounts/{id}`（`{"name":"新名称"}`）和 `DELETE /api/accounts/{id}`，均要求面板鉴权。
 
 ## 升级与数据持久化
 

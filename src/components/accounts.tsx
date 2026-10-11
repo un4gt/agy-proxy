@@ -9,6 +9,8 @@ import {
   Plus,
 } from "lucide-react";
 import { api, date, message } from "@/lib/api";
+import { AccountActions } from "@/components/account-actions";
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -339,7 +341,7 @@ export function Accounts({ login }: { login: (accountId: string) => ReactNode })
         <div className="flex flex-col gap-2">
           <h1 className="text-2xl font-semibold tracking-tight">账号详情</h1>
           <p className="text-sm text-muted-foreground">
-            同一客户端持续使用已绑定账号，仅在额度耗尽后切换。
+            同一客户端持续使用已绑定账号，仅在额度耗尽后自动切换。
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -359,6 +361,15 @@ export function Accounts({ login }: { login: (accountId: string) => ReactNode })
         </div>
       </div>
       {error && <Failure text={error} />}
+      {!busy && !error && !accounts.length && (
+        <Empty>
+          <EmptyHeader>
+            <EmptyMedia variant="icon"><UserRound /></EmptyMedia>
+            <EmptyTitle>还没有账号</EmptyTitle>
+            <EmptyDescription>添加账号并完成授权后，即可开始使用模型。</EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+      )}
       <div
         className="grid items-start gap-5 md:grid-cols-2 xl:grid-cols-3"
         aria-label="账号列表"
@@ -376,6 +387,7 @@ export function Accounts({ login }: { login: (accountId: string) => ReactNode })
               <CardHeader>
                 <div className="flex items-center justify-between gap-3">
                   <UserRound className="size-5 text-muted-foreground" />
+                  <div className="flex items-center gap-2">
                   <Badge
                     variant={
                       busy || error
@@ -393,6 +405,11 @@ export function Accounts({ login }: { login: (accountId: string) => ReactNode })
                         ? "状态未更新"
                         : statusLabels[account.status] || "状态未知"}
                   </Badge>
+                  {account.isolated && <AccountActions account={account} disabled={busy}
+                    onRenamed={(name) => setAccounts((items) => items.map((item) => item.id === account.id ? { ...item, name } : item))}
+                    onDeleted={() => setAccounts((items) => items.filter((item) => item.id !== account.id))}
+                  />}
+                  </div>
                 </div>
                 <CardTitle className="break-all">
                   {account.email || account.name || "Antigravity 账号"}

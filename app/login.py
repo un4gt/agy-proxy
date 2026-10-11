@@ -74,6 +74,11 @@ class LoginBridge:
     def _credentials_path(self) -> Path:
         return Path(self.cfg.account_home) / NATIVE_TOKEN if self.cfg.account_home else _creds_path()
 
+    @property
+    def active(self) -> bool:
+        with self._lock:
+            return self.state in _ACTIVE
+
     def start(self) -> dict:
         with self._lock:
             if self.state in _ACTIVE:

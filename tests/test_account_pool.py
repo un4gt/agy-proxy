@@ -402,3 +402,186 @@ def test_import_current_does_not_confuse_gemini_credentials_with_agy(tmp_path, m
     response = TestClient(app).post("/api/accounts", json={"name": "A", "import_current": True})
     assert response.status_code == 400
     assert not app.state.account_pool.enabled
+
+
+def test_rename_preserves_identity_credentials_quota_and_bindings(pool_setup):
+    cfg, pool, a, b, _ = pool_setup
+    pool.select("client-a")
+    pool.mark_exhausted(a.id, "gemini")
+    pool.select("client-b", "gemini")
+    before = json.loads(pool.path.read_bytes())
+    identity = (a.home.parent / "state.json").read_bytes()
+    token = a.credentials.read_bytes()
+    assert pool.rename(a.id, "  主账号  ")["name"] == "主账号"
+    reopened = AccountPool(cfg)
+    assert reopened.get(a.id).name == "主账号"
+    assert reopened.get(b.id).name == "B"
+    for field in ("bindings", "exhausted"):
+        assert reopened.data[field] == before[field]
+    assert (a.home.parent / "state.json").read_bytes() == identity
+    assert a.credentials.read_bytes() == token
+
+
+@pytest.mark.parametrize("operation", ["rename", "remove"])
+def test_account_edit_disk_failure_preserves_account(pool_setup, monkeypatch, operation):
+    import app.account_pool as module
+    cfg, pool, a, _, _ = pool_setup
+    pool.select("client")
+    before = pool.path.read_bytes()
+    token = a.credentials.read_bytes()
+    monkeypatch.setattr(module, "write_private", lambda *_: (_ for _ in ()).throw(OSError("disk full")))
+    with pytest.raises(AccountPoolError):
+        if operation == "rename":
+            pool.rename(a.id, "changed")
+        else:
+            pool.remove(a.id)
+    assert pool.data == json.loads(before)
+    assert pool.path.read_bytes() == before
+    assert a.credentials.read_bytes() == token
+    assert AccountPool(cfg).select("client").id == a.id
+
+
+def test_delete_clears_only_selected_account_and_its_bindings(pool_setup):
+    cfg, pool, a, b, _ = pool_setup
+    assert pool.select("client-a").id == a.id
+    pool.mark_exhausted(a.id, "gemini")
+    assert pool.select("client-b", "gemini").id == b.id
+    b_token = b.credentials.read_bytes()
+    result = pool.remove(a.id)
+    assert result == {"deleted": a.id, "released_clients": 1}
+    assert not a.home.parent.exists()
+    assert b.credentials.read_bytes() == b_token
+    assert a.id not in pool.data["exhausted"]
+    reopened = AccountPool(cfg)
+    assert reopened.select("client-a").id == b.id
+    assert reopened.select("client-b").id == b.id
+
+
+def test_delete_last_account_never_reactivates_legacy_login(pool_setup, monkeypatch, tmp_path):
+    from app import account
+    cfg, pool, a, b, _ = pool_setup
+    legacy = tmp_path / "antigravity-oauth-token"
+    legacy.write_text(json.dumps(credentials("LEGACY")))
+    monkeypatch.setattr(account, "credentials_path", lambda: legacy)
+    pool.remove(a.id)
+    pool.remove(b.id)
+    app = create_app(cfg)
+    client = TestClient(app)
+    assert app.state.account_pool.enabled
+    assert client.get("/health").json()["signed_in"] is False
+    assert client.get("/api/accounts").json() == {"accounts": []}
+    with pytest.raises(AgyError):
+        app.state.account_pool.select("client")
+    assert client.get("/login/status").status_code == 404
+    response = client.post("/api/accounts", json={"name": "new"})
+    assert response.status_code == 201
+    assert [p.name for p in app.state.account_pool.profiles()] == ["new"]
+    assert legacy.exists()
+
+
+def test_account_mutations_require_panel_auth_and_validate_names(tmp_path, monkeypatch):
+    from app import account
+    monkeypatch.setattr(account, "credentials_path", lambda: tmp_path / "missing")
+    app = create_app(Config(password="panel", data_dir=str(tmp_path / "data")))
+    profile = app.state.account_pool.create("A", credentials("A"))
+    client = TestClient(app)
+    path = f"/api/accounts/{profile.id}"
+    assert client.patch(path, json={"name": "new"}).status_code == 401
+    assert client.delete(path).status_code == 401
+    client.post("/signin", json={"key": "panel"})
+    for body in ({"name": ""}, {"name": "  "}, {"name": "a" * 101}, {"name": 3}, [],
+                 {"name": "new", "machine_id": "change-not-allowed"}):
+        assert client.patch(path, json=body).status_code == 400
+        assert app.state.account_pool.get(profile.id).name == "A"
+    response = client.patch(path, json={"name": "主账号"})
+    assert response.status_code == 200 and response.json()["name"] == "主账号"
+    assert "PRIVATE" not in response.text
+    assert client.delete(path).status_code == 200
+    assert client.delete(path).status_code == 404
+    assert client.patch(path, json={"name": "new"}).status_code == 404
+    assert client.delete("/api/accounts/current").status_code == 404
+
+
+def test_delete_refuses_busy_or_logging_in_account_then_closes_idle_process(pool_setup):
+    from app.login import LoginBridge
+    cfg, pool, a, b, _ = pool_setup
+    async def scenario():
+        mgr = SessionManager(cfg)
+        try:
+            session = await mgr.acquire(model="auto", effort=None)
+            assert session.account_id == a.id and session.busy
+            with pytest.raises(AgyError) as busy:
+                await mgr.remove_account(a.id)
+            assert busy.value.status_code == 409
+            assert session.alive and a.credentials.exists()
+            session.leased = False
+            bridge = LoginBridge(a.configured(cfg))
+            bridge.state = "waiting_code"
+            with pytest.raises(AgyError) as login:
+                await mgr.remove_account(a.id, login_bridges={a.id: bridge})
+            assert login.value.status_code == 409
+            bridge.state = "idle"
+            result = await mgr.remove_account(a.id, login_bridges={a.id: bridge})
+            assert result["deleted"] == a.id
+            assert not session.alive and mgr.live_count == 0
+            assert pool.select().id == b.id
+        finally:
+            await mgr.close_all()
+    asyncio.run(scenario())
+
+
+def test_deletion_blocks_new_login_and_discovery_until_sessions_close(pool_setup, monkeypatch):
+    cfg, pool, a, _, _ = pool_setup
+    async def scenario():
+        mgr = SessionManager(cfg)
+        session = await mgr.acquire(model="auto", effort=None)
+        session.leased = False
+        closing, finish = asyncio.Event(), asyncio.Event()
+        close = session.close
+        async def delayed_close():
+            closing.set()
+            await finish.wait()
+            await close()
+        monkeypatch.setattr(session, "close", delayed_close)
+        task = asyncio.create_task(mgr.remove_account(a.id))
+        try:
+            await asyncio.wait_for(closing.wait(), timeout=5)
+            with pytest.raises(AccountPoolError, match="正在删除"):
+                pool.prepare(a)
+            with pytest.raises(AgyError, match="正在删除"):
+                pool.select()
+        finally:
+            finish.set()
+            await task
+            await mgr.close_all()
+    asyncio.run(scenario())
+
+
+def test_account_list_tolerates_concurrent_deletion(tmp_path, monkeypatch):
+    from app import account
+    app = create_app(Config(data_dir=str(tmp_path / "data")))
+    profile = app.state.account_pool.create("A", credentials("A"))
+    async def scenario():
+        entered, finish = asyncio.Event(), asyncio.Event()
+        async def snapshot(self, refresh=False):
+            entered.set()
+            await finish.wait()
+            return {"id": profile.id, "status": "connected", "usage": None}
+        monkeypatch.setattr(account.AccountService, "snapshot", snapshot)
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+            listing = asyncio.create_task(client.get("/api/accounts"))
+            await asyncio.wait_for(entered.wait(), timeout=5)
+            assert (await client.delete(f"/api/accounts/{profile.id}")).status_code == 200
+            finish.set()
+            response = await listing
+            assert response.status_code == 200 and response.json() == {"accounts": []}
+    asyncio.run(scenario())
+
+
+def test_delete_reports_cleanup_failure_without_reactivating_account(pool_setup, monkeypatch):
+    import app.account_pool as module
+    cfg, pool, a, b, _ = pool_setup
+    monkeypatch.setattr(module.shutil, "rmtree", lambda *_: (_ for _ in ()).throw(PermissionError()))
+    result = pool.remove(a.id)
+    assert result["warning"] and a.credentials.exists()
+    assert AccountPool(cfg).select("client").id == b.id

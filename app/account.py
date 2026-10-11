@@ -361,7 +361,16 @@ async def accounts(request: Request, refresh: bool = False):
         return denied
     pool = request.app.state.account_pool
     ids = [p.id for p in pool.profiles()] if pool.enabled else ["current"]
-    snapshots = await asyncio.gather(*[_snapshot(request, account_id, refresh) for account_id in ids])
+    async def snapshot_if_present(account_id):
+        try:
+            return await _snapshot(request, account_id, refresh)
+        except AccountPoolError:
+            # A concurrent admin deletion can finish while quota queries await.
+            if account_id not in {p.id for p in pool.profiles()}:
+                return None
+            raise
+    snapshots = await asyncio.gather(*[snapshot_if_present(account_id) for account_id in ids])
+    snapshots = [snapshot for snapshot in snapshots if snapshot is not None]
     summaries = [{k: v for k, v in snapshot.items() if k not in ("usage", "usage_error")} for snapshot in snapshots]
     return JSONResponse({"accounts": summaries}, headers={"Cache-Control": "no-store"})
 
@@ -408,6 +417,55 @@ async def add_account(request: Request):
         return JSONResponse({"error": "无法添加账号，请检查名称、凭据 JSON 或本机登录文件。"}, status_code=400)
     return JSONResponse(request.app.state.account_pool.public(profile.id), status_code=201,
                         headers={"Cache-Control": "no-store"})
+
+
+@router.patch("/api/accounts/{account_id}")
+async def edit_account(account_id: str, request: Request):
+    denied = _panel_denied(request)
+    if denied is not None:
+        return denied
+    pool = request.app.state.account_pool
+    try:
+        pool.get(account_id)
+    except AccountPoolError:
+        return JSONResponse({"error": "账号不存在，请先添加或导入隔离账号。"}, status_code=404)
+    try:
+        raw = await request.body()
+        if len(raw) > 4096:
+            raise AccountPoolError("请求过大。")
+        body = json.loads(raw)
+        if not isinstance(body, dict) or set(body) != {"name"}:
+            raise AccountPoolError("仅支持修改账号名称。")
+        result = pool.rename(account_id, body["name"])
+    except (ValueError, TypeError):
+        return JSONResponse({"error": "保存失败，请检查名称（1–100 个字符）及数据目录写入权限。"}, status_code=400)
+    return JSONResponse(result, headers={"Cache-Control": "no-store"})
+
+
+@router.delete("/api/accounts/{account_id}")
+async def delete_account(account_id: str, request: Request):
+    from .agy import AgyError
+
+    denied = _panel_denied(request)
+    if denied is not None:
+        return denied
+    pool = request.app.state.account_pool
+    try:
+        pool.get(account_id)
+    except AccountPoolError:
+        return JSONResponse({"error": "账号不存在，请先添加或导入隔离账号。"}, status_code=404)
+    bridges = getattr(request.app.state, "account_login_bridges", None)
+    if bridges is None:
+        bridges = request.app.state.account_login_bridges = {}
+    try:
+        result = await request.app.state.sessions.remove_account(account_id, login_bridges=bridges)
+    except AgyError as exc:
+        return JSONResponse({"error": str(exc)}, status_code=exc.status_code)
+    except (AccountPoolError, OSError):
+        return JSONResponse({"error": "删除失败，请检查账号状态及数据目录写入权限。"}, status_code=409)
+    bridges.pop(account_id, None)
+    getattr(request.app.state, "account_services", {}).pop(account_id, None)
+    return JSONResponse(result, headers={"Cache-Control": "no-store"})
 
 
 @router.get("/api/accounts/{account_id}/usage")

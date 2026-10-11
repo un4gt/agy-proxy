@@ -41,11 +41,13 @@ def main():
                 context = browser.new_context(viewport={"width": 1440, "height": 1000})
                 context.grant_permissions(["clipboard-read", "clipboard-write"])
                 page = context.new_page()
+                page.route("**/about", lambda r: r.fulfill(json={"service": "agy-proxy", "version": "9.8.7"}))
                 errors = []
                 page.on("pageerror", lambda e: errors.append(str(e)))
                 page.goto(origin + "/")
                 expect(page).to_have_url(origin + "/signin")
                 expect(page.get_by_label("控制台密码", exact=True)).to_be_visible()
+                expect(page.get_by_label("部署版本 v9.8.7").first).to_be_visible()
                 page.screenshot(path=str(screenshots / "signin-desktop.png"), full_page=True)
                 page.set_viewport_size({"width": 390, "height": 844})
                 assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
@@ -56,6 +58,7 @@ def main():
                 page.get_by_label("控制台密码", exact=True).fill("ui-test-only")
                 page.get_by_role("button", name="登录控制台", exact=True).click()
                 expect(page.get_by_role("heading", name="工作空间概览")).to_be_visible()
+                expect(page.get_by_label("部署版本 v9.8.7")).to_be_visible()
                 expect(page.locator("tbody tr").first).to_be_visible()
                 assert page.evaluate("document.documentElement.scrollWidth <= innerWidth"), "dashboard overflow"
                 page.screenshot(path=str(screenshots / "dashboard-mobile.png"), full_page=True)
@@ -204,6 +207,7 @@ def main():
                 # synthetic and the browser never sends these to upstream.
                 account_list = [dict(account, id="a" * 32, name="A", isolated=True, bound_clients=1)]
                 imported = []
+                block_delete = [True]
                 def manage_accounts(route):
                     if route.request.method == "POST":
                         payload = route.request.post_data_json
@@ -214,9 +218,22 @@ def main():
                                      isolated=True, bound_clients=0, status="disconnected", message="尚未连接账号")
                         account_list.append(added)
                         route.fulfill(status=201, json={"id": added["id"]})
+                    elif route.request.method == "PATCH":
+                        target = next(a for a in account_list if route.request.url.endswith(a["id"]))
+                        target["name"] = route.request.post_data_json["name"]
+                        route.fulfill(json={"id": target["id"], "name": target["name"]})
+                    elif route.request.method == "DELETE":
+                        if block_delete[0]:
+                            block_delete[0] = False
+                            route.fulfill(status=409, json={"error": "账号正在处理请求，请等待请求结束后再删除。"})
+                            return
+                        target = next(a for a in account_list if route.request.url.endswith(a["id"]))
+                        account_list.remove(target)
+                        route.fulfill(json={"deleted": target["id"]})
                     else:
                         route.fulfill(json={"accounts": account_list})
                 page.route("**/api/accounts*", manage_accounts)
+                page.route("**/api/accounts/*", manage_accounts)
                 page.get_by_role("button", name="添加账号", exact=True).click()
                 page.get_by_label("账号名称", exact=True).fill("备用账号 B")
                 page.get_by_label("凭据文件（可选）", exact=True).set_input_files({
@@ -236,6 +253,33 @@ def main():
                     added_card.get_by_role("button", name="连接账号", exact=True).click()
                 expect(page.get_by_role("dialog").get_by_text("账号已连接", exact=True)).to_be_visible()
                 page.get_by_role("button", name="关闭", exact=True).click()
+                added_card.get_by_role("button", name="编辑账号 备用账号 B", exact=True).click()
+                page.get_by_role("dialog").get_by_label("账号名称", exact=True).fill("   ")
+                expect(page.get_by_role("button", name="保存名称", exact=True)).to_be_disabled()
+                page.get_by_role("dialog").get_by_label("账号名称", exact=True).fill("备用账号已重命名")
+                page.screenshot(path=str(screenshots / "edit-account-mobile.png"), full_page=True)
+                page.get_by_role("button", name="保存名称", exact=True).click()
+                expect(added_card.get_by_text("备用账号已重命名", exact=True)).to_be_visible()
+                page.reload()
+                added_card.get_by_role("button", name="删除账号 备用账号已重命名", exact=True).click()
+                dialog = page.get_by_role("alertdialog")
+                expect(dialog.get_by_text("后续请求会重新选择可用账号", exact=False)).to_be_visible()
+                page.get_by_role("button", name="取消", exact=True).click()
+                expect(added_card).to_be_visible()
+                added_card.get_by_role("button", name="删除账号 备用账号已重命名", exact=True).click()
+                dialog.get_by_role("button", name="确认删除", exact=True).click()
+                expect(dialog.get_by_text("账号正在处理请求，请等待请求结束后再删除。", exact=True)).to_be_visible()
+                expect(added_card).to_be_visible()
+                for width in (1440, 390):
+                    page.set_viewport_size({"width": width, "height": 900})
+                    assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+                    page.screenshot(path=str(screenshots / f"delete-account-{width}.png"), full_page=True)
+                dialog.get_by_role("button", name="确认删除", exact=True).click()
+                expect(added_card).to_have_count(0)
+                page.get_by_role("button", name="删除账号 A", exact=True).click()
+                page.get_by_role("alertdialog").get_by_role("button", name="确认删除", exact=True).click()
+                expect(page.get_by_text("还没有账号", exact=True)).to_be_visible()
+                page.screenshot(path=str(screenshots / "accounts-empty-mobile.png"), full_page=True)
                 # Real HTTP insecure context: the browser does not expose the
                 # Clipboard API. Copy must still work from the generated-key modal.
                 insecure_context = browser.new_context()
@@ -267,7 +311,7 @@ def main():
                 expect(page.get_by_text("未设置鉴权", exact=True)).to_be_visible()
                 assert not errors, errors
                 browser.close()
-                print("PASS: auth, models, key CRUD and clipboard/fallback, account cards, usage/error/refresh, OAuth modal, responsive layout, no JS errors")
+                print("PASS: auth, deployment version, models, key CRUD and clipboard/fallback, account CRUD/confirmation/errors, usage, OAuth, responsive layout, no JS errors")
         finally:
             server.should_exit = True
             thread.join(timeout=10)

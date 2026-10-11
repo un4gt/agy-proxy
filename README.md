@@ -9,7 +9,7 @@
 
 ## Docker 快速开始
 
-镜像已内置 agy CLI，当前版本为 `tumuer/agy-proxy:v0.0.14`。需要 Docker Compose：
+镜像已内置 agy CLI，当前版本为 `tumuer/agy-proxy:v0.0.15`。需要 Docker Compose：
 
 ```bash
 git clone https://github.com/un4gt/agy-proxy.git

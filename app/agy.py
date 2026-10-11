@@ -658,6 +658,25 @@ class SessionManager:
                     killed += 1
             return killed
 
+    async def remove_account(self, account_id: str, *, login_bridges=None) -> dict:
+        """Serialize account removal with session acquisition and prewarming."""
+        async with self._lock:
+            pool = self.cfg.account_pool
+            with pool.removing(account_id):
+                login_bridge = (login_bridges or {}).get(account_id)
+                sessions = [s for s in self._sessions if s.account_id == account_id]
+                if any(s.busy for s in sessions):
+                    raise AgyError("账号正在处理请求，请等待请求结束后再删除。", status_code=409)
+                if login_bridge is not None and login_bridge.active:
+                    raise AgyError("账号正在登录，请先完成或取消登录后再删除。", status_code=409)
+                for session in sessions:
+                    await session.close()
+                    self._sessions.pop(session, None)
+                result = pool.remove(account_id)
+                if login_bridge is not None:
+                    login_bridge.shutdown()
+                return result
+
     def busy_count(self) -> int:
         return sum(1 for s in self._sessions if s.alive and s.busy)
 
