@@ -21,6 +21,7 @@ from .openai_api import _parse_messages, _resolve_model
 from .reasoning import apply_effort, parse_effort
 from .runner import TurnProfile, TurnResult, record_dashboard_usage
 from .structured_output import ResponseFormat
+from .session_context import client_session_key
 
 
 def invalid(message: str) -> AgyError:
@@ -122,8 +123,9 @@ class PreparedTurn:
                 await asyncio.gather(task, return_exceptions=True)
 
 
-async def prepare(request: Request, body: dict) -> PreparedTurn:
+async def prepare(request: Request, body: dict, *, session_body: dict | None = None) -> PreparedTurn:
     cfg = request.app.state.cfg
+    session_key = client_session_key(request, session_body if session_body is not None else body)
     images = await ImageInput.prepare(body, cfg.max_prompt_chars)
     execution = dict(body, messages=images.messages)
     requested = string(body.get("model"), "model", nonempty=True)
@@ -153,12 +155,12 @@ async def prepare(request: Request, body: dict) -> PreparedTurn:
     profile.mark("models_done")
     if external:
         turn = external.run(request.app.state.sessions, model=model, effort=effort, profile=profile,
-                            images=images)
+                            images=images, session_key=session_key)
     elif response_format:
         system, history, final_user = _parse_messages(execution)
         turn = response_format.run(request.app.state.sessions, system=system, history=history,
                                    final_user=final_user, model=model, effort=effort, profile=profile,
-                                   images=images)
+                                   images=images, session_key=session_key)
     else:
         raise invalid("A client-tool execution context is required")
     return PreparedTurn(request, body, model, profile, turn)

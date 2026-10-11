@@ -61,7 +61,8 @@ def test_base_model_and_effort_reach_real_child_in_all_modes(client, stream, mod
             assert response.json()["choices"][0]["finish_reason"] == "tool_calls"
         elif mode == "json":
             assert json.loads(response.json()["choices"][0]["message"]["content"]) == {"name": "Budi", "age": 20}
-    assert client.app.state.sessions.live_count == 0
+    assert client.app.state.sessions.live_count == 1
+    assert client.app.state.sessions.busy_count() == 0
 
 
 @pytest.mark.parametrize("model,effort,expected", [

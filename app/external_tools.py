@@ -16,6 +16,7 @@ from referencing import Registry
 
 from .agy import AgyError, SessionManager
 from .runner import TurnEvent, TurnProfile, TurnResult
+from .session_context import SessionContext, SessionIdentity
 
 log = logging.getLogger("agy_proxy.external_tools")
 
@@ -297,21 +298,20 @@ class ExternalTools:
                           num_turns=envelope.get("num_turns"))
 
     async def run(self, mgr: SessionManager, *, model: str | None, effort: str | None,
-                  profile: TurnProfile, images=None) -> AsyncIterator[TurnEvent]:
+                  profile: TurnProfile, images=None, session_key: SessionIdentity | str | None = None) -> AsyncIterator[TurnEvent]:
         profile.model = model
         profile.mark("turn_start")
-        # Every request owns a clean process and its complete client transcript,
-        # including tool IDs/results. Identical or forked histories never share
-        # the CLI's hidden state, even when clients use the same API key.
+        context = SessionContext.build(session_key, ["external-tools", self.context], self.messages)
         session = await mgr.acquire(model=model, effort=effort, output_schema=self.schema,
-                                    attachments=images.attachments if images else ())
-        profile.new_session = True
+                                    attachments=images.attachments if images else (), context=context)
+        profile.new_session = session.turns == 0
         profile.mark("session_ready")
         complete = False
         result = None
         try:
             yield "ready", None
-            prompt = self.prompt(self.messages, fresh=True, has_images=bool(images and images.attachments))
+            prompt = self.prompt(self.messages[session.input_offset:], fresh=session.turns == 0,
+                                 has_images=bool(images and images.attachments))
             if images:
                 prompt += images.instruction(session)
             async with aclosing(session.send_turn(prompt)) as events:
@@ -338,12 +338,13 @@ class ExternalTools:
                         profile.mark("result")
             if result is None:
                 raise AgyError("agy ended without a tool protocol response")
+            if result.text:
+                profile.mark("first_delta")
+                yield "delta", result.text
             complete = True
+            yield "result", result
         finally:
-            await mgr.drop(session)
+            reply = dict(result.message(), content=result.text or "") if complete else None
+            await mgr.release(session, reply=reply)
             log.info("turn profile: %s external_tools=1 status=%s", profile.summary(),
                      "ok" if complete else "aborted")
-        if result.text:
-            profile.mark("first_delta")
-            yield "delta", result.text
-        yield "result", result

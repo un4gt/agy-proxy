@@ -248,7 +248,7 @@ def test_openai_message_shapes(client):
 # -- request isolation -------------------------------------------------------
 
 
-def test_followup_replays_history_in_fresh_session(client):
+def test_followup_reuses_session_without_custom_headers(client):
     first = client.post(
         "/v1/chat/completions",
         json={"model": "gemini-3-pro-high", "messages": [{"role": "user", "content": "first question"}]},
@@ -266,11 +266,12 @@ def test_followup_replays_history_in_fresh_session(client):
             ],
         },
     ).json()
-    # Complete history is replayed, but no hidden CLI conversation is reused.
-    assert second["choices"][0]["message"]["content"].startswith("[turn 1]")
+    # The server recognizes the complete transcript and resumes the same CLI.
+    assert second["choices"][0]["message"]["content"].startswith("[turn 2]")
     assert "first question" in second["choices"][0]["message"]["content"]
     assert "second question" in second["choices"][0]["message"]["content"]
-    assert client.app.state.sessions.live_count == 0
+    assert client.app.state.sessions.live_count == 1
+    assert client.app.state.sessions.busy_count() == 0
 
 
 def test_divergent_history_gets_new_session(client):
@@ -756,7 +757,7 @@ def test_update_status_reports_version(client, fresh_update_env):
 
 
 def test_update_full_flow(client, fresh_update_env):
-    # Finished requests have already released their private process.
+    # Finished requests leave one idle reusable process for the updater to reap.
     assert (
         client.post(
             "/v1/chat/completions",
@@ -774,7 +775,7 @@ def test_update_full_flow(client, fresh_update_env):
     assert s["before_version"] == "9.9.9"
     assert s["after_version"] == "9.9.10"
     assert s["version"] == "9.9.10"
-    assert s["sessions_killed"] == 0
+    assert s["sessions_killed"] == 1
 
     # chat still works after the update (session respawned from the new binary)
     r = client.post(

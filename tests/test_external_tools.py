@@ -37,7 +37,7 @@ def send(client, body):
     return client.post("/v1/chat/completions", json=body)
 
 
-def test_tool_roundtrip_uses_fresh_session_and_preserves_results(client):
+def test_tool_roundtrip_reuses_session_and_preserves_results(client):
     body = request()
     first = send(client, body)
     assert first.status_code == 200, first.text
@@ -54,8 +54,9 @@ def test_tool_roundtrip_uses_fresh_session_and_preserves_results(client):
     assert second.status_code == 200, second.text
     result = second.json()["choices"][0]
     assert result["finish_reason"] == "stop"
-    assert result["message"]["content"] == "turn=1; READ; ; PI_RESULT_123"
-    assert client.app.state.sessions.live_count == 0
+    assert result["message"]["content"] == "turn=2; ; PI_RESULT_123"
+    assert client.app.state.sessions.live_count == 1
+    assert client.app.state.sessions.busy_count() == 0
 
 
 def test_multiple_results_and_cold_history(client):
@@ -66,7 +67,7 @@ def test_multiple_results_and_cold_history(client):
     body["messages"] += [first] + [{"role": "tool", "tool_call_id": c["id"], "content": f"result-{i}"}
                                     for i, c in enumerate(calls)]
     second = send(client, body).json()["choices"][0]["message"]["content"]
-    assert second == "turn=1; MULTI; ; result-0; result-1"
+    assert second == "turn=2; ; result-0; result-1"
     # Changed tool definitions must still receive the complete results.
     body["tools"][0]["function"]["description"] = "Changed description"
     third = send(client, body).json()["choices"][0]["message"]["content"]
@@ -102,12 +103,14 @@ def test_parallel_cloned_tool_histories_have_private_processes_and_workspaces(cl
     with ThreadPoolExecutor(max_workers=2) as workers:
         left, right = list(workers.map(branch, ["ONLY_LEFT", "ONLY_RIGHT"]))
     assert left["pid"] != right["pid"] and left["cwd"] != right["cwd"]
+    assert sorted([left["turn"], right["turn"]]) == [1, 2]
     for result, own, other in [(left, "ONLY_LEFT", "ONLY_RIGHT"), (right, "ONLY_RIGHT", "ONLY_LEFT")]:
-        assert result["turn"] == 1
         assert result["history"][-1]["tool_call_id"] == call_id
         transcript = json.dumps(result["history"])
         assert own in transcript and other not in transcript
-        assert not Path(result["cwd"]).exists()  # workspace removed after request
+        assert Path(result["cwd"]).exists()  # retained only for this conversation
+    assert client.portal.call(client.app.state.sessions.close_idle) == 2
+    assert all(not Path(result["cwd"]).exists() for result in (left, right))
     assert client.app.state.sessions.live_count == 0
 
 
@@ -206,9 +209,7 @@ def test_object_arguments_preserve_file_content_and_roundtrip(client, stream):
     body["messages"] += [message, {"role": "tool", "tool_call_id": calls[0]["id"], "content": "FILE_WRITTEN"}]
     result = send(client, body)
     assert result.status_code == 200, result.text
-    assert result.json()["choices"][0]["message"]["content"] == (
-        "turn=1; ECHO_ARGUMENTS\n" + json.dumps(arguments) + "; ; FILE_WRITTEN"
-    )
+    assert result.json()["choices"][0]["message"]["content"] == "turn=2; ; FILE_WRITTEN"
 
 
 @pytest.mark.parametrize("choice", ["auto", "required", {"type": "function", "function": {"name": "read"}}])

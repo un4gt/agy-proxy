@@ -243,7 +243,7 @@ async def responses(request: Request):
         if body.get("previous_response_id") is not None:
             _, previous = cache.get(owner, string(body["previous_response_id"], "previous_response_id"))
         chat, specs = translate(body, previous)
-        prepared = await prepare(request, chat)
+        prepared = await prepare(request, chat, session_body=body)
     except AgyError as exc:
         return openai_error(exc.status_code, str(exc), _err_type(exc.status_code))
 

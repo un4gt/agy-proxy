@@ -167,7 +167,7 @@ async def messages(request: Request):
         if body is None:
             raise invalid("Request body must be a JSON object")
         chat = translate(body)
-        prepared = await prepare(request, chat)
+        prepared = await prepare(request, chat, session_body=body)
     except AgyError as exc:
         return error_response(exc.status_code, str(exc), request_id)
     message_id = "msg_" + uuid.uuid4().hex

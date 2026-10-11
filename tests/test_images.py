@@ -93,6 +93,8 @@ def test_pixels_order_and_cleanup(client, protocol, stream):
     text = result["history"][0]["content"]
     assert text.index("image_1") < text.index("between-1") < text.index("image_2")
     assert "base64" not in text
+    assert client.app.state.sessions.live_count == 1
+    assert client.portal.call(client.app.state.sessions.close_idle) == 1
     assert not Path(result["cwd"]).exists()
     assert all(not Path(p).exists() for p in result["image_paths"])
     assert client.app.state.sessions.live_count == 0
@@ -170,17 +172,19 @@ def test_history_snapshot_ownership_and_parallel_isolation(client, monkeypatch):
     original_id = original.json()["id"]
     assert len(calls) == 1
     # Subsequent turns retain original pixels without fetching a changed URL.
-    def follow(key="key-a"):
+    def follow(key="key-a", marker=""):
         return client.post("/v1/responses", json={"model": "auto", "previous_response_id": original_id,
-                           "input": "INSPECT_CONTEXT"}, headers={"Authorization": "Bearer " + key})
+                           "input": "INSPECT_CONTEXT" + marker}, headers={"Authorization": "Bearer " + key})
     assert follow("key-b").status_code == 404
     with ThreadPoolExecutor(max_workers=2) as pool:
-        responses = list(pool.map(lambda _: follow(), range(2)))
+        responses = list(pool.map(lambda marker: follow(marker=marker), ("left", "right")))
     results = [json.loads(response_text(r, "responses")) for r in responses]
     assert len(calls) == 1
     assert all(r["image_hashes"] == original_result["image_hashes"] for r in results)
-    assert len({r["cwd"] for r in results} | {original_result["cwd"]}) == 3
-    assert len({r["image_path_fingerprints"][0] for r in results} | {original_result["image_path_fingerprints"][0]}) == 3
+    # One continuation reuses the original workspace; the branch is isolated.
+    assert len({r["cwd"] for r in results}) == 2
+    assert len({r["cwd"] for r in results} | {original_result["cwd"]}) == 2
+    assert len({r["image_path_fingerprints"][0] for r in results}) == 2
 
 
 @pytest.mark.parametrize("address", ["127.0.0.1", "10.0.0.1", "169.254.169.254", "::1", "::ffff:127.0.0.1", "100.64.0.1"])

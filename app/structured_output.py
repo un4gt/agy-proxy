@@ -14,6 +14,7 @@ from referencing import Registry
 
 from .agy import AgyError, SessionManager
 from .runner import TurnEvent, TurnProfile, TurnResult, build_seed_prompt
+from .session_context import SessionContext, SessionIdentity
 
 
 def local_refs_only(value) -> None:
@@ -100,13 +101,16 @@ class ResponseFormat:
 
     async def run(self, mgr: SessionManager, *, system: str, history: list,
                   final_user: str | None, model: str | None, effort: str | None,
-                  profile: TurnProfile, images=None) -> AsyncIterator[TurnEvent]:
+                  profile: TurnProfile, images=None, session_key: SessionIdentity | str | None = None) -> AsyncIterator[TurnEvent]:
         profile.model = model
         profile.mark("turn_start")
-        # A request-private session prevents schema and conversation state mixing.
+        messages = [(r, t.strip() if r == "assistant" else t) for r, t in history]
+        if final_user is not None:
+            messages.append(("user", final_user))
+        context = SessionContext.build(session_key, ["structured", system, self.output_schema], messages)
         session = await mgr.acquire(model=model, effort=effort, output_schema=self.output_schema,
-                                    attachments=images.attachments if images else ())
-        profile.new_session = True
+                                    attachments=images.attachments if images else (), context=context)
+        profile.new_session = session.turns == 0
         profile.mark("session_ready")
         instruction = (
             "Generate the JSON object requested by the client, including every requested field. "
@@ -115,10 +119,12 @@ class ResponseFormat:
             "Return a JSON object matching the supplied response schema. "
             "Use finish to submit the object itself, without Markdown or commentary."
         )
-        prompt = instruction + "\n\n" + build_seed_prompt(system, history, final_user)
+        prompt = instruction + "\n\n" + (build_seed_prompt("", messages[session.input_offset:], None)
+                                             if session.input_offset else build_seed_prompt(system, history, final_user))
         if images:
             prompt += images.instruction(session)
         result = None
+        complete = False
         try:
             yield "ready", None
             async with aclosing(session.send_turn(prompt)) as events:
@@ -143,9 +149,10 @@ class ResponseFormat:
                         profile.mark("result")
             if result is None:
                 raise AgyError("agy ended without a structured response")
+            # Buffer and validate first so no invalid output can escape in a delta.
+            profile.mark("first_delta")
+            yield "delta", result.text
+            complete = True
+            yield "result", result
         finally:
-            await mgr.drop(session)
-        # Buffer and validate first so no invalid output can escape in a delta.
-        profile.mark("first_delta")
-        yield "delta", result.text
-        yield "result", result
+            await mgr.release(session, reply=("assistant", result.text.strip()) if complete else None)

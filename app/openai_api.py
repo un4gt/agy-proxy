@@ -24,6 +24,7 @@ from .external_tools import ExternalTools
 from .images import ImageInput, MAX_REQUEST_BYTES
 from .runner import TurnProfile, TurnResult, chain_events, record_dashboard_usage, run_turn
 from .structured_output import ResponseFormat
+from .session_context import client_session_key
 from .streaming import TurnStreamingResponse, heartbeat_events
 
 log = logging.getLogger("agy_proxy.openai")
@@ -33,6 +34,7 @@ router = APIRouter()
 _ERROR_TYPES = {
     400: "invalid_request_error",
     404: "invalid_request_error",
+    409: "invalid_request_error",
     413: "invalid_request_error",
     401: "authentication_error",
     429: "rate_limit_error",
@@ -161,6 +163,7 @@ async def chat_completions(request: Request) -> Response:
             return openai_error(500, "AGY_PROXY_EFFORT is invalid", "server_error")
 
     try:
+        session_key = client_session_key(request, body)
         if body.get("model") is not None and not isinstance(body["model"], str):
             raise AgyError("model must be a string", status_code=400)
         messages = body.get("messages")
@@ -210,18 +213,19 @@ async def chat_completions(request: Request) -> Response:
 
     state = request.app.state
     if external:
-        turn = external.run(state.sessions, model=model, effort=effort, profile=profile, images=images)
+        turn = external.run(state.sessions, model=model, effort=effort, profile=profile, images=images,
+                            session_key=session_key)
     elif response_format:
         turn = response_format.run(
             state.sessions,
             system=system, history=history, final_user=final_user,
-            model=model, effort=effort, profile=profile, images=images,
+            model=model, effort=effort, profile=profile, images=images, session_key=session_key,
         )
     else:
         turn = run_turn(
             cfg, state.sessions,
             system=system, history=history, final_user=final_user,
-            model=model, effort=effort, profile=profile,
+            model=model, effort=effort, profile=profile, session_key=session_key,
         )
 
     completion_id = "chatcmpl-" + uuid.uuid4().hex[:24]

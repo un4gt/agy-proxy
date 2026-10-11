@@ -60,8 +60,9 @@ def test_responses_multiple_tool_roundtrip(client, stream):
     response = client.post("/v1/responses", json=follow)
     assert response.status_code == 200, response.text
     text = response.json()["output"][0]["content"][0]["text"]
-    assert "RESULT-0" in text and "RESULT-1" in text and "turn=1" in text
-    assert client.app.state.sessions.live_count == 0
+    assert "RESULT-0" in text and "RESULT-1" in text and "turn=2" in text
+    assert client.app.state.sessions.live_count == 1
+    assert client.app.state.sessions.busy_count() == 0
 
 
 @pytest.mark.parametrize("stream", [False, True])
@@ -91,9 +92,10 @@ def test_messages_multiple_tool_roundtrip(client, stream):
     final = client.post("/v1/messages", json=body)
     assert final.status_code == 200, final.text
     text = final.json()["content"][0]["text"]
-    assert "RESULT-0" in text and "RESULT-1" in text and "turn=1" in text
+    assert "RESULT-0" in text and "RESULT-1" in text and "turn=2" in text
     assert final.json()["stop_reason"] == "end_turn"
-    assert client.app.state.sessions.live_count == 0
+    assert client.app.state.sessions.live_count == 1
+    assert client.app.state.sessions.busy_count() == 0
 
 
 def test_custom_namespaced_tool_full_history(client):
@@ -145,6 +147,8 @@ def test_protocol_parallel_same_key_isolation(client, endpoint):
         left, right = list(pool.map(run, ["LEFT", "RIGHT"]))
     assert left["pid"] != right["pid"] and left["cwd"] != right["cwd"]
     assert "RIGHT" not in json.dumps(left["history"]) and "LEFT" not in json.dumps(right["history"])
+    assert client.app.state.sessions.live_count == 2
+    assert client.portal.call(client.app.state.sessions.close_idle) == 2
     assert not Path(left["cwd"]).exists() and not Path(right["cwd"]).exists()
 
 

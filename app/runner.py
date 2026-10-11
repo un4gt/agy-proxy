@@ -1,7 +1,7 @@
 """Shared turn executor used by both the Gemini and OpenAI routers.
 
-Flattens a full client-side conversation into one request-private agy turn.
-No process that has seen client messages is reused by another request.
+Seeds a fresh conversation or submits just the new messages of an identified
+client session. HTTP streaming is independent of the CLI's duplex NDJSON.
 """
 
 from __future__ import annotations
@@ -15,6 +15,7 @@ from typing import AsyncIterator, Literal
 from .agy import AgyError, SessionManager
 from .auth import api_key_record
 from .config import Config
+from .session_context import SessionContext, SessionIdentity
 
 log = logging.getLogger("agy_proxy.runner")
 
@@ -177,16 +178,23 @@ async def run_turn(
     model: str | None,
     effort: str | None,
     profile: TurnProfile | None = None,
+    session_key: SessionIdentity | str | None = None,
 ) -> AsyncIterator[TurnEvent]:
     """Execute one agy turn, yielding ("delta", text) events then ("result", TurnResult)."""
     if profile is not None:
         profile.model = model
         profile.mark("turn_start")
-    session = await mgr.acquire(model=model, effort=effort)
+    messages = [(r, t.strip() if r == "assistant" else t) for r, t in history]
+    if final_user is not None:
+        messages.append(("user", final_user))
+    context = SessionContext.build(session_key, ["plain", system], messages)
+    session = await mgr.acquire(model=model, effort=effort, context=context)
     if profile is not None:
-        profile.new_session = True
+        profile.new_session = session.turns == 0
         profile.mark("session_ready")
-    if not history and not system and final_user is not None:
+    if session.input_offset:
+        prompt = build_seed_prompt("", messages[session.input_offset:], None)
+    elif not history and not system and final_user is not None:
         prompt = final_user
     else:
         prompt = build_seed_prompt(system, history, final_user)
@@ -262,4 +270,4 @@ async def run_turn(
         try:
             await events.aclose()
         finally:
-            await mgr.drop(session)
+            await mgr.release(session, reply=("assistant", reply_text.strip()) if completed else None)

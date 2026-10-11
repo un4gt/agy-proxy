@@ -48,7 +48,8 @@ def test_validated_json_and_stream(client, stream, fmt):
     else:
         text = r.json()["choices"][0]["message"]["content"]
     assert json.loads(text) == {"name": "Budi", "age": 20}
-    assert client.app.state.sessions.live_count == 0
+    assert client.app.state.sessions.live_count == 1
+    assert client.app.state.sessions.busy_count() == 0
 
 
 @pytest.mark.parametrize("stream", [False, True])

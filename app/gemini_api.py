@@ -18,6 +18,7 @@ from .agy import AgyError, list_models, resolve_model
 from .model_policy import enabled_models, require_enabled_model
 from .auth import gemini_error, is_authorized
 from .runner import TurnProfile, TurnResult, chain_events, record_dashboard_usage, run_turn
+from .session_context import client_session_key
 from .streaming import TurnStreamingResponse, heartbeat_events
 
 log = logging.getLogger("agy_proxy.gemini")
@@ -189,11 +190,15 @@ async def gemini_action(rest: str, request: Request) -> Response:
         return gemini_error(exc.status_code, str(exc), _status_name(exc.status_code))
 
     state = request.app.state
+    try:
+        session_key = client_session_key(request, body)
+    except AgyError as exc:
+        return gemini_error(exc.status_code, str(exc), _status_name(exc.status_code))
     if action == "generate":
         result: TurnResult | None = None
         t0 = time.monotonic()
         turn = run_turn(cfg, state.sessions, system=system, history=history, final_user=final_user,
-                        model=model, effort=effort, profile=profile)
+                        model=model, effort=effort, profile=profile, session_key=session_key)
         try:
             async for kind, payload in turn:
                 if kind == "result":
@@ -222,7 +227,7 @@ async def gemini_action(rest: str, request: Request) -> Response:
     turn = run_turn(
         cfg, state.sessions,
         system=system, history=history, final_user=final_user,
-        model=model, effort=effort, profile=profile,
+        model=model, effort=effort, profile=profile, session_key=session_key,
     )
     # Pull the first event before opening the SSE body so startup failures
     # (missing binary, dead session) return a real HTTP error status.
