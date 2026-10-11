@@ -15,6 +15,7 @@ from fastapi.responses import Response, StreamingResponse
 from .json_codec import JSONResponse
 
 from .agy import AgyError, list_models, resolve_model
+from .model_policy import enabled_models, require_enabled_model
 from .auth import api_key_record, is_authorized, openai_error
 from .config import Config
 from .reasoning import ReasoningError, apply_effort, model_families, parse_effort
@@ -195,6 +196,7 @@ async def chat_completions(request: Request) -> Response:
     profile.mark("models_done")
     try:
         model = _resolve_model(requested_model, cfg, slugs)
+        require_enabled_model(request, requested_model, model)
     except AgyError as exc:
         return openai_error(404, str(exc), "invalid_request_error", "model_not_found", param="model")
     try:
@@ -353,7 +355,7 @@ async def models_list(request: Request) -> Response:
         {
             "object": "list",
             "data": [{"id": s, "object": "model", "created": 0, "owned_by": "antigravity"}
-                     for s in dict.fromkeys([*slugs, *model_families(slugs)])],
+                     for s in enabled_models(request, list(dict.fromkeys([*slugs, *model_families(slugs)])))],
         }
     )
 
@@ -369,8 +371,9 @@ async def model_detail(model_id: str, request: Request) -> Response:
         return openai_error(exc.status_code, str(exc), _err_type(exc.status_code))
     try:
         resolved = _resolve_model(model_id, cfg, slugs)
+        require_enabled_model(request, model_id, resolved)
     except AgyError:
-        resolved = None
+        return openai_error(404, f"Model '{model_id}' not found", "invalid_request_error", "model_not_found")
     if model_id in slugs or resolved in slugs:
         return JSONResponse({"id": model_id, "object": "model", "created": 0, "owned_by": "antigravity"})
     return openai_error(404, f"Model '{model_id}' not found", "invalid_request_error", "model_not_found")

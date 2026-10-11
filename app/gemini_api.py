@@ -14,6 +14,7 @@ from fastapi.responses import Response, StreamingResponse
 from .json_codec import JSONResponse
 
 from .agy import AgyError, list_models, resolve_model
+from .model_policy import enabled_models, require_enabled_model
 from .auth import gemini_error, is_authorized
 from .runner import TurnProfile, TurnResult, chain_events, record_dashboard_usage, run_turn
 
@@ -153,6 +154,10 @@ async def gemini_action(rest: str, request: Request) -> Response:
     if parsed is None:
         return gemini_error(404, f"Unknown Gemini endpoint: /{rest}", "NOT_FOUND")
     model_requested, action = parsed
+    try:
+        require_enabled_model(request, model_requested)
+    except AgyError as exc:
+        return gemini_error(exc.status_code, str(exc), _status_name(exc.status_code))
 
     body = await _read_json(request)
     if body is None:
@@ -176,6 +181,10 @@ async def gemini_action(rest: str, request: Request) -> Response:
         slugs = []
     profile.mark("models_done")
     model = resolve_model(model_requested, cfg, slugs)
+    try:
+        require_enabled_model(request, model)
+    except AgyError as exc:
+        return gemini_error(exc.status_code, str(exc), _status_name(exc.status_code))
 
     state = request.app.state
     if action == "generate":
@@ -282,6 +291,6 @@ async def gemini_models(request: Request) -> Response:
             "version": "1",
             "supportedGenerationMethods": ["generateContent", "streamGenerateContent", "countTokens"],
         }
-        for slug in slugs
+        for slug in enabled_models(request, slugs)
     ]
     return JSONResponse({"models": models})

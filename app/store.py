@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Any
 
 from .config import Config
+from .reasoning import model_family
 
 log = logging.getLogger("agy_proxy.store")
 
@@ -124,6 +125,7 @@ class Store:
         self.api_keys: list[ApiKeyRecord] = []
         self.requests: deque[UsageRecord] = deque(maxlen=_REQUEST_LOG_LIMIT)
         self.models: dict[str, dict[str, Any]] = {}
+        self.disabled_models: set[str] = set()
         self._lock = asyncio.Lock()
         self._dirty = False
         self._last_save = 0.0
@@ -138,6 +140,10 @@ class Store:
         except (OSError, json.JSONDecodeError) as exc:
             log.warning("could not read %s (%s); starting with empty state", self.path, exc)
             return
+        self.disabled_models = {
+            model_family(model) for model in raw.get("disabled_models", [])
+            if isinstance(model, str) and model
+        }
         for item in raw.get("api_keys") or []:
             if not isinstance(item, dict) or not item.get("key"):
                 continue
@@ -192,6 +198,7 @@ class Store:
             ],
             "requests": [r.public() | {"key_id": r.key_id} for r in self.requests],
             "models": self.models,
+            "disabled_models": sorted(self.disabled_models),
         }
 
     def _write(self) -> None:
@@ -216,6 +223,23 @@ class Store:
 
     async def flush(self) -> None:
         await self.save(force=True)
+
+    def model_enabled(self, model: str | None) -> bool:
+        return model is None or model_family(model) not in self.disabled_models
+
+    async def set_model_enabled(self, model: str, enabled: bool) -> None:
+        async with self._lock:
+            previous = self.disabled_models.copy()
+            family = model_family(model)
+            if enabled:
+                self.disabled_models.discard(family)
+            else:
+                self.disabled_models.add(family)
+            self._dirty = True
+            self._write()
+            if self._dirty:
+                self.disabled_models = previous
+                raise OSError("无法保存模型设置，请检查数据目录的写入权限")
 
     # -- api keys -----------------------------------------------------------
 

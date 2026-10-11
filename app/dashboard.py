@@ -16,6 +16,7 @@ from .json_codec import JSONResponse
 
 from .agy import AgyError, list_models, model_labels
 from .config import Config
+from .reasoning import model_family
 from .store import Store
 
 log = logging.getLogger("agy_proxy.dashboard")
@@ -66,7 +67,39 @@ async def api_models(request: Request) -> JSONResponse:
     except AgyError as exc:
         return JSONResponse({"error": str(exc)}, status_code=exc.status_code)
     labels = model_labels(cfg)
-    return JSONResponse({"models": [{"id": s, "label": labels.get(s, "")} for s in slugs]})
+    store = _store(request)
+    return JSONResponse({"models": [
+        {"id": s, "label": labels.get(s, ""), "family": model_family(s),
+         "enabled": store.model_enabled(s)} for s in slugs
+    ]})
+
+
+@router.patch("/api/models/{model_id}")
+async def set_model_enabled(model_id: str, request: Request) -> JSONResponse:
+    denied = _panel_denied(request)
+    if denied is not None:
+        return denied
+    try:
+        body = json.loads(await request.body())
+    except ValueError:
+        body = None
+    if not isinstance(body, dict) or not isinstance(body.get("enabled"), bool):
+        return JSONResponse({"error": {"message": "enabled 必须为布尔值"}}, status_code=400)
+    store = _store(request)
+    family = model_family(model_id)
+    # Previously disabled families can be restored even during a CLI outage.
+    if family not in store.disabled_models:
+        try:
+            slugs = await list_models(request.app.state.cfg)
+        except AgyError as exc:
+            return JSONResponse({"error": {"message": str(exc)}}, status_code=exc.status_code)
+        if family not in {model_family(slug) for slug in slugs}:
+            return JSONResponse({"error": {"message": "没有这个模型"}}, status_code=404)
+    try:
+        await store.set_model_enabled(family, body["enabled"])
+    except OSError as exc:
+        return JSONResponse({"error": {"message": str(exc)}}, status_code=500)
+    return JSONResponse({"family": family, "enabled": store.model_enabled(family)})
 
 
 @router.post("/api/keys")

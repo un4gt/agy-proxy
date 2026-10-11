@@ -14,6 +14,7 @@ from anyio import CancelScope
 from fastapi import Request
 
 from .agy import AgyError, list_models
+from .model_policy import require_enabled_model
 from .external_tools import ExternalTools
 from .images import ImageInput
 from .openai_api import _parse_messages, _resolve_model
@@ -146,7 +147,9 @@ async def prepare(request: Request, body: dict) -> PreparedTurn:
         external = ExternalTools.from_body(execution)
     profile = TurnProfile()
     slugs = await list_models(cfg)
-    model, effort = apply_effort(_resolve_model(requested, cfg, slugs), effort, slugs)
+    model = _resolve_model(requested, cfg, slugs)
+    require_enabled_model(request, requested, model)
+    model, effort = apply_effort(model, effort, slugs)
     profile.mark("models_done")
     if external:
         turn = external.run(request.app.state.sessions, model=model, effort=effort, profile=profile, images=images)

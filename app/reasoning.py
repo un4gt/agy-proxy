@@ -7,6 +7,12 @@ from .agy import AgyError
 CLI_EFFORTS = ("low", "medium", "high", "xhigh", "max")
 
 
+def model_family(model: str) -> str:
+    """Return the base ID shared by a model and its reasoning variants."""
+    base, _, suffix = model.rpartition("-")
+    return base if base and suffix in CLI_EFFORTS else model
+
+
 class ReasoningError(AgyError):
     def __init__(self, message: str):
         super().__init__(message, status_code=400)

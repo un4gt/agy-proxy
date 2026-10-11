@@ -14,6 +14,7 @@ import {
   Box,
   CircleHelp,
   Copy,
+  Database,
   ExternalLink,
   KeyRound,
   Layers,
@@ -39,6 +40,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import {
   Field,
   FieldDescription,
@@ -94,7 +96,6 @@ import {
   zero,
   type Dashboard,
   type Key,
-  type Model,
 } from "@/lib/api";
 
 function Brand() {
@@ -581,9 +582,14 @@ function KeyManager({ keys, refresh }: { keys: Key[]; refresh: () => void }) {
     </>
   );
 }
+type CatalogModel = { id: string; label: string; family: string; enabled: boolean };
+type ModelGroup = { model: string; label: string; enabled: boolean; variants: CatalogModel[] };
+
 function Overview() {
   const [data, setData] = useState<Dashboard | null>(null);
-  const [models, setModels] = useState<Model[]>([]);
+  const [models, setModels] = useState<ModelGroup[]>([]);
+  const [pendingModel, setPendingModel] = useState<string | null>(null);
+  const modelRevision = useRef(0);
   const [error, setError] = useState("");
   const [modelError, setModelError] = useState("");
   const [query, setQuery] = useState("");
@@ -594,39 +600,34 @@ function Overview() {
     let alive = true;
     let timer: ReturnType<typeof setTimeout>;
     async function load() {
+      const revision = modelRevision.current;
       setBusy(true);
       try {
         const d = await api<Dashboard>("/dashboard");
-        let merged = d.models;
         try {
-          const list = await api<{ models: { id: string; label: string }[] }>(
+          const list = await api<{ models: CatalogModel[] }>(
             "/api/models",
           );
-          const stats = new Map(d.models.map((m) => [m.model, m]));
-          merged = list.models.map((m) => ({
-            model: m.id,
-            label: m.label,
-            requests: stats.get(m.id)?.requests || 0,
-            usage: stats.get(m.id)?.usage || zero,
-          }));
-          merged.push(
-            ...d.models.filter(
-              (m) => !list.models.some((x) => x.id === m.model),
-            ),
-          );
-          if (alive) setModelError("");
+          const groups = new Map<string, ModelGroup>();
+          for (const m of list.models) {
+            const group = groups.get(m.family) || {
+              model: m.family,
+              label: m.label.replace(/\s*\((Low|Medium|High|XHigh|Max)\)$/i, ""),
+              enabled: m.enabled,
+              variants: [],
+            };
+            group.variants.push(m);
+            groups.set(m.family, group);
+          }
+          if (alive && revision === modelRevision.current) {
+            setModels([...groups.values()].sort((a, b) => a.model.localeCompare(b.model)));
+            setModelError("");
+          }
         } catch (e) {
-          if (alive) setModelError(message(e));
+          if (alive && revision === modelRevision.current) setModelError(message(e));
         }
         if (alive) {
           setData(d);
-          setModels(
-            merged.sort(
-              (a, b) =>
-                b.usage.total_tokens - a.usage.total_tokens ||
-                a.model.localeCompare(b.model),
-            ),
-          );
           setError("");
         }
       } catch (e) {
@@ -650,9 +651,31 @@ function Overview() {
       .catch(() => {});
   }, []);
   const refresh = () => setTick((t) => t + 1);
+  async function toggleModel(model: ModelGroup, enabled: boolean) {
+    if (pendingModel) return;
+    modelRevision.current += 1;
+    setPendingModel(model.model);
+    try {
+      const result = await api<{ family: string; enabled: boolean }>(
+        `/api/models/${encodeURIComponent(model.model)}`,
+        { method: "PATCH", body: JSON.stringify({ enabled }) },
+      );
+      setModels((current) => current.map((m) =>
+        m.model === result.family ? { ...m, enabled: result.enabled } : m,
+      ));
+      toast.success(`${model.model} 及其变体已${result.enabled ? "启用" : "禁用"}`);
+    } catch (e) {
+      toast.error(message(e));
+    } finally {
+      modelRevision.current += 1;
+      setPendingModel(null);
+      refresh();
+    }
+  }
   const u = data?.totals.usage || zero;
   const filtered = models.filter((m) =>
-    `${m.model} ${m.label}`.toLowerCase().includes(query.toLowerCase()),
+    `${m.model} ${m.label} ${m.variants.map((v) => `${v.id} ${v.label}`).join(" ")}`
+      .toLowerCase().includes(query.toLowerCase()),
   );
   const metrics = [
     {
@@ -670,7 +693,7 @@ function Overview() {
     {
       label: "输入 Tokens",
       value: u.input_tokens,
-      detail: `缓存命中 ${number(u.cache_read_tokens)}`,
+      detail: "累计输入 Token 用量",
       icon: ArrowDownLeft,
     },
     {
@@ -678,6 +701,12 @@ function Overview() {
       value: u.output_tokens,
       detail: `思考 Tokens ${number(u.thinking_tokens)}`,
       icon: ArrowUpRight,
+    },
+    {
+      label: "总缓存",
+      value: u.cache_read_tokens,
+      detail: "累计缓存命中 Tokens",
+      icon: Database,
     },
   ];
   return (
@@ -703,7 +732,7 @@ function Overview() {
         </Button>
       </div>
       <ErrorNotice error={error} />
-      <div className="my-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="my-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         {metrics.map((m) => (
           <Card key={m.label}>
             <CardHeader className="flex flex-row items-center justify-between">
@@ -726,7 +755,7 @@ function Overview() {
       <Tabs defaultValue="models" className="gap-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <TabsList>
-            <TabsTrigger value="models">可用模型</TabsTrigger>
+            <TabsTrigger value="models">模型列表</TabsTrigger>
             <TabsTrigger value="keys">API 密钥</TabsTrigger>
             <TabsTrigger value="recent">最近请求</TabsTrigger>
           </TabsList>
@@ -739,13 +768,13 @@ function Overview() {
             <CardHeader className="gap-4 sm:flex sm:flex-row sm:items-center sm:justify-between">
               <div className="flex flex-col gap-2">
                 <CardTitle>
-                  模型目录{" "}
+                  模型列表{" "}
                   <span className="ml-2 text-sm font-normal text-muted-foreground">
                     {models.length}
                   </span>
                 </CardTitle>
                 <CardDescription>
-                  所有模型的调用次数与 Token 消耗。
+                  按基础模型统一启用或禁用，包含所有变体。禁用后无法调用，也不会出现在客户端同步列表中。
                 </CardDescription>
               </div>
               <div className="w-full sm:w-64">
@@ -774,15 +803,7 @@ function Overview() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      {[
-                        "模型",
-                        "请求",
-                        "输入",
-                        "输出",
-                        "思考",
-                        "缓存",
-                        "合计 Tokens",
-                      ].map((h) => (
+                      {["模型", "包含变体", "启用"].map((h) => (
                         <TableHead key={h}>{h}</TableHead>
                       ))}
                     </TableRow>
@@ -805,18 +826,28 @@ function Overview() {
                             </div>
                           </div>
                         </TableCell>
-                        {[
-                          m.requests,
-                          m.usage.input_tokens,
-                          m.usage.output_tokens,
-                          m.usage.thinking_tokens,
-                          m.usage.cache_read_tokens,
-                          m.usage.total_tokens,
-                        ].map((n, i) => (
-                          <TableCell key={i} className="tabular-nums">
-                            {number(n)}
-                          </TableCell>
-                        ))}
+                        <TableCell className="whitespace-normal">
+                          <div className="flex flex-wrap gap-2">
+                            {m.variants.map((v) => (
+                              <Badge key={v.id} variant="outline" title={v.id}>
+                                {v.id === m.model ? "默认" : v.id.slice(m.model.length + 1)}
+                              </Badge>
+                            ))}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Switch
+                              aria-label={`启用 ${m.model} 及其所有变体`}
+                              checked={m.enabled}
+                              disabled={pendingModel !== null}
+                              onCheckedChange={(enabled) => toggleModel(m, enabled)}
+                            />
+                            <span className="text-xs text-muted-foreground">
+                              {pendingModel === m.model ? "保存中…" : m.enabled ? "已启用" : "已禁用"}
+                            </span>
+                          </div>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
