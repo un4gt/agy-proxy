@@ -815,6 +815,7 @@ def test_update_failure_surfaces_error(client, fresh_update_env):
 
 def test_update_kills_only_idle_sessions(client, fresh_update_env):
     client.app.state.cfg.model_map["slow-model"] = "slow-model"
+    client.app.state.cfg.turn_timeout = 10
     # Hold one busy session (a slow in-flight turn) while updating.
     result = {}
 
@@ -826,16 +827,21 @@ def test_update_kills_only_idle_sessions(client, fresh_update_env):
 
     worker = threading.Thread(target=slow_turn)
     worker.start()
-    _time.sleep(0.3)  # let the slow turn take over its session's lock
+    try:
+        deadline = _time.monotonic() + 10
+        while not client.app.state.sessions.busy_count() and worker.is_alive() and _time.monotonic() < deadline:
+            _time.sleep(0.02)
+        assert client.app.state.sessions.busy_count() == 1
 
-    r = client.post("/update/start")
-    assert r.status_code == 200
-    body = r.json()
-    assert body["state"] == "running"
-    assert body["busy_sessions"] == 1
+        r = client.post("/update/start")
+        assert r.status_code == 200
+        body = r.json()
+        assert body["state"] == "running"
+        assert body["busy_sessions"] == 1
 
-    s = _wait_update_state(client, "done")
-    worker.join(timeout=30)
+        _wait_update_state(client, "done")
+    finally:
+        worker.join(timeout=15)
     assert result["resp"].status_code == 200
     assert result["resp"].json()["choices"][0]["message"]["content"]  # turn completed
 
