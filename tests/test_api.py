@@ -6,6 +6,7 @@ import json
 import os
 import sys
 import tempfile
+import tomllib
 from pathlib import Path
 
 import pytest
@@ -459,7 +460,8 @@ def test_web_ui_served_at_root(client):
 def test_about_endpoint(client):
     r = client.get("/about")
     assert r.status_code == 200
-    assert r.json()["version"] == "0.0.14"
+    project = tomllib.loads((Path(__file__).parents[1] / "pyproject.toml").read_text())
+    assert r.json()["version"] == project["project"]["version"]
 
 
 # -- login bridge ---------------------------------------------------------------
