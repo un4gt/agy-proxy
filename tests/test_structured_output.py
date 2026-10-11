@@ -55,9 +55,15 @@ def test_validated_json_and_stream(client, stream, fmt):
 @pytest.mark.parametrize("text", ["BAD_TYPE", "EXTRA_FIELD", "MALFORMED", "NATIVE_TOOL"])
 def test_invalid_upstream_output_never_escapes(client, text, stream):
     r = client.post("/v1/chat/completions", json=body(text, stream=stream))
-    assert r.status_code == 502
-    assert r.json()["error"]["type"] == "api_error"
-    assert "data: " not in r.text
+    if stream:
+        assert r.status_code == 200
+        chunks = [json.loads(line[6:]) for line in r.text.splitlines()
+                  if line.startswith("data: ") and line != "data: [DONE]"]
+        assert chunks[-1]["error"]["type"] == "api_error"
+        assert not any(c.get("choices", [{}])[0].get("delta", {}).get("content") for c in chunks)
+    else:
+        assert r.status_code == 502
+        assert r.json()["error"]["type"] == "api_error"
     assert client.app.state.sessions.live_count == 0
 
 
@@ -66,9 +72,15 @@ def test_invalid_upstream_output_never_escapes(client, text, stream):
 def test_json_mode_validates_unwrapped_object(client, text, stream):
     r = client.post("/v1/chat/completions", json=body(
         text, stream=stream, response_format={"type": "json_object"}))
-    assert r.status_code == 502
-    assert r.json()["error"]["type"] == "api_error"
-    assert "data: " not in r.text
+    if stream:
+        assert r.status_code == 200
+        chunks = [json.loads(line[6:]) for line in r.text.splitlines()
+                  if line.startswith("data: ") and line != "data: [DONE]"]
+        assert chunks[-1]["error"]["type"] == "api_error"
+        assert not any(c.get("choices", [{}])[0].get("delta", {}).get("content") for c in chunks)
+    else:
+        assert r.status_code == 502
+        assert r.json()["error"]["type"] == "api_error"
 
 
 def test_schema_and_full_conversation_reach_cli(client):

@@ -5,6 +5,7 @@ import json
 import hashlib
 import os
 import sys
+import time
 from pathlib import Path
 
 from fake_agy import emit, main as plain_main, record_invocation, usage_of
@@ -29,8 +30,17 @@ def main():
     emit({"event": "init", "conversation_id": conv,
           "init": {"agent": args.agent, "tools": ["view_file", "finish"]}})
     history = []
+    cumulative_usage = {}
     for turn, line in enumerate(sys.stdin, 1):
         prompt = json.loads(line)["message"]["content"]
+        if "SLOW_OUTPUT" in prompt:
+            time.sleep(0.6)
+
+        def emit_result(envelope):
+            for key, value in envelope.get("usage", {}).items():
+                cumulative_usage[key] = cumulative_usage.get(key, 0) + value
+            envelope.update(conversation_id=conv, num_turns=turn, usage=dict(cumulative_usage))
+            emit({"event": "result", "result": envelope})
         image_hashes = []
         for image_path in image_paths:
             image_hashes.append(hashlib.sha256(Path(image_path).read_bytes()).hexdigest())
@@ -60,7 +70,7 @@ def main():
                     envelope["structured_output"] = {"json": "[]"}
                 if "JSON_INVALID" in prompt:
                     envelope["structured_output"] = {"json": "not JSON"}
-            emit({"event": "result", "result": envelope})
+            emit_result(envelope)
             continue
         config = json.loads(prompt.split("[Client tool configuration]\n")[1].split("\n\n")[0])
         fresh = "[Complete client conversation]" in prompt
@@ -114,7 +124,7 @@ def main():
                     "usage": usage_of(prompt, json.dumps(output))}
         if text == "MALFORMED":
             envelope.pop("structured_output")
-        emit({"event": "result", "result": envelope})
+        emit_result(envelope)
 
 
 if __name__ == "__main__":

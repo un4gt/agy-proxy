@@ -7,11 +7,12 @@ import logging
 import time
 import uuid
 from dataclasses import replace
+from contextlib import aclosing
 from typing import AsyncIterator
 
 from anyio import CancelScope
 from fastapi import APIRouter, Request
-from fastapi.responses import Response, StreamingResponse
+from fastapi.responses import Response
 from .json_codec import JSONResponse
 
 from .agy import AgyError, list_models, resolve_model
@@ -23,6 +24,7 @@ from .external_tools import ExternalTools
 from .images import ImageInput, MAX_REQUEST_BYTES
 from .runner import TurnProfile, TurnResult, chain_events, record_dashboard_usage, run_turn
 from .structured_output import ResponseFormat
+from .streaming import TurnStreamingResponse, heartbeat_events
 
 log = logging.getLogger("agy_proxy.openai")
 
@@ -98,8 +100,10 @@ def _parse_messages(body: dict) -> tuple[str, list[tuple[str, str]], str | None]
 def _usage(usage: dict) -> dict:
     inp = usage.get("input_tokens") or 0
     out = usage.get("output_tokens") or 0
-    total = usage.get("total_tokens") or (inp + out + (usage.get("thinking_tokens") or 0))
-    return {"prompt_tokens": inp, "completion_tokens": out, "total_tokens": total}
+    total = usage.get("total_tokens") or (inp + out)
+    return {"prompt_tokens": inp, "completion_tokens": out, "total_tokens": total,
+            "prompt_tokens_details": {"cached_tokens": usage.get("cache_read_tokens", 0)},
+            "completion_tokens_details": {"reasoning_tokens": usage.get("thinking_tokens", 0)}}
 
 
 async def _read_json(request: Request) -> dict | None:
@@ -241,12 +245,17 @@ async def chat_completions(request: Request) -> Response:
             async for kind, payload in turn:
                 if kind == "result":
                     result = payload
+            if result is None:
+                raise AgyError("agy ended without a result")
         except AgyError as exc:
             await record_dashboard_usage(
                 cfg, request.app.state, model=model, request=request, usage=None,
                 duration_ms=(time.monotonic() - t0) * 1000, status=f"ERROR {exc.status_code}",
             )
             return openai_error(exc.status_code, str(exc), _err_type(exc.status_code))
+        finally:
+            with CancelScope(shield=True):
+                await turn.aclose()
         await record_dashboard_usage(
             cfg, request.app.state, model=model, request=request,
             usage=result.usage if result else None,
@@ -269,20 +278,21 @@ async def chat_completions(request: Request) -> Response:
             headers={"X-Agy-Profile": profile.summary()},
         )
 
-    # Streaming: pull the first event before starting the SSE body so that
-    # startup failures (missing binary, dead session) return a real HTTP error.
+    # Preflight only process acquisition. Do not wait for model output before
+    # opening SSE: thinking and validated tool JSON may be silent for minutes.
     try:
         first = await turn.__anext__()
     except StopAsyncIteration:
         first = None
     except AgyError as exc:
+        await record_dashboard_usage(cfg, state, model=model, request=request, usage=None,
+                                     duration_ms=profile.total_ms, status=f"ERROR {exc.status_code}")
         return openai_error(exc.status_code, str(exc), _err_type(exc.status_code))
 
     async def sse() -> AsyncIterator[bytes]:
         def encode(obj: dict) -> bytes:
             return b"data: " + json.dumps(obj) + b"\n\n"
 
-        t0 = time.monotonic()
         recorded = False
 
         async def account(usage, status: str) -> None:
@@ -292,34 +302,40 @@ async def chat_completions(request: Request) -> Response:
             recorded = True
             await record_dashboard_usage(
                 cfg, request.app.state, model=model, request=request, usage=usage,
-                duration_ms=(time.monotonic() - t0) * 1000, status=status,
+                duration_ms=profile.total_ms, status=status,
             )
 
         try:
             yield encode(chunk({"role": "assistant", "content": ""}, None))
-            async for kind, payload in chain_events([] if first is None else [first], turn):
-                if kind == "delta":
-                    yield encode(chunk({"content": payload}, None))
-                else:
-                    await account(payload.usage, "SUCCESS")
-                    if payload.tool_calls:
-                        yield encode(chunk({"tool_calls": [dict(call, index=i)
-                                                           for i, call in enumerate(payload.tool_calls)]}, None))
-                    yield encode(chunk({}, payload.finish_reason))
-                    if include_usage:
-                        yield encode(
-                            {
-                                "id": completion_id,
-                                "object": "chat.completion.chunk",
-                                "created": created,
-                                "model": requested_model or model or "agy-default",
-                                "choices": [],
-                                "usage": _usage(payload.usage),
-                            }
-                        )
-                    yield b"data: [DONE]\n\n"
-                    yield b": agy-profile " + profile.summary().encode("utf-8") + b"\n\n"
-                    return
+            async with aclosing(heartbeat_events(chain_events([] if first is None else [first], turn),
+                                                 cfg.stream_heartbeat)) as pending:
+                async for event in pending:
+                    if event is None:
+                        yield b": keep-alive\n\n"
+                        continue
+                    kind, payload = event
+                    if kind == "delta":
+                        yield encode(chunk({"content": payload}, None))
+                    elif kind == "result":
+                        await account(payload.usage, "SUCCESS")
+                        if payload.tool_calls:
+                            yield encode(chunk({"tool_calls": [dict(call, index=i)
+                                                               for i, call in enumerate(payload.tool_calls)]}, None))
+                        yield encode(chunk({}, payload.finish_reason))
+                        if include_usage:
+                            yield encode(
+                                {
+                                    "id": completion_id,
+                                    "object": "chat.completion.chunk",
+                                    "created": created,
+                                    "model": requested_model or model or "agy-default",
+                                    "choices": [],
+                                    "usage": _usage(payload.usage),
+                                }
+                            )
+                        yield b"data: [DONE]\n\n"
+                        yield b": agy-profile " + profile.summary().encode("utf-8") + b"\n\n"
+                        return
         except AgyError as exc:
             await account(None, f"ERROR {exc.status_code}")
             yield encode({"error": {"message": str(exc), "type": _err_type(exc.status_code)}})
@@ -335,8 +351,8 @@ async def chat_completions(request: Request) -> Response:
             with CancelScope(shield=True):
                 await turn.aclose()
 
-    return StreamingResponse(
-        sse(),
+    return TurnStreamingResponse(
+        sse(), turn=turn,
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )

@@ -200,9 +200,12 @@ def test_cache_capacity_and_expiry():
 
 def test_waiting_cancel_releases_underlying_turn():
     from app.protocol_common import PreparedTurn
+    from types import SimpleNamespace
     async def check():
         started, closed = asyncio.Event(), asyncio.Event()
         class Pending:
+            request = SimpleNamespace(app=SimpleNamespace(state=SimpleNamespace(
+                cfg=SimpleNamespace(stream_heartbeat=10))))
             async def collect(self):
                 started.set()
                 try:

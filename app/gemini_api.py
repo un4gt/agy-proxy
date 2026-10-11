@@ -6,17 +6,19 @@ from . import json_codec as json
 import logging
 import time
 import uuid
+from contextlib import aclosing
 from typing import AsyncIterator
 
 from anyio import CancelScope
 from fastapi import APIRouter, Request
-from fastapi.responses import Response, StreamingResponse
+from fastapi.responses import Response
 from .json_codec import JSONResponse
 
 from .agy import AgyError, list_models, resolve_model
 from .model_policy import enabled_models, require_enabled_model
 from .auth import gemini_error, is_authorized
 from .runner import TurnProfile, TurnResult, chain_events, record_dashboard_usage, run_turn
+from .streaming import TurnStreamingResponse, heartbeat_events
 
 log = logging.getLogger("agy_proxy.gemini")
 
@@ -112,10 +114,10 @@ def _usage_meta(usage: dict) -> dict:
     inp = usage.get("input_tokens") or 0
     out = usage.get("output_tokens") or 0
     think = usage.get("thinking_tokens") or 0
-    total = usage.get("total_tokens") or (inp + out + think)
+    total = usage.get("total_tokens") or (inp + out)
     meta = {
         "promptTokenCount": inp,
-        "candidatesTokenCount": out,
+        "candidatesTokenCount": max(0, out - think),
         "totalTokenCount": total,
     }
     if think:
@@ -190,20 +192,23 @@ async def gemini_action(rest: str, request: Request) -> Response:
     if action == "generate":
         result: TurnResult | None = None
         t0 = time.monotonic()
+        turn = run_turn(cfg, state.sessions, system=system, history=history, final_user=final_user,
+                        model=model, effort=effort, profile=profile)
         try:
-            async for kind, payload in run_turn(
-                cfg, state.sessions,
-                system=system, history=history, final_user=final_user,
-                model=model, effort=effort, profile=profile,
-            ):
+            async for kind, payload in turn:
                 if kind == "result":
                     result = payload
+            if result is None:
+                raise AgyError("agy ended without a result")
         except AgyError as exc:
             await record_dashboard_usage(
                 cfg, state, model=model, request=request, usage=None,
                 duration_ms=(time.monotonic() - t0) * 1000, status=f"ERROR {exc.status_code}",
             )
             return gemini_error(exc.status_code, str(exc), _status_name(exc.status_code))
+        finally:
+            with CancelScope(shield=True):
+                await turn.aclose()
         await record_dashboard_usage(
             cfg, state, model=model, request=request,
             usage=result.usage if result else None,
@@ -226,11 +231,12 @@ async def gemini_action(rest: str, request: Request) -> Response:
     except StopAsyncIteration:
         first = None
     except AgyError as exc:
+        await record_dashboard_usage(cfg, state, model=model, request=request, usage=None,
+                                     duration_ms=profile.total_ms, status=f"ERROR {exc.status_code}")
         return gemini_error(exc.status_code, str(exc), _status_name(exc.status_code))
     response_id = "agy-" + uuid.uuid4().hex[:24]
 
     async def sse() -> AsyncIterator[bytes]:
-        t0 = time.monotonic()
         recorded = False
 
         async def account(usage, status: str) -> None:
@@ -240,23 +246,30 @@ async def gemini_action(rest: str, request: Request) -> Response:
             recorded = True
             await record_dashboard_usage(
                 cfg, state, model=model, request=request, usage=usage,
-                duration_ms=(time.monotonic() - t0) * 1000, status=status,
+                duration_ms=profile.total_ms, status=status,
             )
 
         try:
-            async for kind, payload in chain_events([] if first is None else [first], turn):
-                if kind == "delta":
-                    chunk = _candidates(payload, None, None)
-                    chunk["responseId"] = response_id
-                    yield b"data: " + json.dumps(chunk) + b"\n\n"
-                else:
-                    await account(payload.usage, "SUCCESS")
-                    chunk = _candidates("", "STOP", payload.usage)
-                    chunk["responseId"] = response_id
-                    chunk["modelVersion"] = model or "agy-default"
-                    yield b"data: " + json.dumps(chunk) + b"\n\n"
-                    yield b": agy-profile " + profile.summary().encode("utf-8") + b"\n\n"
-                    return
+            yield b": connected\n\n"
+            async with aclosing(heartbeat_events(chain_events([] if first is None else [first], turn),
+                                                 cfg.stream_heartbeat)) as pending:
+                async for event in pending:
+                    if event is None:
+                        yield b": keep-alive\n\n"
+                        continue
+                    kind, payload = event
+                    if kind == "delta":
+                        chunk = _candidates(payload, None, None)
+                        chunk["responseId"] = response_id
+                        yield b"data: " + json.dumps(chunk) + b"\n\n"
+                    elif kind == "result":
+                        await account(payload.usage, "SUCCESS")
+                        chunk = _candidates("", "STOP", payload.usage)
+                        chunk["responseId"] = response_id
+                        chunk["modelVersion"] = model or "agy-default"
+                        yield b"data: " + json.dumps(chunk) + b"\n\n"
+                        yield b": agy-profile " + profile.summary().encode("utf-8") + b"\n\n"
+                        return
         except AgyError as exc:
             await account(None, f"ERROR {exc.status_code}")
             err = {"error": {"code": exc.status_code, "message": str(exc), "status": _status_name(exc.status_code)}}
@@ -268,8 +281,8 @@ async def gemini_action(rest: str, request: Request) -> Response:
             with CancelScope(shield=True):
                 await turn.aclose()
 
-    return StreamingResponse(
-        sse(),
+    return TurnStreamingResponse(
+        sse(), turn=turn,
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )

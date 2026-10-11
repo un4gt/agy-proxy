@@ -99,7 +99,7 @@ def test_cancelled_turn_releases_its_slot_and_process():
         try:
             turn = run_turn(cfg, mgr, system='', history=[], final_user='cancel me',
                             model='auto', effort=None)
-            assert (await anext(turn))[0] == 'delta'
+            assert (await anext(turn))[0] == 'ready'
             assert mgr.busy_count() == 1
             await turn.aclose()
             assert mgr.live_count == 0

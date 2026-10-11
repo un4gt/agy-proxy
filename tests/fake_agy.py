@@ -59,13 +59,13 @@ def fake_version() -> str:
 
 def usage_of(prompt: str, response: str) -> dict:
     inp = len(prompt) // 4 + 1
-    out = len(response) // 4 + 1
+    out = len(response) // 4 + 1 + 3  # AGY output includes thinking tokens.
     return {
         "input_tokens": inp,
         "output_tokens": out,
         "thinking_tokens": 3,
         "cache_read_tokens": 0,
-        "total_tokens": inp + out + 3,
+        "total_tokens": inp + out,
     }
 
 
@@ -138,8 +138,12 @@ def main() -> None:
         sys.stderr.write("crash-model: boom\n")
         sys.stderr.flush()
         raise SystemExit(3)
+    if args.model in ("exit-zero-model", "exit-two-model"):
+        sys.stderr.write("fixture exited before result\n")
+        raise SystemExit(0 if args.model == "exit-zero-model" else 2)
 
     turn = 0
+    cumulative_usage = {}
     for line in sys.stdin:
         line = line.strip()
         if not line:
@@ -153,6 +157,21 @@ def main() -> None:
 
         turn += 1
         prompt = (event.get("message") or {}).get("content") or ""
+
+        if args.model == "bad-ndjson-model":
+            print('{invalid json', flush=True)
+            raise SystemExit(1)
+        if args.model == "unknown-event-model":
+            emit({"event": "future_event", "future_event": {"version": 2}})
+        if args.model and args.model.startswith("status-"):
+            emit({"event": "result", "result": {"status": args.model[7:], "error": "fixture terminal failure"}})
+            raise SystemExit(2)
+        if args.model == "tail-model":
+            for state, fragment in [("ACTIVE", "哈"), ("DONE", "哈\n")]:
+                emit({"event": "step_update", "step_update": {"step_type": "agent_response",
+                      "step_index": 1, "state": state, "text_delta": fragment}})
+            emit({"event": "result", "result": {"status": "SUCCESS", "response": "哈哈\n"}})
+            continue
 
         if args.model == "error-model":
             emit(
@@ -206,7 +225,7 @@ def main() -> None:
             )
             time.sleep(0.005)
 
-        # DONE carries the full cumulative step text, per the real protocol.
+        # DONE carries another incremental fragment, not a cumulative snapshot.
         emit(
             {
                 "event": "step_update",
@@ -215,10 +234,12 @@ def main() -> None:
                     "step_index": step_index,
                     "state": "DONE",
                     "step_type": "agent_response",
-                    "text_delta": response,
+                    "text_delta": "",
                 },
             }
         )
+        for key, value in usage_of(prompt, response).items():
+            cumulative_usage[key] = cumulative_usage.get(key, 0) + value
         emit(
             {
                 "event": "result",
@@ -227,7 +248,7 @@ def main() -> None:
                     "status": "SUCCESS",
                     "response": response,
                     "num_turns": turn,
-                    "usage": usage_of(prompt, response),
+                    "usage": cumulative_usage,
                 },
             }
         )

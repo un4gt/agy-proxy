@@ -111,7 +111,7 @@ class PreparedTurn:
         task = asyncio.create_task(self.collect())
         try:
             while not task.done():
-                done, _ = await asyncio.wait({task}, timeout=10)
+                done, _ = await asyncio.wait({task}, timeout=self.request.app.state.cfg.stream_heartbeat)
                 if not done:
                     yield None
             yield task.result()
@@ -152,11 +152,13 @@ async def prepare(request: Request, body: dict) -> PreparedTurn:
     model, effort = apply_effort(model, effort, slugs)
     profile.mark("models_done")
     if external:
-        turn = external.run(request.app.state.sessions, model=model, effort=effort, profile=profile, images=images)
+        turn = external.run(request.app.state.sessions, model=model, effort=effort, profile=profile,
+                            images=images)
     elif response_format:
         system, history, final_user = _parse_messages(execution)
         turn = response_format.run(request.app.state.sessions, system=system, history=history,
-                                   final_user=final_user, model=model, effort=effort, profile=profile, images=images)
+                                   final_user=final_user, model=model, effort=effort, profile=profile,
+                                   images=images)
     else:
         raise invalid("A client-tool execution context is required")
     return PreparedTurn(request, body, model, profile, turn)

@@ -310,6 +310,7 @@ class ExternalTools:
         complete = False
         result = None
         try:
+            yield "ready", None
             prompt = self.prompt(self.messages, fresh=True, has_images=bool(images and images.attachments))
             if images:
                 prompt += images.instruction(session)

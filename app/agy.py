@@ -4,7 +4,7 @@ Protocol (per official headless docs + observed behaviour):
 - spawn: agy --input-format stream-json --output-format stream-json [--model slug ...]
 - each turn: write {"event": "user", "message": {"content": <str>}} + "\\n" to stdin
 - stdout: NDJSON events; "init" once, "step_update" (tool / agent_response with
-  text_delta fragments, DONE carries the cumulative step text), and exactly one
+  incremental text_delta fragments, including DONE), and exactly one
   "result" event per turn with the authoritative envelope:
   {conversation_id, status, response, error, num_turns, usage{...}}
 """
@@ -76,7 +76,7 @@ class AgySession:
         self.images_seen: set[str] = set()
         self._workspace: tempfile.TemporaryDirectory | None = None
         self.proc: asyncio.subprocess.Process | None = None
-        self.events: asyncio.Queue[Any] = asyncio.Queue()
+        self.events: asyncio.Queue[Any] = asyncio.Queue(maxsize=256)
         self.stderr_tail: deque[str] = deque(maxlen=30)
         self.lock = asyncio.Lock()  # one in-flight turn per session
         self.leased = False  # reserved from acquire until drop, including between events
@@ -86,13 +86,16 @@ class AgySession:
         self.conversation_id: str | None = None
         self._tasks: list[asyncio.Task] = []
         self._dead = False
+        self.init_payload: dict | None = None
+        self._usage_totals: dict[str, int] = {}
 
     # -- lifecycle ---------------------------------------------------------
 
     async def start(self) -> None:
         if self.attachments and self.output_schema is None:
             raise AgyError("Image attachments require a restricted execution context")
-        extra = ["--input-format", "stream-json", "--output-format", "stream-json"]
+        extra = ["--input-format", "stream-json", "--output-format", "stream-json",
+                 "--print-timeout", f"{self.cfg.turn_timeout:g}s"]
         if self.model:
             extra += ["--model", self.model]
         if self.effort:
@@ -169,6 +172,7 @@ class AgySession:
             asyncio.create_task(self._read_stdout(), name="agy-stdout"),
             asyncio.create_task(self._read_stderr(), name="agy-stderr"),
         ]
+        log.info("agy process started pid=%s model=%s effort=%s", self.proc.pid, self.model, self.effort)
 
     @property
     def alive(self) -> bool:
@@ -208,9 +212,20 @@ class AgySession:
         except Exception:
             log.debug("error while killing agy session", exc_info=True)
         finally:
+            await asyncio.gather(*self._tasks, return_exceptions=True)
             if self._workspace is not None:
                 self._workspace.cleanup()
                 self._workspace = None
+
+    async def close(self) -> None:
+        """Idle sessions end by stdin EOF; a stuck process is forcibly reaped."""
+        if self.alive and not self.busy and self.proc.stdin is not None:
+            self.proc.stdin.close()
+            try:
+                await asyncio.wait_for(self.proc.wait(), timeout=2)
+            except (asyncio.TimeoutError, BrokenPipeError, ConnectionResetError):
+                pass
+        await self.kill()
 
     # -- pipe readers ------------------------------------------------------
 
@@ -225,11 +240,19 @@ class AgySession:
                 if not line:
                     continue
                 try:
-                    await self.events.put(json.loads(line))
-                except json.JSONDecodeError:
-                    log.debug("agy: non-JSON stdout line: %.200s", line)
+                    event = json.loads(line)
+                except json.JSONDecodeError as exc:
+                    raise AgyError("agy stdout contains invalid NDJSON") from exc
+                if not isinstance(event, dict) or not isinstance(event.get("event"), str):
+                    raise AgyError("agy stdout event must be a JSON object with an event name")
+                await self.events.put(event)
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            await self.events.put(exc if isinstance(exc, AgyError) else AgyError("Failed to read agy NDJSON stream"))
         finally:
-            await self.events.put(_CLOSED)
+            if not asyncio.current_task().cancelling():
+                await self.events.put(_CLOSED)
 
     async def _read_stderr(self) -> None:
         assert self.proc is not None and self.proc.stderr is not None
@@ -254,6 +277,10 @@ class AgySession:
             if not self.alive:
                 raise AgyError("agy session is not running", status_code=502)
 
+            self.images_seen.clear()
+            if self._workspace is not None:
+                for marker in Path(self._workspace.name).glob("image-read-*.attempted"):
+                    marker.unlink()
             payload = json.dumps({"event": "user", "message": {"content": prompt}}) + b"\n"
             try:
                 assert self.proc is not None and self.proc.stdin is not None
@@ -266,33 +293,83 @@ class AgySession:
                 ) from exc
 
             self.turns += 1
-            deadline = time.monotonic() + self.cfg.turn_timeout
+            started = time.monotonic()
+            deadline = started + self.cfg.turn_timeout
+            log.info("agy turn started pid=%s conversation=%s turn=%s", self.proc.pid, self.conversation_id, self.turns)
             while True:
                 overall_left = deadline - time.monotonic()
                 if overall_left <= 0:
                     await self.kill()
                     raise AgyError(f"agy turn timed out after {self.cfg.turn_timeout:.0f}s", status_code=504)
                 try:
-                    event = await asyncio.wait_for(
-                        self.events.get(), timeout=min(self.cfg.idle_timeout, overall_left)
-                    )
+                    idle_deadline = 0 < self.cfg.idle_timeout < overall_left
+                    wait_for = self.cfg.idle_timeout if idle_deadline else overall_left
+                    event = await asyncio.wait_for(self.events.get(), timeout=wait_for)
                 except asyncio.TimeoutError:
                     await self.kill()
                     raise AgyError(
-                        f"no agy output for {self.cfg.idle_timeout:.0f}s", status_code=504
+                        (f"agy turn timed out after {self.cfg.turn_timeout:.0f}s" if not idle_deadline else
+                         f"no agy stdout for {self.cfg.idle_timeout:.0f}s (configured idle timeout)"), status_code=504
                     ) from None
+                if isinstance(event, AgyError):
+                    raise event
                 if event is _CLOSED or event == _CLOSED:
-                    await self.kill()
+                    # stdout EOF can precede process reaping/stderr draining.
+                    try:
+                        await asyncio.wait_for(self.proc.wait(), timeout=1)
+                        await asyncio.wait_for(asyncio.shield(self._tasks[1]), timeout=1)
+                    except asyncio.TimeoutError:
+                        pass
                     code = self.proc.returncode if self.proc else None
                     raise AgyError(
                         f"agy process exited before replying (code {code}): " + self._stderr_text(),
                         status_code=502,
                     )
-                if isinstance(event, dict) and event.get("event") == "init":
+                kind = event["event"]
+                if kind in ("init", "step_update", "result") and not isinstance(event.get(kind), dict):
+                    raise AgyError(f"agy {kind} payload must be an object")
+                if kind == "init":
+                    if self.init_payload is not None:
+                        raise AgyError("agy sent more than one init event")
+                    self.init_payload = event["init"]
                     self.conversation_id = event.get("conversation_id") or self.conversation_id
+                    log.info("agy init pid=%s conversation=%s model=%s agent=%s permission_mode=%s",
+                             self.proc.pid, self.conversation_id, self.init_payload.get("model"),
+                             self.init_payload.get("agent"), self.init_payload.get("permission_mode"))
+                    if self.output_schema is not None and self.init_payload.get("agent") != "proxy-external":
+                        raise AgyError("agy did not select the external-tool agent; upgrade the CLI")
+                if kind == "result":
+                    result = dict(event["result"])
+                    status = result.get("status")
+                    log.info("agy result pid=%s conversation=%s turn=%s status=%s elapsed=%.2fs",
+                             self.proc.pid, self.conversation_id, self.turns, status, time.monotonic() - started)
+                    if status != "SUCCESS":
+                        message = result.get("error")
+                        raise AgyError(message if isinstance(message, str) and message else
+                                       f"agy turn ended with status {status or 'missing'}")
+                    if self.init_payload is None:
+                        raise AgyError("agy returned SUCCESS without an init event")
+                    conversation = result.get("conversation_id")
+                    if conversation and self.conversation_id and conversation != self.conversation_id:
+                        raise AgyError("agy conversation changed within a duplex session")
+                    self.conversation_id = conversation or self.conversation_id
+                    if "num_turns" in result and (type(result["num_turns"]) is not int
+                                                   or result["num_turns"] != self.turns):
+                        raise AgyError("agy result does not match the active turn number")
+                    totals = result.get("usage") or {}
+                    if not isinstance(totals, dict):
+                        raise AgyError("agy usage must be an object")
+                    usage = {}
+                    for name, value in totals.items():
+                        if type(value) is not int or value < self._usage_totals.get(name, 0):
+                            raise AgyError("agy cumulative usage is invalid or moved backwards")
+                        usage[name] = value - self._usage_totals.get(name, 0)
+                    self._usage_totals.update(totals)
+                    result["usage"] = usage
+                    event = dict(event, result=result)
                 self.last_used = time.monotonic()
                 yield event
-                if isinstance(event, dict) and event.get("event") == "result":
+                if kind == "result":
                     return
 
     def _stderr_text(self) -> str:

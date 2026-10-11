@@ -104,7 +104,7 @@ def normalize_usage(raw: dict | None) -> dict[str, int]:
         if isinstance(value, (int, float)):
             out[name] = int(value)
     if not out["total_tokens"]:
-        out["total_tokens"] = out["input_tokens"] + out["output_tokens"] + out["thinking_tokens"]
+        out["total_tokens"] = out["input_tokens"] + out["output_tokens"]
     return out
 
 

@@ -261,9 +261,9 @@ async def responses(request: Request):
         inp, out = usage.get("input_tokens", 0), usage.get("output_tokens", 0)
         thinking = usage.get("thinking_tokens", 0) or 0
         final = dict(response, status="completed", completed_at=int(time.time()), output=output_items(result, specs),
-                     usage={"input_tokens": inp, "output_tokens": out + thinking,
-                            "total_tokens": inp + out + thinking,
-                            "input_tokens_details": {"cached_tokens": usage.get("cached_input_tokens", 0)},
+                     usage={"input_tokens": inp, "output_tokens": out,
+                            "total_tokens": usage.get("total_tokens") or inp + out,
+                            "input_tokens_details": {"cached_tokens": usage.get("cache_read_tokens", 0)},
                             "output_tokens_details": {"reasoning_tokens": thinking}})
         if store:
             # Request instructions do not carry to the next response. Input system

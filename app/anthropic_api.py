@@ -139,8 +139,8 @@ def message_result(result, model, message_id, stops):
             "content": content, "stop_reason": "tool_use" if result.tool_calls else
             ("stop_sequence" if stop_sequence is not None else "end_turn"), "stop_sequence": stop_sequence,
             "usage": {"input_tokens": usage.get("input_tokens", 0),
-                      "output_tokens": (usage.get("output_tokens", 0) or 0) + (usage.get("thinking_tokens", 0) or 0),
-                      "cache_creation_input_tokens": 0, "cache_read_input_tokens": 0}}
+                      "output_tokens": usage.get("output_tokens", 0) or 0,
+                      "cache_creation_input_tokens": 0, "cache_read_input_tokens": usage.get("cache_read_tokens", 0)}}
 
 
 def message_events(message):

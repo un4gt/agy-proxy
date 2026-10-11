@@ -46,7 +46,7 @@ class TurnProfile:
                 end = self.marks.get(b)
                 if end is None:
                     return -1.0
-            return (end - start) * 1000
+            return max(0.0, end - start) * 1000
 
         parts = [
             f"model={self.model}",
@@ -63,7 +63,7 @@ class TurnProfile:
 # history entries are (role, text) tuples; role is "user" | "assistant" | "tool"
 History = list[tuple[str, str]]
 
-TurnEvent = tuple[Literal["delta", "result"], object]
+TurnEvent = tuple[Literal["ready", "delta", "result"], object]
 
 
 @dataclass
@@ -117,9 +117,8 @@ def build_seed_prompt(system: str, history: History, final_user: str | None) -> 
 class DeltaTracker:
     """Streams agent_response text deltas across agy step_update events.
 
-    ACTIVE events carry incremental fragments; the DONE event of a step carries
-    the full cumulative text of that step, so only the not-yet-emitted remainder
-    is forwarded on DONE.
+    text_delta is incremental in BOTH ACTIVE and DONE, including repeated text.
+    A DONE transition does not imply a cumulative snapshot or a completed turn.
     """
 
     def __init__(self) -> None:
@@ -133,18 +132,6 @@ class DeltaTracker:
         if not isinstance(fragment, str) or not fragment:
             return None
         emitted = self._emitted.get(idx, "")
-        if step.get("state") == "DONE":
-            if not emitted:
-                delta = fragment
-            elif fragment == emitted:
-                return None
-            elif fragment.startswith(emitted):
-                delta = fragment[len(emitted):]
-            else:
-                log.warning("agy DONE text diverges from streamed fragments for step %s; keeping fragments", idx)
-                return None
-            self._emitted[idx] = fragment
-            return delta or None
         self._emitted[idx] = emitted + fragment
         return fragment
 
@@ -209,6 +196,7 @@ async def run_turn(
     reply_text: str | None = None
     events = session.send_turn(prompt)
     try:
+        yield "ready", None
         async for event in events:
             if not isinstance(event, dict):
                 continue
@@ -219,7 +207,7 @@ async def run_turn(
                 envelope = event.get("result")
                 if not isinstance(envelope, dict):
                     envelope = {}
-                status = envelope.get("status") or "SUCCESS"
+                status = envelope.get("status")
                 if status != "SUCCESS":
                     raise AgyError(
                         envelope.get("error") or f"agy turn ended with status {status}",
@@ -241,7 +229,7 @@ async def run_turn(
                         profile.mark("first_delta")
                     yield ("delta", text[len(streamed):])
                 elif streamed and not text.startswith(streamed):
-                    log.warning("agy result text diverges from streamed deltas; keeping streamed output")
+                    raise AgyError("agy result text does not match its streamed response")
 
                 reply_text = text or streamed or ""
                 completed = True

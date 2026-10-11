@@ -120,6 +120,7 @@ class ResponseFormat:
             prompt += images.instruction(session)
         result = None
         try:
+            yield "ready", None
             async with aclosing(session.send_turn(prompt)) as events:
                 async for event in events:
                     if not isinstance(event, dict):
