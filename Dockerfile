@@ -6,7 +6,9 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # Install the Antigravity CLI (agy)
-RUN curl -fsSL https://antigravity.google/cli/install.sh | bash
+ARG AGY_VERSION=1.3.3
+RUN curl -fsSL https://antigravity.google/cli/install.sh | bash \
+    && test "$(/root/.local/bin/agy --version)" = "$AGY_VERSION"
 
 ENV PATH="/root/.local/bin:${PATH}" \
     PYTHONUNBUFFERED=1
