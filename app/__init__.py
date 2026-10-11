@@ -9,7 +9,8 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
+from fastapi.responses import FileResponse, RedirectResponse, Response
+from .json_codec import JSONResponse
 
 from . import account, anthropic_api, dashboard, gemini_api, login, openai_api, responses_api, update
 from .agy import SessionManager
@@ -76,6 +77,7 @@ def create_app(cfg: Config | None = None) -> FastAPI:
 
     app = FastAPI(
         title="agy-proxy",
+        default_response_class=JSONResponse,
         version="0.0.13",
         lifespan=lifespan,
         docs_url=None,

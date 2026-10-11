@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import json
+from . import json_codec as json
 import logging
 import time
 import uuid
@@ -11,7 +11,8 @@ from typing import AsyncIterator
 
 from anyio import CancelScope
 from fastapi import APIRouter, Request
-from fastapi.responses import JSONResponse, Response, StreamingResponse
+from fastapi.responses import Response, StreamingResponse
+from .json_codec import JSONResponse
 
 from .agy import AgyError, list_models, resolve_model
 from .auth import api_key_record, is_authorized, openai_error
@@ -277,7 +278,7 @@ async def chat_completions(request: Request) -> Response:
 
     async def sse() -> AsyncIterator[bytes]:
         def encode(obj: dict) -> bytes:
-            return b"data: " + json.dumps(obj, ensure_ascii=False).encode("utf-8") + b"\n\n"
+            return b"data: " + json.dumps(obj) + b"\n\n"
 
         t0 = time.monotonic()
         recorded = False

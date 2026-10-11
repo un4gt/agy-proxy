@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import json
+from . import json_codec as json
 import os
 from dataclasses import dataclass, field
 

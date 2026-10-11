@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import codecs
-import json
+from . import json_codec as json
 import logging
 import os
 import re
@@ -15,7 +15,8 @@ from pathlib import Path
 
 import pyte
 from fastapi import APIRouter, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse
+from .json_codec import JSONResponse
 from pydantic import BaseModel
 
 from .agy import AgyError, _agy_argv, _child_env
@@ -412,7 +413,7 @@ async def login_code(request: Request):
     if denied is not None:
         return denied
     try:
-        body = await request.json()
+        body = json.loads(await request.body())
         code = str((body or {}).get("code", ""))
     except Exception:
         body = {}

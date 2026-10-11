@@ -9,7 +9,7 @@ is rewritten at most once per `_SAVE_DEBOUNCE` seconds.
 from __future__ import annotations
 
 import asyncio
-import json
+from . import json_codec as json
 import logging
 import os
 import secrets
@@ -198,7 +198,7 @@ class Store:
         try:
             self.path.parent.mkdir(parents=True, exist_ok=True)
             tmp = self.path.with_suffix(".json.tmp")
-            tmp.write_text(json.dumps(self._snapshot(), ensure_ascii=False), encoding="utf-8")
+            tmp.write_bytes(json.dumps(self._snapshot()))
             os.replace(tmp, self.path)
             self._dirty = False
             self._last_save = time.monotonic()

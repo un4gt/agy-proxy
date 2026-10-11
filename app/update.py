@@ -14,7 +14,8 @@ import logging
 import re
 
 from fastapi import APIRouter, Request
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
+from .json_codec import JSONResponse
 
 from .agy import _agy_argv, _child_env
 from .auth import panel_authorized

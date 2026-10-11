@@ -10,11 +10,13 @@ Two distinct secrets, deliberately separate:
 
 from __future__ import annotations
 
+from . import json_codec as json
+
 import base64
 import secrets
 
 from fastapi import APIRouter, Request
-from fastapi.responses import JSONResponse
+from .json_codec import JSONResponse
 
 from .config import Config
 
@@ -103,7 +105,7 @@ async def signin_page(request: Request):
 async def signin_submit(request: Request):
     cfg = request.app.state.cfg
     try:
-        body = await request.json()
+        body = json.loads(await request.body())
         key = str((body or {}).get("key", "")).strip()
     except Exception:
         key = ""

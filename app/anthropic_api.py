@@ -1,13 +1,14 @@
 """Anthropic Messages wire adapter for text and client-executed tools."""
 from __future__ import annotations
 
-import json
+from . import json_codec as json
 import math
 import uuid
 from contextlib import aclosing
 
 from fastapi import APIRouter, Request
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import StreamingResponse
+from .json_codec import JSONResponse
 
 from .agy import AgyError
 from .images import ImageInput, normalize_content
@@ -57,7 +58,7 @@ def translate(body, *, count_only=False):
             elif kind == "tool_use" and role == "assistant":
                 calls.append({"id": string(block.get("id"), "tool_use.id", nonempty=True), "type": "function",
                               "function": {"name": string(block.get("name"), "tool_use.name"),
-                                           "arguments": json.dumps(obj(block.get("input"), "tool_use.input"))}})
+                                           "arguments": json.dumps_text(obj(block.get("input"), "tool_use.input"))}})
             elif kind == "tool_result" and role == "user":
                 if text:
                     raise invalid("tool_result blocks must precede user text")
@@ -147,7 +148,7 @@ def message_events(message):
         tool = block["type"] == "tool_use"
         yield {"type": "content_block_start", "index": index,
                "content_block": dict(block, input={}) if tool else dict(block, text="")}
-        delta = ({"type": "input_json_delta", "partial_json": json.dumps(block["input"], ensure_ascii=False)}
+        delta = ({"type": "input_json_delta", "partial_json": json.dumps_text(block["input"])}
                  if tool else {"type": "text_delta", "text": block["text"]})
         yield {"type": "content_block_delta", "index": index, "delta": delta}
         yield {"type": "content_block_stop", "index": index}
@@ -214,7 +215,7 @@ async def count_tokens(request: Request):
             raise invalid("Request body must be a JSON object")
         chat = translate(body, count_only=True)
         images = await ImageInput.prepare(chat, request.app.state.cfg.max_prompt_chars)
-        serialized = json.dumps({"messages": images.messages, "tools": chat["tools"]}, ensure_ascii=False)
+        serialized = json.dumps_text({"messages": images.messages, "tools": chat["tools"]})
         # agy exposes usage only after generation, not a tokenizer. Mark this
         # explicitly as an estimate; never use it for accounting or quota.
         estimated = max(1, math.ceil(sum(1 if ord(c) < 128 else 3 for c in serialized) / 3))

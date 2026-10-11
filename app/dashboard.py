@@ -7,10 +7,12 @@ against.
 
 from __future__ import annotations
 
+from . import json_codec as json
+
 import logging
 
 from fastapi import APIRouter, Request
-from fastapi.responses import JSONResponse
+from .json_codec import JSONResponse
 
 from .agy import AgyError, list_models, model_labels
 from .config import Config
@@ -73,7 +75,7 @@ async def create_key(request: Request) -> JSONResponse:
     if denied is not None:
         return denied
     try:
-        body = await request.json()
+        body = json.loads(await request.body())
     except Exception:
         body = {}
     name = str((body or {}).get("name") or "")
@@ -88,7 +90,7 @@ async def rename_key(key_id: str, request: Request) -> JSONResponse:
     if denied is not None:
         return denied
     try:
-        body = await request.json()
+        body = json.loads(await request.body())
     except Exception:
         body = {}
     record = await _store(request).rename_key(key_id, str((body or {}).get("name") or ""))

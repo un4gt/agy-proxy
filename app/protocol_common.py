@@ -6,7 +6,7 @@ workspace, schema validation, cancellation cleanup and usage accounting.
 from __future__ import annotations
 
 import asyncio
-import json
+from . import json_codec as json
 import time
 from dataclasses import dataclass
 
@@ -69,8 +69,7 @@ def text_content(value, *, types=("text", "input_text", "output_text")) -> str:
 
 
 def encode(event: dict) -> bytes:
-    return ("event: " + event["type"] + "\ndata: " +
-            json.dumps(event, ensure_ascii=False, allow_nan=False) + "\n\n").encode()
+    return b"event: " + event["type"].encode() + b"\ndata: " + json.dumps(event) + b"\n\n"
 
 
 @dataclass

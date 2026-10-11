@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import hashlib
-import json
+from . import json_codec as json
 import time
 import uuid
 from collections import OrderedDict
@@ -10,7 +10,8 @@ from contextlib import aclosing
 from copy import deepcopy
 
 from fastapi import APIRouter, Request
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import StreamingResponse
+from .json_codec import JSONResponse
 
 from .agy import AgyError
 from .images import normalize_content
@@ -37,7 +38,7 @@ class ResponseCache:
 
     def put(self, owner, response, messages):
         self.prune()
-        size = len(json.dumps([response, messages], ensure_ascii=False).encode())
+        size = len(json.dumps([response, messages]))
         if size > self.max_bytes:
             return
         while self.entries and (len(self.entries) >= self.max_entries or self.size + size > self.max_bytes):
@@ -98,7 +99,7 @@ def convert_tools(raw):
                 raise invalid("Unsupported custom tool format")
             description += "\nReturn the raw tool input in the input string, without JSON or Markdown wrappers."
             if fmt.get("type") == "grammar":
-                description += "\nThe input must follow this grammar: " + json.dumps(fmt.get("grammar"))
+                description += "\nThe input must follow this grammar: " + json.dumps_text(fmt.get("grammar"))
             parameters = {"type": "object", "properties": {"input": {"type": "string"}},
                           "required": ["input"], "additionalProperties": False}
         else:
@@ -127,7 +128,7 @@ def convert_input(raw):
             messages.append({"role": role, "content": normalize_content(item.get("content"), protocol="responses", role=role)})
         elif kind in ("function_call", "custom_tool_call"):
             name = tool_alias(item.get("name"), item.get("namespace"))
-            args = (json.dumps({"input": string(item.get("input"), "custom_tool_call.input")})
+            args = (json.dumps_text({"input": string(item.get("input"), "custom_tool_call.input")})
                     if kind == "custom_tool_call" else string(item.get("arguments"), "arguments"))
             call = {"id": string(item.get("call_id"), "call_id", nonempty=True), "type": "function",
                     "function": {"name": name, "arguments": args}}

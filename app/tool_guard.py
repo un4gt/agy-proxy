@@ -5,7 +5,7 @@ finish submits structured output. With a request-private manifest, view_file
 may inspect only that request's validated image attachments.
 """
 
-import json
+import orjson
 import hashlib
 import sys
 from pathlib import Path
@@ -20,7 +20,7 @@ def allowed_image(tool, manifest):
     value = args.get("AbsolutePath")
     if not isinstance(value, str):
         return False
-    paths = json.loads(Path(manifest).read_text(encoding="utf-8"))
+    paths = orjson.loads(Path(manifest).read_text(encoding="utf-8"))
     path = Path(value)
     return (isinstance(paths, list) and value in paths and not path.is_symlink()
             and path.is_file() and str(path.resolve(strict=True)) == value)
@@ -35,13 +35,13 @@ def main() -> None:
     reason = ("Only finish and explicitly allowlisted image attachment reads are available here. "
               "Return external tool requests through finish; the API client executes them.")
     try:
-        payload = json.load(sys.stdin)
+        payload = orjson.loads(sys.stdin.buffer.read())
         tool = payload.get("toolCall", {})
         allowed = tool.get("name") == "finish"
         if len(sys.argv) == 2:
             manifest = sys.argv[1]
             if allowed:
-                paths = json.loads(Path(manifest).read_text(encoding="utf-8"))
+                paths = orjson.loads(Path(manifest).read_text(encoding="utf-8"))
                 allowed = isinstance(paths, list) and all(read_marker(manifest, p).is_file() for p in paths)
                 if not allowed:
                     reason = ("Before finish, use view_file to read EVERY attachment listed in [Image attachments], "
@@ -55,10 +55,10 @@ def main() -> None:
                     read_marker(manifest, tool["args"]["AbsolutePath"]).touch(mode=0o600, exist_ok=True)
     except (ValueError, AttributeError, OSError, TypeError):
         allowed = False
-    print(json.dumps({
+    sys.stdout.buffer.write(orjson.dumps({
         "decision": "allow" if allowed else "deny",
         "reason": reason,
-    }))
+    }) + b"\n")
 
 
 if __name__ == "__main__":

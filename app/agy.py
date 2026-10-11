@@ -12,7 +12,7 @@ Protocol (per official headless docs + observed behaviour):
 from __future__ import annotations
 
 import asyncio
-import json
+from . import json_codec as json
 import logging
 import os
 import re
@@ -127,17 +127,17 @@ class AgySession:
             hook_argv = [sys.executable, str(Path(__file__).with_name("tool_guard.py").resolve())]
             if self.image_paths:
                 manifest = root / "image-permissions.json"
-                manifest.write_text(json.dumps(self.image_paths), encoding="utf-8")
+                manifest.write_text(json.dumps_text(self.image_paths), encoding="utf-8")
                 manifest.chmod(0o600)
                 hook_argv.append(str(manifest))
             command = subprocess.list2cmdline(hook_argv) if os.name == "nt" else shlex.join(hook_argv)
-            (root / ".agents" / "hooks.json").write_text(json.dumps({
+            (root / ".agents" / "hooks.json").write_text(json.dumps_text({
                 "proxy-external-tools": {"PreToolUse": [{"matcher": "*", "hooks": [{
                     "type": "command", "command": command, "timeout": 10,
                 }]}]},
             }), encoding="utf-8")
             schema_path = root / "response-schema.json"
-            schema_path.write_text(json.dumps(self.output_schema, ensure_ascii=False), encoding="utf-8")
+            schema_path.write_text(json.dumps_text(self.output_schema), encoding="utf-8")
             extra += ["--agent", "proxy-external", "--disable-slash-commands",
                       "--json-schema", str(schema_path)]
         elif self.cfg.agent:
@@ -221,7 +221,7 @@ class AgySession:
                 line = await self.proc.stdout.readline()
                 if not line:
                     break
-                line = line.decode("utf-8", errors="replace").strip()
+                line = line.strip()
                 if not line:
                     continue
                 try:
@@ -254,10 +254,10 @@ class AgySession:
             if not self.alive:
                 raise AgyError("agy session is not running", status_code=502)
 
-            payload = json.dumps({"event": "user", "message": {"content": prompt}}, ensure_ascii=False)
+            payload = json.dumps({"event": "user", "message": {"content": prompt}}) + b"\n"
             try:
                 assert self.proc is not None and self.proc.stdin is not None
-                self.proc.stdin.write((payload + "\n").encode("utf-8"))
+                self.proc.stdin.write(payload)
                 await self.proc.stdin.drain()
             except (BrokenPipeError, ConnectionResetError) as exc:
                 raise AgyError(

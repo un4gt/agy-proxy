@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import json
+from . import json_codec as json
 import re
 from contextlib import aclosing
 from dataclasses import dataclass
@@ -90,7 +90,7 @@ class ResponseFormat:
                 Draft202012Validator(self.output_schema).validate(output)
                 output = json.loads(output["json"])
             self.validator.validate(output)
-            text = json.dumps(output, ensure_ascii=False, allow_nan=False, separators=(",", ":"))
+            text = json.dumps_text(output, strict=True)
         except Exception as exc:
             # Never expose invalid JSON as a successful completion, including SSE.
             raise AgyError("agy returned output that does not match response_format") from exc

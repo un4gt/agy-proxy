@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import json
+from . import json_codec as json
 import logging
 import re
 import uuid
@@ -21,7 +21,7 @@ log = logging.getLogger("agy_proxy.external_tools")
 
 
 def _json(value) -> str:
-    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return json.dumps_text(value, sort_keys=True)
 
 
 def _invalid(message: str) -> AgyError:

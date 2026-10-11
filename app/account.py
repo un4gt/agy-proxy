@@ -9,7 +9,7 @@ from __future__ import annotations
 import asyncio
 import base64
 import hashlib
-import json
+from . import json_codec as json
 import math
 import time
 from datetime import datetime
@@ -18,7 +18,7 @@ from urllib.parse import parse_qs, urlparse
 
 import httpx
 from fastapi import APIRouter, Request
-from fastapi.responses import JSONResponse
+from .json_codec import JSONResponse
 
 from .config import Config
 from .dashboard import _panel_denied
@@ -263,7 +263,7 @@ class AccountService:
             if response.status_code in (400, 401):
                 raise AccountError("unauthorized", "登录已失效，请重新授权。")
             response.raise_for_status()
-            fresh = response.json()
+            fresh = json.loads(response.content)
             if not isinstance(fresh, dict):
                 raise ValueError("Invalid token response")
             access = fresh.get("access_token")
@@ -311,7 +311,7 @@ class AccountService:
     @staticmethod
     async def _post(client, host, method, body, headers) -> dict:
         response = await client.post(
-            f"https://{host}/v1internal:{method}", json=body, headers=headers
+            f"https://{host}/v1internal:{method}", content=json.dumps(body), headers={**headers, "Content-Type": "application/json"}
         )
         if response.status_code == 401:
             raise AccountError("unauthorized", "登录已失效，请重新授权。")
@@ -320,7 +320,7 @@ class AccountService:
                 "forbidden", "上游拒绝访问，请检查账号的 Antigravity 使用权限。"
             )
         response.raise_for_status()
-        result = response.json()
+        result = json.loads(response.content)
         if not isinstance(result, dict):
             raise ValueError("Invalid response")
         return result

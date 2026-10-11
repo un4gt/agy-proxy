@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import json
+from . import json_codec as json
 import logging
 import time
 import uuid
@@ -10,7 +10,8 @@ from typing import AsyncIterator
 
 from anyio import CancelScope
 from fastapi import APIRouter, Request
-from fastapi.responses import JSONResponse, Response, StreamingResponse
+from fastapi.responses import Response, StreamingResponse
+from .json_codec import JSONResponse
 
 from .agy import AgyError, list_models, resolve_model
 from .auth import gemini_error, is_authorized
@@ -135,7 +136,7 @@ def _candidates(text: str, finish: str | None, usage: dict | None) -> dict:
 
 async def _read_json(request: Request) -> dict | None:
     try:
-        body = await request.json()
+        body = json.loads(await request.body())
     except Exception:
         return None
     return body if isinstance(body, dict) else None
@@ -238,19 +239,19 @@ async def gemini_action(rest: str, request: Request) -> Response:
                 if kind == "delta":
                     chunk = _candidates(payload, None, None)
                     chunk["responseId"] = response_id
-                    yield b"data: " + json.dumps(chunk, ensure_ascii=False).encode("utf-8") + b"\n\n"
+                    yield b"data: " + json.dumps(chunk) + b"\n\n"
                 else:
                     await account(payload.usage, "SUCCESS")
                     chunk = _candidates("", "STOP", payload.usage)
                     chunk["responseId"] = response_id
                     chunk["modelVersion"] = model or "agy-default"
-                    yield b"data: " + json.dumps(chunk, ensure_ascii=False).encode("utf-8") + b"\n\n"
+                    yield b"data: " + json.dumps(chunk) + b"\n\n"
                     yield b": agy-profile " + profile.summary().encode("utf-8") + b"\n\n"
                     return
         except AgyError as exc:
             await account(None, f"ERROR {exc.status_code}")
             err = {"error": {"code": exc.status_code, "message": str(exc), "status": _status_name(exc.status_code)}}
-            yield b"data: " + json.dumps(err, ensure_ascii=False).encode("utf-8") + b"\n\n"
+            yield b"data: " + json.dumps(err) + b"\n\n"
         except BaseException:
             await account(None, "ABORTED")
             raise

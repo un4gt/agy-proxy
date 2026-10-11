@@ -6,7 +6,7 @@ No process that has seen client messages is reused by another request.
 
 from __future__ import annotations
 
-import json
+from . import json_codec as json
 import logging
 import time
 from dataclasses import dataclass, field
@@ -228,7 +228,7 @@ async def run_turn(
                 text = envelope.get("response")
                 if not isinstance(text, str):
                     structured = envelope.get("structured_output")
-                    text = json.dumps(structured, ensure_ascii=False) if structured is not None else ""
+                    text = json.dumps_text(structured) if structured is not None else ""
                 usage = envelope.get("usage") if isinstance(envelope.get("usage"), dict) else {}
 
                 streamed = tracker.streamed
