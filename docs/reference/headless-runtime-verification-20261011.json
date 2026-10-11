@@ -1,0 +1,90 @@
+{
+  "live-image-smoke.log": [
+    {
+      "phase": "first_tool_round",
+      "pid": 52,
+      "conversation_id": "78bac023-f33a-4ac7-bec2-4b708b5f5ecc",
+      "elapsed": 16.01
+    },
+    {
+      "live_smoke": "passed",
+      "pid": 52,
+      "conversation_id": "78bac023-f33a-4ac7-bec2-4b708b5f5ecc",
+      "rounds": 2,
+      "same_pid": true,
+      "usage_difference_correct": true,
+      "sse_heartbeats": 1,
+      "elapsed": 19.56
+    }
+  ],
+  "failure-replay.log": [
+    {
+      "phase": "replay_started",
+      "original_prompt_sha256": "c01c81b4f3ffce5a0a82de5249dae8b8718edc18bb0551ad8ccbc0434bd18f65",
+      "messages": 9,
+      "tools": 27
+    },
+    {
+      "http_status": 200,
+      "elapsed": 163.82,
+      "sse_heartbeats": 32,
+      "errors": [],
+      "tool_calls": [
+        {
+          "name": "todo_write",
+          "argument_chars": 345
+        },
+        {
+          "name": "write",
+          "argument_chars": 64706
+        }
+      ],
+      "usage": [
+        {
+          "prompt_tokens": 20857,
+          "completion_tokens": 26684,
+          "total_tokens": 47541,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          },
+          "completion_tokens_details": {
+            "reasoning_tokens": 5102
+          }
+        }
+      ],
+      "success": true
+    }
+  ],
+  "production-probe.log": [
+    {
+      "production_probe": "passed",
+      "session_hash": "338e7b1e20b3",
+      "first_sse_seconds": 0.102,
+      "first_result_seconds": 12.128,
+      "sse_heartbeats": 1,
+      "second_reused_session": true,
+      "elapsed": 15.435
+    }
+  ],
+  "deployment.log": [
+    {
+      "image": "agy-proxy:headless-protocol-20261011",
+      "image_id": "sha256:ea86e747d2fcacaa98435b9988b61d0a7de514bd0f91dc155729ed4329b5c913",
+      "health": "healthy",
+      "signed_in": true,
+      "api_keys_preserved": true,
+      "usage_preserved": true,
+      "model_policy_preserved": true,
+      "mounts_preserved": true,
+      "file_hashes_verified": 34,
+      "runtime": {
+        "orjson": "3.13.0",
+        "idle": 0.0,
+        "turn": 600.0,
+        "heartbeat": 10.0,
+        "ttl": 1800.0
+      },
+      "backup": "/home/docker_depolyments/agy-proxy/backups/headless-protocol-20261011"
+    }
+  ]
+}

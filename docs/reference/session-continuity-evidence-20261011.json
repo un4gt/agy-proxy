@@ -1,0 +1,211 @@
+[
+  {
+    "conversation": "63da35cf-fa74-4477-950b-be860c870361",
+    "steps": [
+      {
+        "idx": 0,
+        "type": 14,
+        "fields": [
+          1,
+          4,
+          5,
+          19
+        ],
+        "prompt_sha256": "8eed75105d3a852943f72ed68570a119d9f5f4df009e0cae575c73649e6ffa28",
+        "messages": 4,
+        "tools": 27,
+        "roles": [
+          "developer",
+          "user",
+          "user",
+          "user"
+        ],
+        "client_tool_calls": [],
+        "last_tool_content": null
+      },
+      {
+        "idx": 1,
+        "type": 15,
+        "fields": [
+          1,
+          4,
+          5,
+          20
+        ],
+        "public_tool_calls": [
+          {
+            "name": "finish",
+            "argument_keys": [
+              "content",
+              "kind",
+              "toolAction",
+              "toolSummary",
+              "tool_calls"
+            ],
+            "kind": "tool_calls",
+            "client_tools": [
+              "todo_write",
+              "glob"
+            ],
+            "content_chars": 0,
+            "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        ]
+      },
+      {
+        "idx": 2,
+        "type": 132,
+        "fields": [
+          1,
+          4,
+          5,
+          140
+        ]
+      }
+    ]
+  },
+  {
+    "conversation": "dcdd676b-b621-4ed1-8f22-262685c4655c",
+    "steps": [
+      {
+        "idx": 0,
+        "type": 14,
+        "fields": [
+          1,
+          4,
+          5,
+          19
+        ],
+        "prompt_sha256": "3bc78730c669a855f68404d139eb5ec60deed8cfc17df53edca41f20f6aa9647",
+        "messages": 7,
+        "tools": 27,
+        "roles": [
+          "developer",
+          "user",
+          "user",
+          "user",
+          "assistant",
+          "tool",
+          "tool"
+        ],
+        "client_tool_calls": [
+          "todo_write",
+          "glob"
+        ],
+        "last_tool_content": "No files found"
+      },
+      {
+        "idx": 1,
+        "type": 15,
+        "fields": [
+          1,
+          4,
+          5,
+          20
+        ],
+        "public_tool_calls": [
+          {
+            "name": "finish",
+            "argument_keys": [
+              "content",
+              "kind",
+              "toolAction",
+              "toolSummary",
+              "tool_calls"
+            ],
+            "kind": "tool_calls",
+            "client_tools": [
+              "todo_write",
+              "write"
+            ],
+            "content_chars": 111,
+            "content_sha256": "b0b77a07b59ac553e7b8b720b131f30542b33ddc467c932e7e6dccfb9d9caa39"
+          }
+        ]
+      },
+      {
+        "idx": 2,
+        "type": 132,
+        "fields": [
+          1,
+          4,
+          5,
+          140
+        ]
+      }
+    ]
+  },
+  {
+    "conversation": "0bf9113b-ab29-4d04-8688-7ac23b1bfac1",
+    "steps": [
+      {
+        "idx": 0,
+        "type": 14,
+        "fields": [
+          1,
+          4,
+          5,
+          19
+        ],
+        "prompt_sha256": "a92f7a6163d6796d1e3f128bd475366a4934c73cd589c0153303952fdc8fc146",
+        "messages": 10,
+        "tools": 27,
+        "roles": [
+          "developer",
+          "user",
+          "user",
+          "user",
+          "assistant",
+          "tool",
+          "tool",
+          "assistant",
+          "tool",
+          "tool"
+        ],
+        "client_tool_calls": [
+          "todo_write",
+          "glob",
+          "todo_write",
+          "write"
+        ],
+        "last_tool_content": "<path>E:\\frontend_workspace\\gemini-web\\index-edge.html</path>\n<type>file</type>\n<content>\nCreated file\n</content>"
+      },
+      {
+        "idx": 1,
+        "type": 15,
+        "fields": [
+          1,
+          4,
+          5,
+          20
+        ],
+        "public_tool_calls": [
+          {
+            "name": "finish",
+            "argument_keys": [
+              "content",
+              "kind",
+              "toolAction",
+              "toolSummary",
+              "tool_calls"
+            ],
+            "kind": "message",
+            "client_tools": [],
+            "content_chars": 963,
+            "content_sha256": "65f026be7a920c11771b93d665aedb3e044a0c22092124a6ae078cb8df1adf77"
+          }
+        ]
+      },
+      {
+        "idx": 2,
+        "type": 132,
+        "fields": [
+          1,
+          4,
+          5,
+          140
+        ]
+      }
+    ]
+  }
+]

@@ -24,23 +24,27 @@ agy-proxy (FastAPI)
    │  stdin  ← NDJSON: {"event":"user","message":{"content":"..."}}
    │  stdout → NDJSON: init / step_update(text_delta) / result
    ▼
-agy --input-format stream-json --output-format stream-json  (请求独占进程)
+agy --input-format stream-json --output-format stream-json  (每个 agent 会话独立 PID)
 ```
 
-- 每次请求独占一个干净的 `agy` 进程，prompt 经 **stdin** 传入（无命令行长度限制），结束后销毁进程
-- `step_update`（`step_type=agent_response`）的 `text_delta` 增量转发为 SSE；`DONE` 事件携带该步完整文本，代理只补发未发送部分
-- 每轮以恰好一个 `result` 事件结束，`usage`（input/output/thinking tokens）映射为对应格式的 usage 字段
+- CLI 始终使用 stdin/stdout NDJSON。客户端 `stream=true` 接收 SSE，`stream=false` 在代理内汇总到本轮 `result` 后返回 JSON
+- `agent_response.text_delta` 在 `ACTIVE` 和 `DONE` 中都是增量；`DONE` 只表示这一步结束，不代表整轮结束
+- `init` 每个 CLI 会话一次，`result` 每轮一次。累计 usage 按轮差分后再映射和记账；thinking 已包含在 output 中
+- HTTP SSE 在生成期间每 10 秒发送保活。工具参数/结构化 JSON 必须等待最终结果完整校验后才能交给客户端
 
-### 请求与会话隔离
+### Agent 会话与进程对应
 
-客户端每次请求都携带全量历史。代理将完整对话发送给请求独占的上游进程，不按历史内容匹配或复用已处理过消息的会话：
+适用于任意 coding agent / agent 客户端，包括 dsh、pi、Codex、Claude Code、OpenCode。**服务端维护会话与独立 AGY PID / conversation_id 的对应关系，客户端无需新增自定义请求头。** 默认在同一 API 凭据内，按完整历史与上一轮实际回复（包括工具调用 ID）识别连续请求。
 
-- 即使两个 Pi / OpenCode 使用同一账号、同一 API Key、相同消息前缀或复制后的 tool call ID，也不会共享代理进程内的对话状态
-- 工具调用保留完整参数、调用 ID 和各自客户端返回的结果；每次工具请求使用独立临时目录，完成、失败或取消后清理
-- 只允许领取尚未接收过客户端消息的预热进程，并在领取时原子预留；`MAX_SESSIONS` 满时返回 HTTP 429，不驱逐正在运行或已被领取的进程
-- 后续请求需要重放完整历史，可能增加进程冷启动延迟和输入 Token；客户端自己的会话续接仍可正常使用
+客户端若已有会话字段，优先使用它；兼容 `X-Agy-Session-Id`、`X-Session-Id`、`session-id`、`session_id`、`X-Session-Affinity`、`X-Opencode-Session`，以及 `metadata.session_id`、Codex 的 `client_metadata.session_id/thread_id`、Claude Code 的 JSON `metadata.user_id.session_id`。同时出现多个标识时必须一致；普通用户名、请求 ID、API Key 或相同首条 prompt 不会把多个会话合并。
 
-这里隔离的是代理侧对话状态与工具结果。同一 Antigravity 账号仍共享额度和上游限流；两个客户端若操作同一目录，仍可能相互覆盖文件。并行编码请使用独立目录、Git worktree 或独立容器。临时目录不是操作系统安全沙箱。
+- 客户端仍提交完整历史，代理核对已确认历史后只向同一 stdin 发送新消息。工具回传包含上一条 assistant 的调用 ID，便于关联真实工具结果
+- 单个 PID 同时只执行一轮；显式同会话重叠请求或自动识别出的在途重复续接返回 409，容量全部忙时返回 429
+- 没有会话字段也会保留成功进程。唯一匹配到连续历史才复用；首次请求、匹配歧义或并发分支各自建立独立进程
+- 历史重试/编辑/截断、模型/effort/工具/schema/附件变化、进程失败或 TTL/LRU 回收时，使用完整历史建立新进程。失败和取消的半轮状态不会交给下一次请求
+- 成功且可复用的进程保持 stdin 打开；空闲回收时先关闭 stdin，让 CLI 正常退出。外部工具仍仅在客户端执行，私有工作目录/图片路径校验持续有效
+
+`prompt_cache_key` 本身可能跨会话共享，默认不作为身份；连续历史仍可自动复用。如果客户端原本支持明确的会话标识，可以消除内容完全一致的会话或克隆之间的歧义；无需为 dsh/pi 修改 headers 或缓存配置。协议证据与接入说明见 [Headless 分析](docs/headless-protocol-analysis-20261011.md)，自动会话关联和任务状态排查见 [本次修正记录](docs/session-continuity-and-todos-20261011.md)。
 
 ## 前置条件
 
@@ -66,10 +70,11 @@ uv run main.py            # 等价于 uvicorn app:app --host 127.0.0.1 --port 83
 | `DATA_DIR` | `~/.agy-proxy` | API Key 与用量记录（`data.json`）所在目录 |
 | `DEFAULT_MODEL` | 空 | 未知模型兜底映射到的 slug |
 | `MODEL_MAP` | 空 | JSON，如 `{"gemini-3-pro-preview":"gemini-3-pro-high"}` |
-| `MAX_SESSIONS` | `8` | agy 进程数上限；优先回收未使用的预热进程，全部被请求占用时返回 429 |
-| `SESSION_TTL` | `1800` | 未使用的预热进程空闲回收秒数；请求进程结束即销毁 |
+| `MAX_SESSIONS` | `8` | agy 进程数上限；回收最久未用的空闲进程，全部忙时返回 429 |
+| `SESSION_TTL` | `1800` | 会话及预热进程空闲回收秒数，包含服务端自动关联的会话 |
 | `TURN_TIMEOUT` | `600` | 单轮总超时秒数 |
-| `IDLE_TIMEOUT` | `120` | 单轮无输出超时秒数 |
+| `IDLE_TIMEOUT` | `0` | stdout 静默超时，0 禁用；CLI 思考可能不输出 stdout，通常应保持禁用 |
+| `STREAM_HEARTBEAT` | `10` | 流式 HTTP 等待期间的 SSE 心跳间隔（秒） |
 | `MODELS_TTL` | `300` | `agy models` 结果缓存秒数 |
 | `EFFORT` | 空 | OpenAI 请求未指定 `reasoning_effort` 时使用的默认思考级别 |
 | `AGENT` | 空 | 进程级默认 `--agent` |
@@ -124,6 +129,8 @@ Chat Completions 支持用不带档位后缀的模型名称，配合标准字段
 ```
 
 该请求选择 `gemini-3.8-flash-high`，并传入 CLI 的 `--effort high`。`stream: true`、客户端工具调用、JSON/JSON Schema 模式使用相同规则。`/v1/models` 同时列出基础名称和原有完整模型 ID，响应中的 `model` 保持客户端请求的名称。
+
+控制台「模型列表」按基础模型分组，可统一启用或禁用整组变体。例如关闭 `gemini-3.8-flash` 后，其 low/medium/high 等变体也会禁用，不再出现在 `/v1/models` 和 Gemini 模型同步列表中；通过旧 ID、别名或默认模型直接调用会返回 `404`。设置保存在数据目录的 `data.json`，重启后仍生效。概览中的「总缓存」显示累计缓存命中 Tokens。
 
 优先级：请求的 `reasoning_effort` → `AGY_PROXY_EFFORT` → 模型名称自带的档位/原有默认选择。例如 `model: "gemini-3.8-flash-low"` 配合 `reasoning_effort: "high"` 会选择同系列的 High 模型；未设置思考参数与默认值时，原有完整模型 ID 保持不变。`null` 等同于未指定。
 
@@ -435,7 +442,10 @@ acquire=16ms agy_boot=6312ms think=28094ms stream=7016ms total=41438ms
 app/
 ├── config.py     # 环境变量配置
 ├── agy.py        # AgySession（常驻进程/NDJSON 读写）+ SessionManager + 模型发现
-├── runner.py     # 回合执行器：请求隔离、delta 去重、seed 拍平
+├── runner.py     # 回合执行器：会话续接、增量文本、seed 拍平
+├── session_context.py # 通用 agent 会话标识、凭据隔离和历史指纹
+├── json_codec.py # orjson 编解码与 HTTP JSON 响应
+├── streaming.py  # SSE 保活与断连清理
 ├── store.py      # 控制台持久化：上游 API Key + agy 用量记录（单个 JSON）
 ├── auth.py       # 控制台密码 / 上游 API Key 两套鉴权 + /signin
 ├── dashboard.py  # 控制台数据与 API Key 管理接口

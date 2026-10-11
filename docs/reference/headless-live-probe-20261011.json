@@ -1,0 +1,100 @@
+{
+  "pid": 2378,
+  "turns": [
+    {
+      "elapsed": 7.85,
+      "steps": [
+        {
+          "step_index": 0,
+          "step_type": "user_input",
+          "state": "DONE"
+        },
+        {
+          "step_index": 1,
+          "step_type": "agent_response",
+          "state": "ACTIVE",
+          "text_delta": "apple"
+        },
+        {
+          "step_index": 1,
+          "step_type": "agent_response",
+          "state": "DONE",
+          "text_delta": "\n",
+          "usage": {
+            "input_tokens": 11777,
+            "output_tokens": 27,
+            "thinking_tokens": 26,
+            "cache_read_tokens": 0,
+            "total_tokens": 11804
+          }
+        }
+      ],
+      "result": {
+        "conversation_id": "f5fb2250-cd0e-4e63-9c23-838d8f01697a",
+        "status": "SUCCESS",
+        "response": "apple\n",
+        "duration_seconds": 2.105979798,
+        "num_turns": 1,
+        "usage": {
+          "input_tokens": 11777,
+          "output_tokens": 27,
+          "thinking_tokens": 26,
+          "cache_read_tokens": 0,
+          "total_tokens": 11804
+        }
+      }
+    },
+    {
+      "elapsed": 2.72,
+      "steps": [
+        {
+          "step_index": 2,
+          "step_type": "user_input",
+          "state": "DONE"
+        },
+        {
+          "step_index": 3,
+          "step_type": "agent_response",
+          "state": "ACTIVE",
+          "text_delta": "apple"
+        },
+        {
+          "step_index": 3,
+          "step_type": "agent_response",
+          "state": "DONE",
+          "text_delta": "\n",
+          "usage": {
+            "input_tokens": 11884,
+            "output_tokens": 69,
+            "thinking_tokens": 68,
+            "cache_read_tokens": 0,
+            "total_tokens": 11953
+          }
+        }
+      ],
+      "result": {
+        "conversation_id": "f5fb2250-cd0e-4e63-9c23-838d8f01697a",
+        "status": "SUCCESS",
+        "response": "apple\n",
+        "duration_seconds": 4.8093129999999995,
+        "num_turns": 2,
+        "usage": {
+          "input_tokens": 23661,
+          "output_tokens": 96,
+          "thinking_tokens": 94,
+          "cache_read_tokens": 0,
+          "total_tokens": 23757
+        }
+      }
+    }
+  ],
+  "conversation_id": "f5fb2250-cd0e-4e63-9c23-838d8f01697a",
+  "init": {
+    "model": "gemini-3.8-flash-high",
+    "cwd": "/workspace-empty",
+    "permission_mode": "request-review",
+    "tools_count": 60
+  },
+  "processes": "    PID    PPID COMMAND\n      1       0 python\n   2371       0 python\n   2378    2371 agy\n   2410    2371 ps\n",
+  "exitcode": 0
+}

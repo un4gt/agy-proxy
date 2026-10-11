@@ -1,0 +1,108 @@
+{
+  "tests": {
+    "passed": 365,
+    "skipped": 2,
+    "elapsed_seconds": 34.01
+  },
+  "deployment": {
+    "image": "agy-proxy:server-sessions-20261011",
+    "image_id": "sha256:543468fccb4eaf159f35378772d62d89ea6d27c1e944705c6e667737af7d7dc8",
+    "health": "healthy",
+    "signed_in": true,
+    "api_keys_preserved": true,
+    "usage_preserved": true,
+    "model_policy_preserved": true,
+    "mounts_preserved": true,
+    "file_hashes_verified": 34,
+    "runtime": {
+      "orjson": "3.13.0",
+      "idle": 0.0,
+      "turn": 600.0,
+      "heartbeat": 10.0,
+      "ttl": 1800.0
+    },
+    "backup": "/home/docker_depolyments/agy-proxy/backups/server-sessions-20261011"
+  },
+  "offline": {
+    "offline_smoke": "passed",
+    "orjson": "3.13.0",
+    "same_pid": true,
+    "credential_isolation": true,
+    "usage_delta": true,
+    "heartbeat": true
+  },
+  "live": {
+    "live_smoke": "passed",
+    "custom_session_headers": false,
+    "same_pid": 28,
+    "conversation": "6c1e2465-47da-4f17-aaa6-39ef17e2cb7c",
+    "turns": 3,
+    "elapsed": 25.0
+  },
+  "replay": [
+    {
+      "phase": "replay_started",
+      "messages": 10,
+      "tools": 27,
+      "original_prompt_sha256": "a92f7a6163d6796d1e3f128bd475366a4934c73cd589c0153303952fdc8fc146"
+    },
+    {
+      "replay": "completed",
+      "elapsed": 21.91,
+      "client_tool_calls": [
+        {
+          "name": "todo_write",
+          "argument_keys": [
+            "todos"
+          ],
+          "statuses": [
+            "completed",
+            "completed",
+            "in_progress"
+          ]
+        },
+        {
+          "name": "pwsh",
+          "argument_keys": [
+            "command",
+            "description"
+          ]
+        }
+      ],
+      "heartbeats": 3,
+      "usage": [
+        {
+          "prompt_tokens": 32787,
+          "completion_tokens": 2219,
+          "total_tokens": 35006,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          },
+          "completion_tokens_details": {
+            "reasoning_tokens": 1985
+          }
+        }
+      ],
+      "executed_client_tools": false
+    }
+  ],
+  "production": {
+    "production_probe": "passed",
+    "custom_session_headers": false,
+    "session_hash": "e96e2516cecf",
+    "pid": 256,
+    "conversation": "c2fdbec1-50fe-4998-8321-fd5672da5327",
+    "turns": 3,
+    "new_session": [
+      1,
+      0,
+      0
+    ],
+    "stream_modes": [
+      false,
+      false,
+      true
+    ],
+    "elapsed": 17.07
+  }
+}
