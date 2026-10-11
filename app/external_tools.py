@@ -260,6 +260,12 @@ class ExternalTools:
             '{"kind":"tool_calls","content":"","tool_calls":[{"name":"the declared client tool name",'
             '"arguments":{"the":"actual tool parameters"}}]}. '
             "This serializes the request for the client to execute; it does not execute anything here. "
+            "A successful client tool result completes only that operation, not the entire task. "
+            "Continue any outstanding implementation or verification through client tools. "
+            "If you created a client task list or plan, keep its status current through the declared "
+            "client task/plan tool before the final answer; ordinary answer text does not update it. "
+            "Mark work completed only when supported by actual client results. "
+            "If remaining work is blocked or cannot be verified, state that accurately instead of claiming success. "
             "For an answer invoke finish with kind=message, content=the answer, tool_calls=[]. "
             "Do not attempt other native tools to check whether they are available."
         )
