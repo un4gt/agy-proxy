@@ -14,7 +14,7 @@ from jsonschema import Draft202012Validator
 from jsonschema.exceptions import SchemaError, ValidationError
 from referencing import Registry
 
-from .agy import AgyError, SessionManager
+from .agy import AgyError, SessionManager, account_failover
 from .runner import TurnEvent, TurnProfile, TurnResult
 from .session_context import SessionContext, SessionIdentity
 
@@ -303,6 +303,7 @@ class ExternalTools:
                           conversation_id=envelope.get("conversation_id"),
                           num_turns=envelope.get("num_turns"))
 
+    @account_failover
     async def run(self, mgr: SessionManager, *, model: str | None, effort: str | None,
                   profile: TurnProfile, images=None, session_key: SessionIdentity | str | None = None) -> AsyncIterator[TurnEvent]:
         profile.model = model

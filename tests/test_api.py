@@ -459,7 +459,7 @@ def test_web_ui_served_at_root(client):
 def test_about_endpoint(client):
     r = client.get("/about")
     assert r.status_code == 200
-    assert r.json()["version"] == "0.0.13"
+    assert r.json()["version"] == "0.0.14"
 
 
 # -- login bridge ---------------------------------------------------------------

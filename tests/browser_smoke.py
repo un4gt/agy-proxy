@@ -158,12 +158,12 @@ def main():
                     assert payload["session_id"] == "browser-session"
                     presses.append(payload["key"])
                     route.fulfill(json=terminal)
-                page.route("**/login/status", lambda r: r.fulfill(json=terminal))
-                page.route("**/login/input", handle_input)
+                page.route("**/login/status*", lambda r: r.fulfill(json=terminal))
+                page.route("**/login/input*", handle_input)
                 def handle_stop(route):
                     terminal.update(state="idle", interactive=False)
                     route.fulfill(json=terminal)
-                page.route("**/login/stop", handle_stop)
+                page.route("**/login/stop*", handle_stop)
                 page.goto(origin + "/login")
                 page.get_by_role("button", name="登录操作").click()
                 expect(page.get_by_text("CLI 交互终端", exact=True)).to_be_visible()
@@ -185,11 +185,11 @@ def main():
                 def handle_code(route):
                     terminal.update(state="authenticated", message="凭据已保存，请完成其余提示")
                     route.fulfill(json=terminal)
-                page.route("**/login/code", handle_code)
+                page.route("**/login/code*", handle_code)
                 def handle_finish(route):
                     terminal.update(state="done", interactive=False)
                     route.fulfill(json=terminal)
-                page.route("**/login/finish", handle_finish)
+                page.route("**/login/finish*", handle_finish)
                 page.goto(origin + "/login")
                 page.get_by_role("button", name="登录操作").click()
                 expect(page.get_by_label("授权码", exact=True)).to_be_visible()
@@ -199,6 +199,42 @@ def main():
                 expect(page.get_by_role("button", name="回车确认", exact=True)).to_be_enabled()
                 page.get_by_role("button", name="完成并关闭", exact=True).click()
                 expect(page.get_by_role("button", name="回车确认", exact=True)).to_be_disabled()
+                page.get_by_role("button", name="关闭", exact=True).click()
+                # Import UI and per-account login targeting. Credentials remain
+                # synthetic and the browser never sends these to upstream.
+                account_list = [dict(account, id="a" * 32, name="A", isolated=True, bound_clients=1)]
+                imported = []
+                def manage_accounts(route):
+                    if route.request.method == "POST":
+                        payload = route.request.post_data_json
+                        assert payload["name"] == "备用账号 B"
+                        assert payload["credentials"] == {"token": {"access_token": "UI_FIXTURE_ONLY"}}
+                        imported.append(payload)
+                        added = dict(account, id="b" * 32, name=payload["name"], email=None,
+                                     isolated=True, bound_clients=0, status="disconnected", message="尚未连接账号")
+                        account_list.append(added)
+                        route.fulfill(status=201, json={"id": added["id"]})
+                    else:
+                        route.fulfill(json={"accounts": account_list})
+                page.route("**/api/accounts*", manage_accounts)
+                page.get_by_role("button", name="添加账号", exact=True).click()
+                page.get_by_label("账号名称", exact=True).fill("备用账号 B")
+                page.get_by_label("凭据文件（可选）", exact=True).set_input_files({
+                    "name": "account.json", "mimeType": "application/json",
+                    "buffer": b'{"token":{"access_token":"UI_FIXTURE_ONLY"}}',
+                })
+                page.get_by_role("button", name="导入账号", exact=True).click()
+                added_card = page.locator('[data-account-id="' + "b" * 32 + '"]')
+                expect(added_card).to_be_visible()
+                expect(added_card.get_by_text("备用账号 B", exact=True)).to_be_visible()
+                assert len(imported) == 1
+                for width in (1440, 390):
+                    page.set_viewport_size({"width": width, "height": 900})
+                    assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+                    page.screenshot(path=str(screenshots / f"multi-account-{width}.png"), full_page=True)
+                with page.expect_request("**/login/status?account_id=" + "b" * 32):
+                    added_card.get_by_role("button", name="连接账号", exact=True).click()
+                expect(page.get_by_role("dialog").get_by_text("账号已连接", exact=True)).to_be_visible()
                 page.get_by_role("button", name="关闭", exact=True).click()
                 # Real HTTP insecure context: the browser does not expose the
                 # Clipboard API. Copy must still work from the generated-key modal.

@@ -9,7 +9,7 @@
 - **容器内 agy 自更新**：`/update` 页面一键升级容器内的 agy CLI，无需重建镜像
 
 ```bash
-docker pull tumuer/agy-proxy:v0.0.13
+docker pull tumuer/agy-proxy:v0.0.14
 ```
 
 任何支持自定义 base URL 的客户端（Cherry Studio、OpenWebUI、LobeChat、Continue、openai/gemini SDK 等）都能直接接入。
@@ -59,6 +59,20 @@ uv sync
 uv run main.py            # 等价于 uvicorn app:app --host 127.0.0.1 --port 8317
 ```
 
+## 多账号隔离与固定账号路由
+
+在「账号详情 → 添加账号」中导入 agy 原生凭据文件（`antigravity-oauth-token`），或包含 `token` 的 agy-switch 完整账号 JSON；也可以先创建空账号，再在其卡片中完成授权（交互登录桥需要 Linux / Docker）。「导入本机当前凭据」读取服务端的登录文件。首次添加新账号时，已有的文件凭据会先迁移为「原服务账号」，保留原 CLI 安装标识；原文件不改动。凭据导入接口为受控制台鉴权保护的 `POST /api/accounts`，例如 `{"name":"账号 A","credentials":{"token":{...}}}`，省略 `credentials` 则创建待登录账号。
+
+- 每个账号拥有独立的用户目录、OAuth 文件、CLI 状态、缓存、日志和对话历史。账号自己的 `state.json` 保存固定 UUID，并写入其 CLI 的 `installation_id`。新增 B 会生成与 A 不同的标识；重启、请求重试及进程回收不会重新生成。
+- 同一客户端 API Key（未带 Key 时为匿名客户端）持续绑定同一账号，模型变化、会话超时及代理重启均保留绑定。新客户端默认使用第一个可用账号，不按请求轮换。
+- 只有上游明确报告额度耗尽，或新鲜的额度查询明确返回相关模型组剩余为 **0**，才允许切换。低余额、未知额度、普通 429 / 频率限制、超时、认证失败及网络错误不会触发切号；已绑定账号的凭据缺失也会返回错误。
+- 额度耗尽时，若尚未交付内容且未执行服务端工具，本次请求自动用下一账号重放完整历史。已输出部分内容或执行工具则终止本轮，下一次请求使用新账号，避免重复输出或重复执行。所有账号耗尽时返回额度错误。
+- 切到 B 后，即使 A 恢复额度也继续使用 B。可在账号卡片中刷新额度；没有上游重置时间的耗尽记录会保留到查询确认恢复。
+
+所有管理数据保存在 `DATA_DIR` 下：`accounts.json` 保存账号索引、客户端绑定和耗尽状态；`accounts/<id>/state.json` 保存固定身份；`accounts/<id>/home/` 保存各账号的原生 CLI 数据。Docker 的 `agy-data` 卷必须整体持久化，备份也需包含整个数据目录。未创建隔离账号时兼容原来的本机登录方式。账户索引由单个代理进程管理，多个实例须使用各自的数据目录。
+
+这里固定的是 CLI 安装标识。参考项目的 IDE 指纹字段、CLI 原生 `state.json` 与代理账号 `state.json` 的区别，以及已验证的凭据隔离行为，见 [实现与验证说明](docs/account-isolation.md)。
+
 ## 配置（环境变量，前缀 `AGY_PROXY_`）
 
 | 变量 | 默认值 | 说明 |
@@ -67,7 +81,7 @@ uv run main.py            # 等价于 uvicorn app:app --host 127.0.0.1 --port 83
 | `HOST` / `PORT` | `127.0.0.1` / `8317` | 监听地址 |
 | `PASSWORD` | 空 | **控制台密码**，保护 `/`、`/login`、`/update`、`/dashboard`、`/api/*`。为空则控制台无鉴权（仅适合本机） |
 | `API_KEYS` | 空 | 逗号分隔的**固定** API 密钥，供客户端调 `/v1/*`；也兼作控制台登录凭证。常规做法是留空、改在控制台里创建 |
-| `DATA_DIR` | `~/.agy-proxy` | API Key 与用量记录（`data.json`）所在目录 |
+| `DATA_DIR` | `~/.agy-proxy` | API Key、用量记录及隔离账号、固定身份、账号绑定所在目录，需整体持久化 |
 | `DEFAULT_MODEL` | 空 | 未知模型兜底映射到的 slug |
 | `MODEL_MAP` | 空 | JSON，如 `{"gemini-3-pro-preview":"gemini-3-pro-high"}` |
 | `MAX_SESSIONS` | `8` | agy 进程数上限；回收最久未用的空闲进程，全部忙时返回 429 |
@@ -371,7 +385,7 @@ agy_backup_dir=$(mktemp -d /tmp/agy-proxy-backup.XXXXXX)
 docker cp agy-proxy:/root/.agy-proxy/data.json "$agy_backup_dir/data.json"
 ```
 
-确认备份成功后再迁移，并在服务停止时将备份恢复到新数据卷的 `data.json`。已有正确挂载的部署，修改镜像 tag（如 `tumuer/agy-proxy:v0.0.13`）后执行：
+确认备份成功后再迁移，并在服务停止时将备份恢复到新数据卷的 `data.json`。已有正确挂载的部署，修改镜像 tag（如 `tumuer/agy-proxy:v0.0.14`）后执行：
 
 ```bash
 docker compose pull
@@ -393,7 +407,7 @@ docker run -d --name agy-proxy -p 8317:8317 \
   -e AGY_PROXY_HTTP_PROXY=http://host.docker.internal:7890 \
   -e AGY_PROXY_PASSWORD=你的控制台密码 \
   --add-host=host.docker.internal:host-gateway \
-  tumuer/agy-proxy:v0.0.13
+  tumuer/agy-proxy:v0.0.14
 ```
 
 ### 容器内 agy 的 OAuth 登录（浏览器在你自己的电脑上完成）

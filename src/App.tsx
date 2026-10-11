@@ -963,9 +963,11 @@ const cliKeys = [
 function LoginTerminal({
   state,
   onChange,
+  accountQuery = "",
 }: {
   state: BridgeState;
   onChange: (state: BridgeState) => void;
+  accountQuery?: string;
 }) {
   const [pending, setPending] = useState(false);
   const sending = useRef(false);
@@ -974,7 +976,7 @@ function LoginTerminal({
     sending.current = true;
     setPending(true);
     try {
-      const next = await api<BridgeState>("/login/input", {
+      const next = await api<BridgeState>("/login/input" + accountQuery, {
         method: "POST",
         body: JSON.stringify({ key, session_id: state.session_id }),
       });
@@ -1077,11 +1079,14 @@ function LoginTerminal({
 function Bridge({
   update = false,
   embedded = false,
+  accountId,
 }: {
   update?: boolean;
   embedded?: boolean;
+  accountId?: string;
 }) {
   const base = update ? "/update" : "/login";
+  const accountQuery = !update && accountId ? `?account_id=${encodeURIComponent(accountId)}` : "";
   const title = update ? "CLI 更新" : "账号授权";
   const [state, setState] = useState<BridgeState | null>(null);
   const [error, setError] = useState("");
@@ -1093,7 +1098,7 @@ function Bridge({
     let timer: ReturnType<typeof setTimeout>;
     async function poll() {
       try {
-        const d = await api<BridgeState>(base + "/status");
+        const d = await api<BridgeState>(base + "/status" + accountQuery);
         if (alive) {
           setState(d);
           setError("");
@@ -1109,12 +1114,12 @@ function Bridge({
       alive = false;
       clearTimeout(timer);
     };
-  }, [base, tick]);
+  }, [base, tick, accountQuery]);
   async function action(path: string, body?: object) {
     setBusy(true);
     setError("");
     try {
-      const d = await api<BridgeState>(base + path, {
+      const d = await api<BridgeState>(base + path + accountQuery, {
         method: "POST",
         body: JSON.stringify({ ...body, session_id: state?.session_id }),
       });
@@ -1287,7 +1292,7 @@ function Bridge({
       {!update &&
       state &&
       (state.interactive || state.screen?.length || state.tail) ? (
-        <LoginTerminal state={state} onChange={setState} />
+        <LoginTerminal state={state} onChange={setState} accountQuery={accountQuery} />
       ) : null}
       {update && (state?.output || state?.tail) && (
         <Card>
@@ -1313,7 +1318,7 @@ export default function App() {
         <SignIn />
       ) : path === "/login" ? (
         <Shell page="账号详情">
-          <Accounts login={<Bridge embedded />} />
+          <Accounts login={(id) => <Bridge key={id} embedded accountId={id} />} />
         </Shell>
       ) : path === "/update" ? (
         <Bridge update />

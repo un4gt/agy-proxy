@@ -3,7 +3,7 @@
 # pull 只更新镜像，不更新服务器上的此文件；旧部署升级前应确认两个数据卷均已挂载。
 services:
   agy-proxy:
-    image: tumuer/agy-proxy:v0.0.13   # 建议生产固定版本，如 tumuer/agy-proxy:v0.0.13
+    image: tumuer/agy-proxy:v0.0.14   # 建议生产固定版本，如 tumuer/agy-proxy:v0.0.14
     # 本地开发想直接从源码构建时，注释掉上面的 image，取消下一行注释：
     # build: .
     container_name: agy-proxy
@@ -11,7 +11,7 @@ services:
       - "${PORT:-8317}:8317"
     volumes:
       - agy-gemini:/root/.gemini     # agy OAuth 凭据，一次登录长期有效
-      - agy-data:/root/.agy-proxy    # 必须持久化 API Key 与用量；旧部署补挂载前先备份 data.json
+      - agy-data:/root/.agy-proxy    # 整体持久化 API Key、用量、隔离账号凭据/固定身份和绑定
     environment:
       AGY_PROXY_PASSWORD: ${AGY_PROXY_PASSWORD:-}
       AGY_PROXY_API_KEYS: ${AGY_PROXY_API_KEYS:-}

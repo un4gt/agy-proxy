@@ -14,6 +14,7 @@ from .json_codec import JSONResponse
 
 from . import account, anthropic_api, dashboard, gemini_api, login, openai_api, responses_api, update
 from .agy import SessionManager
+from .account_pool import AccountPool
 from .auth import panel_authorized, signin_router
 from .config import Config, load_config
 from .store import Store
@@ -69,6 +70,8 @@ def create_app(cfg: Config | None = None) -> FastAPI:
             bridge = getattr(app.state, "login_bridge", None)
             if bridge is not None:
                 bridge.shutdown()
+            for bridge in getattr(app.state, "account_login_bridges", {}).values():
+                bridge.shutdown()
             updater = getattr(app.state, "update_bridge", None)
             if updater is not None:
                 await updater.shutdown()
@@ -78,13 +81,15 @@ def create_app(cfg: Config | None = None) -> FastAPI:
     app = FastAPI(
         title="agy-proxy",
         default_response_class=JSONResponse,
-        version="0.0.13",
+        version="0.0.14",
         lifespan=lifespan,
         docs_url=None,
         redoc_url=None,
         openapi_url=None,
     )
     app.state.cfg = cfg
+    cfg.account_pool = AccountPool(cfg)
+    app.state.account_pool = cfg.account_pool
     app.state.sessions = SessionManager(cfg)
     app.state.store = Store(cfg)
     app.state.store.load()
@@ -172,7 +177,7 @@ def create_app(cfg: Config | None = None) -> FastAPI:
         return JSONResponse(
             {
                 "service": "agy-proxy",
-                "version": "0.0.13",
+                "version": "0.0.14",
                 "endpoints": [
                     "/ (dashboard)",
                     "/login (agy OAuth)",
@@ -193,9 +198,10 @@ def create_app(cfg: Config | None = None) -> FastAPI:
         return JSONResponse(
             {
                 "status": "ok",
-                "version": "0.0.13",
+                "version": "0.0.14",
                 "auth_required": cfg.auth_enabled,
-                "signed_in": account.credentials_present(),
+                "signed_in": (any(p.credentials.is_file() for p in cfg.account_pool.profiles())
+                              if cfg.account_pool.enabled else account.credentials_present()),
             }
         )
 

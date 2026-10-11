@@ -14,7 +14,7 @@ import uuid
 from pathlib import Path
 
 import pyte
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import HTMLResponse
 from .json_codec import JSONResponse
 from pydantic import BaseModel
@@ -23,6 +23,7 @@ from .agy import AgyError, _agy_argv, _child_env
 from .auth import panel_authorized
 from .config import Config
 from .account import credentials_path
+from .account_pool import AccountPoolError, NATIVE_TOKEN
 
 log = logging.getLogger("agy_proxy.login")
 router = APIRouter()
@@ -70,11 +71,14 @@ class LoginBridge:
         self._screen = pyte.Screen(120, 40)
         self._stream = pyte.Stream(self._screen)
 
+    def _credentials_path(self) -> Path:
+        return Path(self.cfg.account_home) / NATIVE_TOKEN if self.cfg.account_home else _creds_path()
+
     def start(self) -> dict:
         with self._lock:
             if self.state in _ACTIVE:
                 return self._snapshot()
-            if _creds_path().exists():
+            if self._credentials_ready():
                 self._set("done", "已检测到登录凭据，无需重复登录。")
                 return self._snapshot()
             self.state, self.url, self.message = (
@@ -323,11 +327,12 @@ class LoginBridge:
                         "凭据已保存。请处理 CLI 中剩余的确认提示，完成后点击「完成并关闭」。",
                     )
 
-    @staticmethod
-    def _credentials_ready() -> bool:
+    def _credentials_ready(self) -> bool:
         # Do not kill agy while it has opened but not finished writing the file.
         try:
-            return bool(json.loads(_creds_path().read_text(encoding="utf-8")))
+            data = json.loads(self._credentials_path().read_text(encoding="utf-8"))
+            token = data.get("token", data) if isinstance(data, dict) else {}
+            return isinstance(token, dict) and bool(token.get("access_token") or token.get("refresh_token"))
         except (OSError, ValueError):
             return False
 
@@ -371,6 +376,20 @@ class LoginSession(BaseModel):
 
 
 def _bridge(request: Request) -> LoginBridge:
+    pool = request.app.state.account_pool
+    account_id = request.query_params.get("account_id")
+    if pool.enabled or account_id not in (None, "current"):
+        try:
+            profile = pool.get(account_id) if account_id not in (None, "current") else pool.profiles()[0]
+            pool.prepare(profile)
+        except (AccountPoolError, IndexError):
+            raise HTTPException(404, "账号不存在或隔离状态无效") from None
+        bridges = getattr(request.app.state, "account_login_bridges", None)
+        if bridges is None:
+            bridges = request.app.state.account_login_bridges = {}
+        if profile.id not in bridges:
+            bridges[profile.id] = LoginBridge(profile.configured(request.app.state.cfg))
+        return bridges[profile.id]
     bridge = getattr(request.app.state, "login_bridge", None)
     if bridge is None:
         bridge = LoginBridge(request.app.state.cfg)

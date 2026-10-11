@@ -12,7 +12,7 @@ from jsonschema import Draft202012Validator
 from jsonschema.exceptions import SchemaError
 from referencing import Registry
 
-from .agy import AgyError, SessionManager
+from .agy import AgyError, SessionManager, account_failover
 from .runner import TurnEvent, TurnProfile, TurnResult, build_seed_prompt
 from .session_context import SessionContext, SessionIdentity
 
@@ -99,6 +99,7 @@ class ResponseFormat:
                           conversation_id=envelope.get("conversation_id"),
                           num_turns=envelope.get("num_turns"))
 
+    @account_failover
     async def run(self, mgr: SessionManager, *, system: str, history: list,
                   final_user: str | None, model: str | None, effort: str | None,
                   profile: TurnProfile, images=None, session_key: SessionIdentity | str | None = None) -> AsyncIterator[TurnEvent]:

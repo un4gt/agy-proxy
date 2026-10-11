@@ -80,7 +80,7 @@ def test_other_protocols_reject_disabled_models(client, path, body):
 def test_catalog_outage_does_not_bypass_disable(client, monkeypatch):
     disable(client)
 
-    async def unavailable(_cfg):
+    async def unavailable(_cfg, **_kwargs):
         raise agy.AgyError("catalog unavailable")
 
     monkeypatch.setattr(openai_api, "list_models", unavailable)
@@ -114,7 +114,7 @@ def test_unknown_family_cannot_be_disabled(client):
 def test_new_variants_inherit_disable_without_affecting_similar_names(client, monkeypatch):
     slugs = ["gemini-3.8-flash-low", "gemini-3.8-flash-high", "gemini-3.8-flash-lite-low"]
 
-    async def catalog(_cfg):
+    async def catalog(_cfg, **_kwargs):
         return slugs
 
     monkeypatch.setattr(dashboard, "list_models", catalog)

@@ -12,7 +12,7 @@ import time
 from dataclasses import dataclass, field
 from typing import AsyncIterator, Literal
 
-from .agy import AgyError, SessionManager
+from .agy import AgyError, SessionManager, account_failover
 from .auth import api_key_record
 from .config import Config
 from .session_context import SessionContext, SessionIdentity
@@ -168,6 +168,7 @@ async def record_dashboard_usage(
         log.warning("failed to record dashboard usage", exc_info=True)
 
 
+@account_failover
 async def run_turn(
     cfg: Config,
     mgr: SessionManager,

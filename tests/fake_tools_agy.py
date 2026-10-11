@@ -8,7 +8,7 @@ import sys
 import time
 from pathlib import Path
 
-from fake_agy import emit, main as plain_main, record_invocation, usage_of
+from fake_agy import emit, main as plain_main, record_invocation, usage_of, account_failure
 
 
 def main():
@@ -33,6 +33,8 @@ def main():
     cumulative_usage = {}
     for turn, line in enumerate(sys.stdin, 1):
         prompt = json.loads(line)["message"]["content"]
+        if account_failure(prompt):
+            continue
         if "SLOW_OUTPUT" in prompt:
             time.sleep(0.6)
 

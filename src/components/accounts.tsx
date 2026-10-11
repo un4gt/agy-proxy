@@ -6,6 +6,7 @@ import {
   RefreshCw,
   ShieldCheck,
   UserRound,
+  Plus,
 } from "lucide-react";
 import { api, date, message } from "@/lib/api";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -30,6 +31,8 @@ import {
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import { Field, FieldGroup, FieldLabel, FieldDescription } from "@/components/ui/field";
 
 type Account = {
   id: string;
@@ -38,6 +41,10 @@ type Account = {
   status: string;
   message: string;
   checked_at: number;
+  name?: string;
+  isolated?: boolean;
+  bound_clients?: number;
+  exhausted_scopes?: string[];
 };
 type AccountUsage = Account & {
   usage_error: string | null;
@@ -241,7 +248,65 @@ function UsageDetails({
   );
 }
 
-export function Accounts({ login }: { login: ReactNode }) {
+function AddAccount({ onAdded }: { onAdded: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  async function add(importCurrent = false) {
+    setBusy(true);
+    setError("");
+    try {
+      if (file && file.size > 256 * 1024) throw new Error("凭据文件不能超过 256 KiB");
+      let credentials;
+      if (file && !importCurrent) {
+        try { credentials = JSON.parse(await file.text()); }
+        catch { throw new Error("凭据文件不是有效的 JSON"); }
+      }
+      await api("/api/accounts", {
+        method: "POST",
+        body: JSON.stringify({ name: name.trim() || "Antigravity 账号", credentials, import_current: importCurrent }),
+      });
+      setOpen(false);
+      setName("");
+      setFile(null);
+      onAdded();
+    } catch (e) { setError(message(e)); }
+    finally { setBusy(false); }
+  }
+  return (
+    <Dialog open={open} onOpenChange={(value) => { if (!busy) { setOpen(value); setError(""); setFile(null); } }}>
+      <DialogTrigger asChild><Button><Plus data-icon="inline-start" />添加账号</Button></DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>添加隔离账号</DialogTitle>
+          <DialogDescription>导入凭据，或创建账号后在卡片中完成授权。每个账号独立保存登录状态。</DialogDescription>
+        </DialogHeader>
+        <form onSubmit={(event) => { event.preventDefault(); void add(); }} className="flex flex-col gap-5">
+          <FieldGroup>
+            <Field>
+              <FieldLabel htmlFor="account-name">账号名称</FieldLabel>
+              <Input id="account-name" value={name} maxLength={100} disabled={busy} onChange={(e) => setName(e.target.value)} placeholder="例如：主账号" />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="account-file">凭据文件（可选）</FieldLabel>
+              <Input id="account-file" type="file" disabled={busy} onChange={(e) => setFile(e.target.files?.[0] || null)} />
+              <FieldDescription>支持 agy 原生凭据或包含 token 的 agy-switch 账号 JSON。留空后可在 Linux / Docker 中交互登录。</FieldDescription>
+            </Field>
+          </FieldGroup>
+          {error && <Failure text={error} />}
+          <DialogFooter>
+            <Button type="button" variant="outline" disabled={busy} onClick={() => void add(true)}>导入本机当前凭据</Button>
+            <Button type="submit" disabled={busy}>{busy ? "正在保存…" : file ? "导入账号" : "创建账号"}</Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export function Accounts({ login }: { login: (accountId: string) => ReactNode }) {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState("");
@@ -274,9 +339,11 @@ export function Accounts({ login }: { login: ReactNode }) {
         <div className="flex flex-col gap-2">
           <h1 className="text-2xl font-semibold tracking-tight">账号详情</h1>
           <p className="text-sm text-muted-foreground">
-            查看账号连接状态与可用额度。
+            同一客户端持续使用已绑定账号，仅在额度耗尽后切换。
           </p>
         </div>
+        <div className="flex flex-wrap gap-2">
+        <AddAccount onAdded={() => setTick((v) => v + 1)} />
         <Button
           variant="outline"
           disabled={busy}
@@ -289,6 +356,7 @@ export function Accounts({ login }: { login: ReactNode }) {
           )}
           刷新状态
         </Button>
+        </div>
       </div>
       {error && <Failure text={error} />}
       <div
@@ -327,13 +395,18 @@ export function Accounts({ login }: { login: ReactNode }) {
                   </Badge>
                 </div>
                 <CardTitle className="break-all">
-                  {account.email || "Antigravity 账号"}
+                  {account.email || account.name || "Antigravity 账号"}
                 </CardTitle>
                 <CardDescription>
-                  {account.tier || "当前服务账号"}
+                  {[account.name, account.tier].filter(Boolean).join(" · ") || "当前服务账号"}
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col gap-3">
+                {account.isolated && <div className="flex flex-wrap gap-2">
+                  <Badge variant="outline">独立账号环境</Badge>
+                  {!!account.bound_clients && <Badge variant="secondary">已绑定请求</Badge>}
+                  {!!account.exhausted_scopes?.length && <Badge variant="destructive">部分模型额度耗尽</Badge>}
+                </div>}
                 <p className="flex items-start gap-2 text-sm text-muted-foreground">
                   <ShieldCheck className="mt-0.5 size-4 shrink-0" />
                   {account.message}
@@ -385,7 +458,7 @@ export function Accounts({ login }: { login: ReactNode }) {
                         按照 CLI 提示完成 Google 账号授权。
                       </DialogDescription>
                     </DialogHeader>
-                    {login}
+                    {login(account.id)}
                   </DialogContent>
                 </Dialog>
               </CardFooter>

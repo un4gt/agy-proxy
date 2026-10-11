@@ -64,6 +64,10 @@ class Config:
     agy_cwd: str | None = None
     prewarm_models: tuple[str, ...] = ()
     max_prompt_chars: int = 200_000
+    # Internal per-child context; never change the proxy's own process home.
+    account_home: str | None = field(default=None, repr=False)
+    account_id: str | None = None
+    account_pool: object | None = field(default=None, repr=False, compare=False)
 
     @property
     def auth_enabled(self) -> bool:

@@ -179,7 +179,7 @@ async def gemini_action(rest: str, request: Request) -> Response:
 
     profile = TurnProfile()
     try:
-        slugs = await list_models(cfg)
+        slugs = await list_models(cfg, owner=client_session_key(request, body).owner, model=model_requested)
     except AgyError:
         slugs = []
     profile.mark("models_done")
@@ -299,7 +299,7 @@ async def gemini_models(request: Request) -> Response:
     if not is_authorized(cfg, request):
         return gemini_error(401, "API key not valid", "UNAUTHENTICATED")
     try:
-        slugs = await list_models(cfg)
+        slugs = await list_models(cfg, owner=client_session_key(request).owner)
     except AgyError as exc:
         return gemini_error(exc.status_code, str(exc), _status_name(exc.status_code))
     models = [

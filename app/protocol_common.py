@@ -148,7 +148,7 @@ async def prepare(request: Request, body: dict, *, session_body: dict | None = N
     else:
         external = ExternalTools.from_body(execution)
     profile = TurnProfile()
-    slugs = await list_models(cfg)
+    slugs = await list_models(cfg, owner=session_key.owner, model=requested)
     model = _resolve_model(requested, cfg, slugs)
     require_enabled_model(request, requested, model)
     model, effort = apply_effort(model, effort, slugs)

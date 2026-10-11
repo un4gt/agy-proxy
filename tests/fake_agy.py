@@ -17,6 +17,7 @@ import os
 import sys
 import tempfile
 import time
+from pathlib import Path
 
 MODELS = [
     "gemini-3-pro-high",
@@ -70,12 +71,40 @@ def usage_of(prompt: str, response: str) -> dict:
 
 
 def respond(prompt: str, turn: int) -> str:
+    if prompt.strip() == "INSPECT_ACCOUNT":
+        root = Path.home()
+        token = json.loads((root / ".gemini/antigravity-cli/antigravity-oauth-token").read_text())
+        return json.dumps({"home": str(root), "token": token["token"]["access_token"],
+                           "installation_id": (root / ".gemini/antigravity-cli/installation_id").read_text(),
+                           "state": json.loads((root / ".gemini/state.json").read_text())})
     if prompt.strip() == "PING":
         return "pong"
     proxy = os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy") or ""
     marker = f" [proxy {proxy}]" if proxy else ""
     snippet = prompt[:150] + " ... " + prompt[-100:] if len(prompt) > 280 else prompt
     return f"[turn {turn}] you said: {snippet}{marker}"
+
+
+def account_failure(prompt: str) -> bool:
+    trace = os.environ.get("FAKE_AGY_ACCOUNT_LOG")
+    if trace:
+        with open(trace, "a", encoding="utf-8") as output:
+            output.write(json.dumps({"home": str(Path.home()), "prompt": prompt, "pid": os.getpid()}) + "\n")
+    path = Path.home() / "upstream-error.json"
+    if not trace or not path.is_file():
+        return False
+    failure = json.loads(path.read_text())
+    if failure.get("trigger", "") not in prompt:
+        return False
+    if failure.get("partial"):
+        emit({"event": "step_update", "step_update": {"step_type": "agent_response", "text_delta": "partial"}})
+    if failure.get("tool"):
+        emit({"event": "step_update", "step_update": {"step_type": "tool", "tool_name": "run_command"}})
+    if failure.get("stderr"):
+        print('AGY_ERROR: ' + json.dumps({"short_error": failure["message"]}), file=sys.stderr, flush=True)
+        raise SystemExit(3)
+    emit({"event": "result", "result": {"status": "ERROR", "error": failure["message"]}})
+    return True
 
 
 def main() -> None:
@@ -157,6 +186,8 @@ def main() -> None:
 
         turn += 1
         prompt = (event.get("message") or {}).get("content") or ""
+        if account_failure(prompt):
+            continue
 
         if args.model == "bad-ndjson-model":
             print('{invalid json', flush=True)

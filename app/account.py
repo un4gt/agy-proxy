@@ -22,6 +22,7 @@ from .json_codec import JSONResponse
 
 from .config import Config
 from .dashboard import _panel_denied
+from .account_pool import AccountPoolError, native_credentials
 
 router = APIRouter()
 _HOSTS = ("daily-cloudcode-pa.googleapis.com", "cloudcode-pa.googleapis.com")
@@ -131,8 +132,10 @@ def normalize_quota(raw: dict) -> list[dict]:
 
 
 class AccountService:
-    def __init__(self, cfg: Config):
+    def __init__(self, cfg: Config, path: Path | None = None, account_id: str = "current"):
         self.cfg = cfg
+        self.path = path
+        self.account_id = account_id
         self._lock = asyncio.Lock()
         self._cache: dict | None = None
         self._cached_at = 0.0
@@ -146,7 +149,7 @@ class AccountService:
             data = {}
             error = None
             try:
-                raw = credentials_path().read_bytes()
+                raw = (self.path or credentials_path()).read_bytes()
                 fingerprint = hashlib.sha256(raw).hexdigest()
                 data = json.loads(raw)
                 if not isinstance(data, dict) or not isinstance(
@@ -174,7 +177,7 @@ class AccountService:
             ):
                 return self._cache
             result = {
-                "id": "current",
+                "id": self.account_id,
                 "email": _email(data),
                 "tier": None,
                 "status": "error",
@@ -279,7 +282,7 @@ class AccountService:
     async def _query(self, client: httpx.AsyncClient, access: str) -> tuple[dict, dict]:
         headers = {
             "Authorization": f"Bearer {access}",
-            "User-Agent": "antigravity-agy-proxy/0.0.13",
+            "User-Agent": "antigravity-agy-proxy/0.0.14",
         }
         for host in _HOSTS:
             try:
@@ -326,10 +329,29 @@ class AccountService:
         return result
 
 
-def _service(request: Request) -> AccountService:
+def _service(request: Request, account_id: str = "current") -> AccountService:
+    if account_id != "current":
+        pool = request.app.state.account_pool
+        profile = pool.get(account_id)
+        services = getattr(request.app.state, "account_services", None)
+        if services is None:
+            services = request.app.state.account_services = {}
+        if account_id not in services:
+            services[account_id] = AccountService(request.app.state.cfg, profile.credentials, account_id)
+        return services[account_id]
     if not hasattr(request.app.state, "account_service"):
         request.app.state.account_service = AccountService(request.app.state.cfg)
     return request.app.state.account_service
+
+
+async def _snapshot(request: Request, account_id: str, refresh: bool) -> dict:
+    result = dict(await _service(request, account_id).snapshot(refresh))
+    if account_id != "current":
+        pool = request.app.state.account_pool
+        if result["status"] == "connected":
+            pool.observe_quota(account_id, result.get("usage"))
+        result.update(pool.public(account_id))
+    return result
 
 
 @router.get("/api/accounts")
@@ -337,9 +359,55 @@ async def accounts(request: Request, refresh: bool = False):
     denied = _panel_denied(request)
     if denied is not None:
         return denied
-    snapshot = await _service(request).snapshot(refresh)
-    summary = {k: v for k, v in snapshot.items() if k not in ("usage", "usage_error")}
-    return JSONResponse({"accounts": [summary]}, headers={"Cache-Control": "no-store"})
+    pool = request.app.state.account_pool
+    ids = [p.id for p in pool.profiles()] if pool.enabled else ["current"]
+    snapshots = await asyncio.gather(*[_snapshot(request, account_id, refresh) for account_id in ids])
+    summaries = [{k: v for k, v in snapshot.items() if k not in ("usage", "usage_error")} for snapshot in snapshots]
+    return JSONResponse({"accounts": summaries}, headers={"Cache-Control": "no-store"})
+
+
+@router.post("/api/accounts")
+async def add_account(request: Request):
+    denied = _panel_denied(request)
+    if denied is not None:
+        return denied
+    try:
+        raw = await request.body()
+        if len(raw) > 256 * 1024:
+            raise AccountPoolError("凭据文件超过 256 KiB。")
+        body = json.loads(raw)
+        if not isinstance(body, dict):
+            raise AccountPoolError("请求须为 JSON 对象。")
+        name = body.get("name", "Antigravity 账号")
+        if not isinstance(name, str) or not name.strip() or len(name) > 100:
+            raise AccountPoolError("账号名称无效。")
+        credentials = body.get("credentials")
+        if credentials is not None:
+            credentials = native_credentials(credentials)
+        machine_id = None
+        pool = request.app.state.account_pool
+        source = credentials_path()
+        native_source = source.name in ("antigravity-oauth-token", "jetski-standalone-oauth-token")
+        installation = Path.home() / ".gemini/antigravity-cli/installation_id"
+        if body.get("import_current"):
+            if not native_source:
+                return JSONResponse({"error": "未找到 agy 原生文件凭据；系统凭据库登录请先导出该账号，再通过凭据文件导入。"}, status_code=400)
+            credentials = json.loads(source.read_bytes())
+            if installation.is_file():
+                machine_id = installation.read_text(encoding="utf-8").strip()
+        elif not pool.enabled and native_source and source.is_file():
+            # Adding B must not replace the existing A. Snapshot A before the
+            # first managed account is added; native credential files stay put.
+            pool.create("原服务账号", json.loads(source.read_bytes()),
+                        machine_id=installation.read_text(encoding="utf-8").strip() if installation.is_file() else None)
+        elif not pool.enabled and request.app.state.sessions.live_count:
+            return JSONResponse({"error": "原服务仍有会话，但未找到可迁移的文件凭据。请先结束原会话，再优先导入原账号凭据。"}, status_code=409)
+        profile = pool.create(name, credentials, machine_id=machine_id)
+    except (OSError, ValueError, TypeError):
+        # Do not echo parsing errors or credential values back to the browser.
+        return JSONResponse({"error": "无法添加账号，请检查名称、凭据 JSON 或本机登录文件。"}, status_code=400)
+    return JSONResponse(request.app.state.account_pool.public(profile.id), status_code=201,
+                        headers={"Cache-Control": "no-store"})
 
 
 @router.get("/api/accounts/{account_id}/usage")
@@ -347,8 +415,13 @@ async def account_usage(account_id: str, request: Request, refresh: bool = False
     denied = _panel_denied(request)
     if denied is not None:
         return denied
-    if account_id != "current":
+    pool = request.app.state.account_pool
+    if account_id == "current" and pool.enabled:
+        return JSONResponse({"error": "请选择具体的隔离账号"}, status_code=404)
+    try:
+        snapshot = await _snapshot(request, account_id, refresh)
+    except AccountPoolError:
         return JSONResponse({"error": "账号不存在"}, status_code=404)
     return JSONResponse(
-        await _service(request).snapshot(refresh), headers={"Cache-Control": "no-store"}
+        snapshot, headers={"Cache-Control": "no-store"}
     )

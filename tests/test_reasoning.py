@@ -117,7 +117,7 @@ def test_invalid_or_unsupported_effort_is_400_before_any_turn(client, value, str
 
 
 def test_future_advertised_effort_is_selected(client, monkeypatch):
-    async def models(_cfg):
+    async def models(_cfg, **_kwargs):
         return ["future-model-low", "future-model-xhigh", "future-model-max"]
     monkeypatch.setattr(openai_api, "list_models", models)
     for effort in ("xhigh", "max"):
@@ -128,7 +128,7 @@ def test_future_advertised_effort_is_selected(client, monkeypatch):
 
 
 def test_catalog_failure_does_not_guess_effort(client, monkeypatch):
-    async def unavailable(_cfg):
+    async def unavailable(_cfg, **_kwargs):
         raise AgyError("model discovery unavailable", status_code=503)
     monkeypatch.setattr(openai_api, "list_models", unavailable)
     response = request(client, reasoning_effort="high")

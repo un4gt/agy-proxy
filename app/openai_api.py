@@ -193,7 +193,7 @@ async def chat_completions(request: Request) -> Response:
     requested_model = body.get("model") or ""
     profile = TurnProfile()
     try:
-        slugs = await list_models(cfg)
+        slugs = await list_models(cfg, owner=session_key.owner, model=requested_model)
     except AgyError as exc:
         if effort is not None:
             # A base name cannot be mapped safely when the model catalog is
@@ -368,7 +368,7 @@ async def models_list(request: Request) -> Response:
     if not is_authorized(cfg, request):
         return openai_error(401, "Invalid API key", "authentication_error", "invalid_api_key")
     try:
-        slugs = await list_models(cfg)
+        slugs = await list_models(cfg, owner=client_session_key(request).owner)
     except AgyError as exc:
         return openai_error(exc.status_code, str(exc), _err_type(exc.status_code))
     return JSONResponse(
@@ -386,7 +386,7 @@ async def model_detail(model_id: str, request: Request) -> Response:
     if not is_authorized(cfg, request):
         return openai_error(401, "Invalid API key", "authentication_error", "invalid_api_key")
     try:
-        slugs = await list_models(cfg)
+        slugs = await list_models(cfg, owner=client_session_key(request).owner, model=model_id)
     except AgyError as exc:
         return openai_error(exc.status_code, str(exc), _err_type(exc.status_code))
     try:

@@ -22,11 +22,14 @@ import sys
 import tempfile
 import time
 from collections import OrderedDict, deque
+from contextlib import aclosing
 from dataclasses import replace
+from functools import wraps
 from pathlib import Path
 from typing import Any
 
 from .config import Config
+from .account_pool import AccountPoolError, quota_exhausted
 
 log = logging.getLogger("agy_proxy.agy")
 
@@ -44,6 +47,47 @@ class AgyError(Exception):
         self.detail = detail
 
 
+class AgyQuotaError(AgyError):
+    def __init__(self, message: str, account_id: str, model: str | None, *, retry_safe: bool):
+        super().__init__(message, status_code=429)
+        self.account_id, self.model, self.retry_safe = account_id, model, retry_safe
+
+
+def account_failover(function):
+    """Restart a failed turn with full history only on proven quota exhaustion."""
+    @wraps(function)
+    async def wrapped(*args, **kwargs):
+        mgr = kwargs.get("mgr") or args[1]
+        attempted = set()
+        delivered = ready = False
+        while True:
+            try:
+                async with aclosing(function(*args, **kwargs)) as events:
+                    async for kind, value in events:
+                        if kind == "ready":
+                            if ready:
+                                continue
+                            ready = True
+                        else:
+                            delivered = True
+                        yield kind, value
+                return
+            except AgyQuotaError as exc:
+                pool = mgr.cfg.account_pool
+                if pool is None:
+                    raise
+                try:
+                    pool.mark_exhausted(exc.account_id, exc.model)
+                except AccountPoolError as failure:
+                    raise AgyError(str(failure), status_code=503) from None
+                if delivered or not exc.retry_safe or exc.account_id in attempted:
+                    raise
+                attempted.add(exc.account_id)
+                if len(attempted) >= len(pool.profiles()):
+                    raise
+    return wrapped
+
+
 def _agy_argv(cfg: Config, extra: list[str]) -> list[str]:
     # AGY_BIN may be a bare binary name or a full command line ("python fake.py").
     posix = os.name != "nt"
@@ -54,12 +98,32 @@ def _agy_argv(cfg: Config, extra: list[str]) -> list[str]:
 
 
 def _child_env(cfg: Config) -> dict[str, str] | None:
-    """Environment for agy child processes (adds the outbound proxy if set)."""
-    if not cfg.http_proxy:
+    """Isolate native state and force file credentials for managed accounts."""
+    if not cfg.http_proxy and not cfg.account_home:
         return None
     env = os.environ.copy()
-    for name in ("HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy"):
-        env[name] = cfg.http_proxy
+    if cfg.http_proxy:
+        for name in ("HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy"):
+            env[name] = cfg.http_proxy
+    if cfg.account_home:
+        root = Path(cfg.account_home)
+        for name in ("HOME", "USERPROFILE"):
+            env[name] = str(root)
+        for name, sub in {"APPDATA": "AppData/Roaming", "LOCALAPPDATA": "AppData/Local",
+                          "XDG_CONFIG_HOME": ".config", "XDG_DATA_HOME": ".local/share",
+                          "XDG_STATE_HOME": ".local/state", "XDG_CACHE_HOME": ".cache",
+                          "XDG_RUNTIME_DIR": ".run", "TMP": "tmp", "TEMP": "tmp", "TMPDIR": "tmp"}.items():
+            env[name] = str(root / sub)
+        # agy 1.3.3 otherwise prefers the shared OS keyring, even when a native
+        # token file exists. Its SSH mode explicitly uses file token storage.
+        env["SSH_CONNECTION"] = env.get("SSH_CONNECTION") or "127.0.0.1 1 127.0.0.1 22"
+        if os.name == "nt":
+            env["HOMEDRIVE"], env["HOMEPATH"] = os.path.splitdrive(str(root))
+        for name in list(env):
+            if name in {"AGY_ADC_AUTH", "GOOGLE_APPLICATION_CREDENTIALS", "GEMINI_API_KEY",
+                        "GOOGLE_API_KEY", "JETSKI_OAUTH_TOKEN", "JETSKI_TEST_GAIA_TOKEN",
+                        "ANTIGRAVITY_LS_ADDRESS", "ANTIGRAVITY_CSRF_TOKEN", "ANTIGRAVITY_PROJECT_ID"} or name.startswith("AGY_LLM_GATEWAY_"):
+                env.pop(name, None)
     return env
 
 
@@ -92,6 +156,8 @@ class AgySession:
         self.client_context = None
         self.client_history: tuple[str, ...] = ()
         self.input_offset = 0
+        self.account_id = cfg.account_id
+        self._turn_has_tools = False
 
     # -- lifecycle ---------------------------------------------------------
 
@@ -282,6 +348,7 @@ class AgySession:
                 raise AgyError("agy session is not running", status_code=502)
 
             self.images_seen.clear()
+            self._turn_has_tools = False
             if self._workspace is not None:
                 for marker in Path(self._workspace.name).glob("image-read-*.attempted"):
                     marker.unlink()
@@ -325,13 +392,17 @@ class AgySession:
                     except asyncio.TimeoutError:
                         pass
                     code = self.proc.returncode if self.proc else None
-                    raise AgyError(
+                    raise self._upstream_error(
                         f"agy process exited before replying (code {code}): " + self._stderr_text(),
-                        status_code=502,
                     )
                 kind = event["event"]
                 if kind in ("init", "step_update", "result") and not isinstance(event.get(kind), dict):
                     raise AgyError(f"agy {kind} payload must be an object")
+                if kind == "step_update":
+                    step = event[kind]
+                    if (step.get("step_type") in ("tool", "tool_call", "tool_use", "run_command")
+                            or step.get("tool_info") or step.get("tool_name")):
+                        self._turn_has_tools = True
                 if kind == "init":
                     if self.init_payload is not None:
                         raise AgyError("agy sent more than one init event")
@@ -349,8 +420,8 @@ class AgySession:
                              self.proc.pid, self.conversation_id, self.turns, status, time.monotonic() - started)
                     if status != "SUCCESS":
                         message = result.get("error")
-                        raise AgyError(message if isinstance(message, str) and message else
-                                       f"agy turn ended with status {status or 'missing'}")
+                        raise self._upstream_error(message if isinstance(message, str) and message else
+                                                   f"agy turn ended with status {status or 'missing'}")
                     if self.init_payload is None:
                         raise AgyError("agy returned SUCCESS without an init event")
                     conversation = result.get("conversation_id")
@@ -378,6 +449,11 @@ class AgySession:
 
     def _stderr_text(self) -> str:
         return " | ".join(list(self.stderr_tail)[-3:])
+
+    def _upstream_error(self, message: str) -> AgyError:
+        if self.account_id and quota_exhausted(message):
+            return AgyQuotaError(message, self.account_id, self.model, retry_safe=not self._turn_has_tools)
+        return AgyError(message)
 
     def check_tool_step(self, step: dict) -> None:
         """Keep native execution closed except verified attachment reads."""
@@ -414,10 +490,17 @@ class SessionManager:
                       output_schema: dict | None = None, attachments=(), context=None) -> AgySession:
         """Resume a compatible, unique continuation without requiring client headers."""
         async with self._lock:
+            pool = self.cfg.account_pool
+            try:
+                profile = pool.select((context.owner or context.key) if context else None, model) if pool else None
+            except AccountPoolError as exc:
+                raise AgyError(str(exc), status_code=503) from None
+            account_id = profile.id if profile else None
             if context is not None:
                 def compatible(session):
                     expected = session.client_history
                     return (session.alive and expected
+                            and session.account_id == account_id
                             and time.monotonic() - session.last_used <= self.cfg.session_ttl
                             and session.model == model and session.effort == effort
                             and session.output_schema == output_schema
@@ -465,6 +548,7 @@ class SessionManager:
                     del self._sessions[existing]
             for session in self._sessions:
                 if (not attachments and not session.attachments and session.alive and not session.busy and session.turns == 0
+                        and session.account_id == account_id
                         and session.model == model and session.effort == effort
                         and session.output_schema == output_schema):
                     session.leased = True
@@ -477,7 +561,7 @@ class SessionManager:
                 await victim.close()
                 del self._sessions[victim]
             session = await self._start(model=model, effort=effort,
-                                        output_schema=output_schema, attachments=attachments, leased=True)
+                                        output_schema=output_schema, attachments=attachments, leased=True, profile=profile)
             session.client_context = context
             if context is not None:
                 log.info("agy session bound owner_session=%s affinity=%s pid=%s", context.key[:12],
@@ -485,10 +569,17 @@ class SessionManager:
             return session
 
     async def _start(self, *, model: str | None, effort: str | None,
-                     output_schema: dict | None = None, attachments=(), leased: bool) -> AgySession:
+                     output_schema: dict | None = None, attachments=(), leased: bool, profile=None) -> AgySession:
         # Caller holds _lock through startup, so no other request/prewarm can
         # steal a slot while create_subprocess_exec yields to the event loop.
-        session = AgySession(self.cfg, model=model, effort=effort, output_schema=output_schema, attachments=attachments)
+        cfg = self.cfg
+        if profile is not None:
+            try:
+                self.cfg.account_pool.prepare(profile)
+            except (AccountPoolError, OSError) as exc:
+                raise AgyError(str(exc), status_code=503) from None
+            cfg = profile.configured(cfg)
+        session = AgySession(cfg, model=model, effort=effort, output_schema=output_schema, attachments=attachments)
         session.leased = leased
         self._sessions[session] = None
         try:
@@ -532,11 +623,16 @@ class SessionManager:
             for model in self.cfg.prewarm_models:
                 if len(self._sessions) >= self.cfg.max_sessions:
                     return
+                try:
+                    profile = self.cfg.account_pool.select(model=model) if self.cfg.account_pool else None
+                except AgyError:
+                    continue
                 if any(s.alive and not s.busy and s.turns == 0 and s.model == model
+                       and s.account_id == (profile.id if profile else None)
                        and s.effort is None and s.output_schema is None for s in self._sessions):
                     continue
                 try:
-                    await self._start(model=model, effort=None, leased=False)
+                    await self._start(model=model, effort=None, leased=False, profile=profile)
                     log.info("prewarmed agy session for model=%s", model)
                 except AgyError as exc:
                     log.warning("prewarm failed for model=%s: %s", model, exc)
@@ -573,9 +669,9 @@ class SessionManager:
 # -- model discovery --------------------------------------------------------
 
 # cache keyed by agy_bin: (timestamp, slugs, error message or None)
-_model_caches: dict[str, tuple[float, list[str], str | None]] = {}
+_model_caches: dict[object, tuple[float, list[str], str | None]] = {}
 # cache keyed by agy_bin: slug -> human label from `agy models`
-_model_labels: dict[str, dict[str, str]] = {}
+_model_labels: dict[object, dict[str, str]] = {}
 _MODELS_NEGATIVE_TTL = 60.0
 
 _ANSI_RE = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]")
@@ -593,15 +689,18 @@ def _clean_stream_error(raw: bytes) -> str:
     return " ".join(lines[-2:])[:300]
 
 
-async def list_models(cfg: Config, *, force: bool = False) -> list[str]:
+async def list_models(cfg: Config, *, force: bool = False, owner: str | None = None,
+                      model: str | None = None) -> list[str]:
     """Run `agy models` and cache the slug list (failures cached briefly).
 
     A previously-successful list past its TTL is served immediately while a
     refresh runs in the background, so the periodic `agy models` round-trip
     never blocks chat requests.
     """
+    cfg = _discovery_config(cfg, owner=owner, model=model)
+    cache_key = _models_key(cfg)
     now = time.monotonic()
-    cached = _model_caches.get(cfg.agy_bin)
+    cached = _model_caches.get(cache_key)
     if cached is not None and not force:
         ts, slugs, error = cached
         if now - ts < (cfg.models_ttl if error is None else _MODELS_NEGATIVE_TTL):
@@ -645,29 +744,47 @@ async def list_models(cfg: Config, *, force: bool = False) -> list[str]:
     if not slugs:
         message = _clean_stream_error(err) or f"`agy models` returned no models (rc={proc.returncode})"
         log.warning("`agy models` failed (rc=%s): %.300s", proc.returncode, message)
-        _model_caches[cfg.agy_bin] = (now, [], message)
+        _model_caches[cache_key] = (now, [], message)
         raise AgyError(message, status_code=502)
 
-    _model_caches[cfg.agy_bin] = (now, slugs, None)
-    _model_labels[cfg.agy_bin] = labels
+    _model_caches[cache_key] = (now, slugs, None)
+    _model_labels[cache_key] = labels
     return slugs
 
 
 def model_labels(cfg: Config) -> dict[str, str]:
     """slug -> human label, empty until a successful `agy models` run."""
-    return dict(_model_labels.get(cfg.agy_bin, {}))
+    return dict(_model_labels.get(_models_key(_discovery_config(cfg)), {}))
+
+
+def _discovery_config(cfg: Config, *, owner: str | None = None, model: str | None = None) -> Config:
+    if cfg.account_pool and cfg.account_pool.enabled and not cfg.account_home:
+        try:
+            profile = cfg.account_pool.select(owner, cfg.model_map.get(model, model) or cfg.default_model)
+            cfg.account_pool.prepare(profile)
+        except (AccountPoolError, OSError) as exc:
+            raise AgyError(str(exc), status_code=503) from None
+        return profile.configured(cfg)
+    return cfg
+
+
+def _models_key(cfg: Config):
+    return (cfg.agy_bin, cfg.account_home) if cfg.account_home else cfg.agy_bin
 
 
 def _spawn_models_refresh(cfg: Config) -> None:
     """Refresh the models cache in the background (deduplicated per config)."""
-    for task in getattr(_spawn_models_refresh, "_tasks", []):
-        if not task.done():
-            return
+    tasks = getattr(_spawn_models_refresh, "_tasks", {})
+    key = _models_key(cfg)
+    if key in tasks and not tasks[key].done():
+        return
     try:
         task = asyncio.create_task(list_models(cfg, force=True))
     except RuntimeError:  # no running loop (shouldn't happen inside a request)
         return
-    _spawn_models_refresh._tasks = [task]
+    tasks = {k: t for k, t in tasks.items() if not t.done()}
+    tasks[key] = task
+    _spawn_models_refresh._tasks = tasks
 
 
 def resolve_model(requested: str | None, cfg: Config, slugs: list[str]) -> str | None:
