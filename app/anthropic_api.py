@@ -11,6 +11,7 @@ from fastapi.responses import StreamingResponse
 from .json_codec import JSONResponse
 
 from .agy import AgyError
+from .protocol_adapters import ADAPTERS
 from .images import ImageInput, normalize_content
 from .auth import is_authorized
 from .openai_api import _read_json
@@ -161,28 +162,29 @@ def message_events(message):
 async def messages(request: Request):
     request_id = "req_" + uuid.uuid4().hex
     if not is_authorized(request.app.state.cfg, request):
-        return error_response(401, "Invalid API key", request_id)
+        return ADAPTERS["messages"].error(401, "Invalid API key", request_id)
     try:
         body = await _read_json(request)
         if body is None:
             raise invalid("Request body must be a JSON object")
-        chat = translate(body)
+        chat = ADAPTERS["messages"].parse(body)
         prepared = await prepare(request, chat, session_body=body)
     except AgyError as exc:
-        return error_response(exc.status_code, str(exc), request_id)
+        return ADAPTERS["messages"].error(exc.status_code, f"{exc} [{exc.code}; {request.state.agy_request_id}]", request_id)
     message_id = "msg_" + uuid.uuid4().hex
 
     def finish(result):
-        return message_result(result, body["model"], message_id, body.get("stop_sequences", []))
+        return ADAPTERS["messages"].encode(result, body["model"], message_id, body.get("stop_sequences", []))
 
     if not chat["stream"]:
         try:
             return JSONResponse(finish(await prepared.collect()), headers={"request-id": request_id,
                                 "X-Agy-Profile": prepared.profile.summary()})
         except AgyError as exc:
-            return error_response(exc.status_code, str(exc), request_id)
+            return ADAPTERS["messages"].error(exc.status_code, f"{exc} [{exc.code}; {request.state.agy_request_id}]", request_id)
 
     async def stream():
+        request.state.start_event_sent = True
         yield encode({"type": "message_start", "message": {
             "id": message_id, "type": "message", "role": "assistant", "model": body["model"],
             "content": [], "stop_reason": None, "stop_sequence": None,
@@ -194,10 +196,11 @@ async def messages(request: Request):
                     if result is None:
                         yield encode({"type": "ping"})
                     else:
-                        for event in message_events(finish(result)):
+                        request.state.business_delivered = True
+                        for event in ADAPTERS["messages"].stream(finish(result)):
                             yield encode(event)
         except AgyError as exc:
-            error = json.loads(error_response(exc.status_code, str(exc), request_id).body)
+            error = json.loads(ADAPTERS["messages"].error(exc.status_code, f"{exc} [{exc.code}; {request.state.agy_request_id}]", request_id).body)
             yield encode(error)
 
     return StreamingResponse(stream(), media_type="text/event-stream", headers={"request-id": request_id,
@@ -208,13 +211,13 @@ async def messages(request: Request):
 async def count_tokens(request: Request):
     request_id = "req_" + uuid.uuid4().hex
     if not is_authorized(request.app.state.cfg, request):
-        return error_response(401, "Invalid API key", request_id)
+        return ADAPTERS["messages"].error(401, "Invalid API key", request_id)
     try:
         body = await _read_json(request)
         if body is None:
             raise invalid("Request body must be a JSON object")
         chat = translate(body, count_only=True)
-        images = await ImageInput.prepare(chat, request.app.state.cfg.max_prompt_chars)
+        images = await ImageInput.prepare(chat)
         serialized = json.dumps_text({"messages": images.messages, "tools": chat["tools"]})
         # agy exposes usage only after generation, not a tokenizer. Mark this
         # explicitly as an estimate; never use it for accounting or quota.
@@ -225,4 +228,4 @@ async def count_tokens(request: Request):
         return JSONResponse({"input_tokens": estimated}, headers={"request-id": request_id,
                             "X-Agy-Token-Count": "estimate"})
     except AgyError as exc:
-        return error_response(exc.status_code, str(exc), request_id)
+        return ADAPTERS["messages"].error(exc.status_code, f"{exc} [{exc.code}; {request.state.agy_request_id}]", request_id)

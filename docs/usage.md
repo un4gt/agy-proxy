@@ -2,6 +2,8 @@
 
 [返回 README](../README.md) · [环境变量](configuration.md)
 
+四种推理 API 统一使用受限客户端模式。未声明工具时只能回答；声明的工具由客户端执行。Chat/Gemini 的普通文本 SSE 也先发送开始标记／心跳，等待完整结果校验后再交付正文，不再转发 CLI 的逐 token 输出。协议能力、恢复行为及升级变化见[统一协议兼容层](unified-client-protocols.md)。
+
 先在控制台创建 API Key，并从 `GET /v1/models` 获取实际可用的模型 ID。示例中的模型名需按你的账号替换；curl 示例使用 Bash：
 
 ```bash
@@ -78,7 +80,7 @@ result = client.chat.completions.create(
 
 ## Pi coding agent 与客户端工具
 
-带 `tools`、`tool_choice` 或工具历史的 OpenAI 请求自动进入**客户端工具模式**（工具参数对象协议已实测 agy 1.2.16；下方 Pi 配置适用于 0.87.1）：
+所有 OpenAI 请求均进入**受限客户端模式**；声明 `tools` 时启用客户端工具桥接（下方 Pi 配置适用于 0.87.1）：
 
 1. 代理为 agy 创建独立临时工作目录，选择仅允许 `finish` 的自定义主 Agent；`PreToolUse` hook 拒绝其余服务端工具。`finish` 只负责提交结构化结果，必须保留。
 2. 把客户端工具定义和消息交给 agy，使用 `--json-schema` 获取调用请求。内部工具参数直接使用 JSON 对象，校验工具名、参数 schema 和 `tool_choice` 后，由代理序列化成 OpenAI `tool_calls[].function.arguments` 字符串，结束原因为 `tool_calls`。这样避免让模型在 JSON 字符串里再次编码参数，减少文件路径、代码中的引号与换行造成的解析错误。
@@ -176,6 +178,7 @@ Pi、Codex、Claude Code、OpenCode 在客户端发现和加载 `SKILL.md`，代
 客户端若已有会话字段，优先使用它；兼容 `X-Agy-Session-Id`、`X-Session-Id`、`session-id`、`session_id`、`X-Session-Affinity`、`X-Opencode-Session`，以及 `metadata.session_id`、Codex 的 `client_metadata.session_id/thread_id`、Claude Code 的 JSON `metadata.user_id.session_id`。同时出现多个标识时必须一致；普通用户名、请求 ID、API Key 或相同首条 prompt 不会把多个会话合并。
 
 - 客户端仍提交完整历史，代理核对已确认历史后只向同一 stdin 发送新消息。工具回传包含上一条 assistant 的调用 ID，便于关联真实工具结果
+- 客户端工具声明和固定桥接规则在 AGY 会话启动时写入私有 agent 配置一次；后续回合不再将其追加到用户消息或对话历史。工具定义、选择或并行约束变化时创建新会话并加载新配置；修复重建也为新进程加载一次原配置
 - 单个 PID 同时只执行一轮；显式同会话重叠请求或自动识别出的在途重复续接返回 409，容量全部忙时返回 429
 - 没有会话字段也会保留成功进程。唯一匹配到连续历史才复用；首次请求、匹配歧义或并发分支各自建立独立进程
 - 历史重试/编辑/截断、模型/effort/工具/schema/附件变化、进程失败或 TTL/LRU 回收时，使用完整历史建立新进程。失败和取消的半轮状态不会交给下一次请求
@@ -186,8 +189,8 @@ Pi、Codex、Claude Code、OpenCode 在客户端发现和加载 `SKILL.md`，代
 ## 已知限制
 
 - **仍经过 agy 的 Agent 层**：客户端工具模式使用自定义主 Agent 限制工具；系统上下文、模型行为与原生模型 API 不完全相同。
-- **Gemini 原生接口**的图片 `inlineData` 与 function calling 暂未实现；图片请使用上述三个 `/v1` 接口。工具/MCP 返回图片暂不支持；`temperature` 等采样参数仍不透传。
-- 普通纯文本且不带工具字段或历史的 Chat 请求仍可能让 agy 使用其服务端工具（受自身权限策略约束）；需要限制时显式发送 `tools: []`。带图片的请求自动使用受限执行上下文，只允许读取本次图片附件和提交结果。
+- **Gemini 原生接口**支持图片 `inlineData` 与客户端 function calling，能力边界见[统一协议说明](unified-client-protocols.md)。工具/MCP 返回图片暂不支持；`temperature` 等采样参数仍不透传。
+- 四种推理协议的普通文本和工具请求都使用受限执行上下文；只允许提交结果，含图片时额外允许读取会话图片白名单。
 - 首次请求或会话重建有进程冷启动开销；连续历史可复用已有进程，预热可减少冷启动等待
 - 需遵守 Antigravity 服务条款与账号额度，本代理不做额外限流（按 key 只做统计，不做配额；可用 `MAX_SESSIONS` 约束并发）
 - 控制台用量只保留**最近 500 条**请求明细（更早的只进总量与按模型聚合），且首次启动前的历史不可追溯

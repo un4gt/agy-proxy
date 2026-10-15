@@ -211,7 +211,7 @@ class ImageInput:
         self.messages = []
 
     @classmethod
-    async def prepare(cls, body, max_prompt_chars):
+    async def prepare(cls, body):
         """Snapshot URLs into request-owned pixels and render positional markers.
 
         body retains canonical data URLs for bounded Responses history. This
@@ -243,9 +243,6 @@ class ImageInput:
                     pieces.append(f"\n[Image attachment image_{len(result.attachments)}; detail={ref['detail']}]\n")
                 copy["content"] = "".join(pieces)
             result.messages.append(copy)
-        execution = dict(body, messages=result.messages)
-        if len(json.dumps_text(execution)) > max_prompt_chars:
-            raise invalid("Prompt and tool definitions too long for this proxy", 413)
         return result
 
     def instruction(self, session):

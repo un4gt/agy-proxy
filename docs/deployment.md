@@ -4,7 +4,7 @@
 
 ## Docker 部署
 
-首次启动见 [README 快速开始](../README.md#docker-快速开始)。镜像发布于 `docker.io/tumuer/agy-proxy`，当前 Compose 固定为 `v0.0.15`，镜像构建会校验 agy CLI 为 `1.3.3`。运行环境无需安装 Python、Node 或 agy。
+首次启动见 [README 快速开始](../README.md#docker-快速开始)。镜像发布于 `docker.io/tumuer/agy-proxy`，当前 Compose 固定为 `v0.0.16`，镜像构建会校验 agy CLI 为 `1.3.5`。运行环境无需安装 Python、Node 或 agy。
 
 服务器上保留 `docker-compose.yml` 和由 `.env.example` 创建的 `.env` 即可部署。至少设置 `AGY_PROXY_PASSWORD`；需要代理访问 Google 时配置 `AGY_PROXY_HTTP_PROXY`。查看启动状态：
 
@@ -25,7 +25,7 @@ docker run -d --name agy-proxy -p 8317:8317 \
   -v agy-data:/root/.agy-proxy \
   --add-host=host.docker.internal:host-gateway \
   --restart unless-stopped \
-  tumuer/agy-proxy:v0.0.15
+  tumuer/agy-proxy:v0.0.16
 ```
 
 Compose 默认给卷名加项目名前缀，如 `agy-proxy_agy-data`；上例的 `agy-data` 是另一个卷。从 Compose 切换部署方式时，应显式复用原卷。

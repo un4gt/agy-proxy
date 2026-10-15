@@ -7,9 +7,10 @@ from starlette.responses import StreamingResponse
 
 class TurnStreamingResponse(StreamingResponse):
     """Also release a preflight lease if sending the HTTP headers fails."""
-    def __init__(self, *args, turn, **kwargs):
+    def __init__(self, *args, turn, on_close=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.turn = turn
+        self.on_close = on_close
 
     async def __call__(self, scope, receive, send):
         try:
@@ -17,6 +18,8 @@ class TurnStreamingResponse(StreamingResponse):
         finally:
             with CancelScope(shield=True):
                 await self.turn.aclose()
+                if self.on_close:
+                    await self.on_close()
 
 
 async def heartbeat_events(events, interval: float):

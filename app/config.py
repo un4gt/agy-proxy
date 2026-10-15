@@ -50,6 +50,7 @@ class Config:
     max_sessions: int = 8
     session_ttl: float = 1800.0
     turn_timeout: float = 600.0
+    recovery_attempts: int = 1
     # CLI stdout omits thinking/upstream activity; silence is not a stalled run.
     idle_timeout: float = 0.0
     stream_heartbeat: float = 10.0
@@ -63,7 +64,6 @@ class Config:
     oauth_client_secret: str | None = field(default=None, repr=False)
     agy_cwd: str | None = None
     prewarm_models: tuple[str, ...] = ()
-    max_prompt_chars: int = 200_000
     # Internal per-child context; never change the proxy's own process home.
     account_home: str | None = field(default=None, repr=False)
     account_id: str | None = None
@@ -117,6 +117,7 @@ def load_config() -> Config:
         max_sessions=max(1, _int("MAX_SESSIONS", 8)),
         session_ttl=max(30.0, _float("SESSION_TTL", 1800.0)),
         turn_timeout=max(5.0, _float("TURN_TIMEOUT", 600.0)),
+        recovery_attempts=min(1, max(0, _int("RECOVERY_ATTEMPTS", 1))),
         idle_timeout=max(0.0, _float("IDLE_TIMEOUT", 0.0)),
         stream_heartbeat=max(0.1, _float("STREAM_HEARTBEAT", 10.0)),
         models_ttl=max(10.0, _float("MODELS_TTL", 300.0)),

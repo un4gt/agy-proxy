@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from app import agy, create_app, openai_api
+from app import agy, create_app, protocol_common
 from app.agy import AgyError
 from app.config import Config
 
@@ -119,7 +119,7 @@ def test_invalid_or_unsupported_effort_is_400_before_any_turn(client, value, str
 def test_future_advertised_effort_is_selected(client, monkeypatch):
     async def models(_cfg, **_kwargs):
         return ["future-model-low", "future-model-xhigh", "future-model-max"]
-    monkeypatch.setattr(openai_api, "list_models", models)
+    monkeypatch.setattr(protocol_common, "list_models", models)
     for effort in ("xhigh", "max"):
         response = request(client, model="future-model", reasoning_effort=effort)
         assert response.status_code == 200, response.text
@@ -130,7 +130,7 @@ def test_future_advertised_effort_is_selected(client, monkeypatch):
 def test_catalog_failure_does_not_guess_effort(client, monkeypatch):
     async def unavailable(_cfg, **_kwargs):
         raise AgyError("model discovery unavailable", status_code=503)
-    monkeypatch.setattr(openai_api, "list_models", unavailable)
+    monkeypatch.setattr(protocol_common, "list_models", unavailable)
     response = request(client, reasoning_effort="high")
     assert response.status_code == 503
     assert not client.trace.exists()

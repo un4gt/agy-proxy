@@ -6,7 +6,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # Install the Antigravity CLI (agy)
-ARG AGY_VERSION=1.3.3
+ARG AGY_VERSION=1.3.5
 RUN curl -fsSL https://antigravity.google/cli/install.sh | bash \
     && test "$(/root/.local/bin/agy --version)" = "$AGY_VERSION"
 
@@ -29,7 +29,7 @@ ENV AGY_PROXY_CWD=/workspace-empty \
 
 LABEL org.opencontainers.image.title="agy-proxy" \
       org.opencontainers.image.description="Gemini / OpenAI compatible reverse proxy backed by the Antigravity CLI (agy) stream-json duplex mode" \
-      org.opencontainers.image.version="0.0.15" \
+      org.opencontainers.image.version="0.0.16" \
       org.opencontainers.image.source="https://github.com/un4gt/agy-proxy"
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \

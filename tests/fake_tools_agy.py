@@ -24,7 +24,10 @@ def main():
     assert Path(".agents/hooks.json").exists()
     image_paths = json.loads(Path("image-permissions.json").read_text()) if Path("image-permissions.json").exists() else []
     expected_tools = "tools: [finish, view_file]" if image_paths else "tools: [finish]"
-    assert expected_tools in Path(".agents/agents/proxy-external.md").read_text()
+    agent = Path(".agents/agents/proxy-external.md").read_text(encoding="utf-8")
+    assert expected_tools in agent
+    config = (json.JSONDecoder().raw_decode(agent.split("[Client tool configuration]\n", 1)[1])[0]
+              if "[Client tool configuration]\n" in agent else None)
     schema = json.loads(Path(args.json_schema).read_text())
     conv = f"fake-tools-{os.getpid()}"
     emit({"event": "init", "conversation_id": conv,
@@ -33,9 +36,20 @@ def main():
     cumulative_usage = {}
     for turn, line in enumerate(sys.stdin, 1):
         prompt = json.loads(line)["message"]["content"]
+        # Model a persistent agent configuration, not declarations supplied by
+        # each user turn. Regressions must fail even if a duplicate is identical.
+        assert "[Client tool configuration]\n" not in prompt
+        trace = os.environ.get("FAKE_AGY_TURNS_FILE")
+        if trace:
+            with open(trace, "a", encoding="utf-8") as output:
+                output.write(json.dumps({"pid": os.getpid(), "turn": turn, "prompt": prompt,
+                                         "agent": agent if turn == 1 else None}) + "\n")
         if account_failure(prompt):
             continue
         if "SLOW_OUTPUT" in prompt:
+            time.sleep(0.6)
+        repair = "[Validation feedback]" in prompt
+        if repair and "SLOW_REPAIR" in prompt:
             time.sleep(0.6)
 
         def emit_result(envelope):
@@ -50,7 +64,7 @@ def main():
                 emit({"event": "step_update", "step_update": {"step_type": "tool", "state": "DONE",
                       "tool_info": {"name": "view_file", "parameters": {
                           "AbsolutePath": "/etc/passwd" if "WRONG_IMAGE_READ" in prompt else image_path}}}})
-        if "[Client tool configuration]" not in prompt:
+        if config is None:
             output = {"name": "Budi", "age": 20}
             if "BAD_TYPE" in prompt:
                 output["age"] = "twenty"
@@ -74,10 +88,9 @@ def main():
                     envelope["structured_output"] = {"json": "not JSON"}
             emit_result(envelope)
             continue
-        config = json.loads(prompt.split("[Client tool configuration]\n")[1].split("\n\n")[0])
         fresh = "[Complete client conversation]" in prompt
-        incoming = json.loads(prompt.split("conversation]\n" if fresh else "[New client messages]\n")[1]
-                              .split("\n\n[Bridge output contract]\n")[0])
+        incoming = json.JSONDecoder().raw_decode(prompt.split(
+            "[Complete client conversation]\n" if fresh else "[New client messages]\n", 1)[1])[0]
         history = incoming if fresh else history + incoming
         last = incoming[-1]
         text = last["content"]
@@ -95,6 +108,10 @@ def main():
             calls = [{"name": name, "arguments": {"path": "client.txt"}}]
             if text.startswith("ECHO_ARGUMENTS\n"):
                 calls[0]["arguments"] = json.loads(text.split("\n", 1)[1])
+            if text.startswith("REPAIR_ARGS\n"):
+                calls[0]["arguments"] = json.loads(text.split("\n", 1)[1]) if repair else {}
+            if text.startswith("SLOW_REPAIR"):
+                calls[0]["arguments"] = {"path": "fixed.txt"} if repair else {}
             if text == "MULTI":
                 calls.append({"name": name, "arguments": {"path": "second.txt"}})
             if text == "BAD_ARGS":

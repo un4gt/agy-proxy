@@ -3,7 +3,7 @@
 # pull 只更新镜像，不更新服务器上的此文件；旧部署升级前应确认两个数据卷均已挂载。
 services:
   agy-proxy:
-    image: tumuer/agy-proxy:v0.0.15   # 建议生产固定版本，如 tumuer/agy-proxy:v0.0.15
+    image: tumuer/agy-proxy:v0.0.16   # 建议生产固定版本，如 tumuer/agy-proxy:v0.0.16
     # 本地开发想直接从源码构建时，注释掉上面的 image，取消下一行注释：
     # build: .
     container_name: agy-proxy
@@ -13,6 +13,7 @@ services:
       - agy-gemini:/root/.gemini     # agy OAuth 凭据，一次登录长期有效
       - agy-data:/root/.agy-proxy    # 整体持久化 API Key、用量、隔离账号凭据/固定身份和绑定
     environment:
+      AGY_PROXY_BIN: ${AGY_PROXY_BIN:-agy}
       AGY_PROXY_PASSWORD: ${AGY_PROXY_PASSWORD:-}
       AGY_PROXY_API_KEYS: ${AGY_PROXY_API_KEYS:-}
       AGY_PROXY_OAUTH_CLIENT_ID: ${AGY_PROXY_OAUTH_CLIENT_ID:-}
@@ -21,6 +22,7 @@ services:
       AGY_PROXY_PREWARM_MODELS: ${AGY_PROXY_PREWARM_MODELS:-}
       AGY_PROXY_MAX_SESSIONS: ${AGY_PROXY_MAX_SESSIONS:-8}
       AGY_PROXY_TURN_TIMEOUT: ${AGY_PROXY_TURN_TIMEOUT:-600}
+      AGY_PROXY_RECOVERY_ATTEMPTS: ${AGY_PROXY_RECOVERY_ATTEMPTS:-1}
       AGY_PROXY_IDLE_TIMEOUT: ${AGY_PROXY_IDLE_TIMEOUT:-0}
       AGY_PROXY_STREAM_HEARTBEAT: ${AGY_PROXY_STREAM_HEARTBEAT:-10}
       AGY_PROXY_SESSION_TTL: ${AGY_PROXY_SESSION_TTL:-1800}
@@ -28,6 +30,11 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"   # Linux 下容器访问宿主机代理用
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
 
 volumes:
   agy-gemini:

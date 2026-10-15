@@ -350,6 +350,7 @@ def test_error_model(client):
 
 
 def test_crash_model(client):
+    client.app.state.cfg.model_map["crash-model"] = "crash-model"
     r = client.post(
         "/v1beta/models/crash-model:generateContent",
         json={"contents": [{"role": "user", "parts": [{"text": "PING"}]}]},

@@ -78,6 +78,7 @@ class UsageRecord:
     status: str
     duration_ms: float
     usage: dict[str, int]
+    diagnostics: dict = field(default_factory=dict)
 
     def public(self) -> dict:
         return {
@@ -87,6 +88,7 @@ class UsageRecord:
             "status": self.status,
             "duration_ms": self.duration_ms,
             "usage": self.usage,
+            **self.diagnostics,
         }
 
 
@@ -169,6 +171,8 @@ class Store:
                         status=str(item.get("status") or "SUCCESS"),
                         duration_ms=float(item.get("duration_ms") or 0),
                         usage=normalize_usage(item.get("usage")),
+                        diagnostics={k: item[k] for k in ("request_id", "protocol", "attempts", "repair_attempts",
+                                                         "error_code", "usage_complete") if k in item},
                     )
                 )
             except (KeyError, TypeError, ValueError):
@@ -295,6 +299,7 @@ class Store:
         usage: dict | None,
         duration_ms: float = 0.0,
         status: str = "SUCCESS",
+        diagnostics: dict | None = None,
     ) -> None:
         normalized = normalize_usage(usage)
         record = UsageRecord(
@@ -305,6 +310,7 @@ class Store:
             status=status,
             duration_ms=round(float(duration_ms or 0.0), 1),
             usage=normalized,
+            diagnostics=diagnostics or {},
         )
         async with self._lock:
             self.requests.append(record)

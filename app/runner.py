@@ -15,6 +15,8 @@ from typing import AsyncIterator, Literal
 from .agy import AgyError, SessionManager, account_failover
 from .auth import api_key_record
 from .config import Config
+from .contracts import ExecutionOutcome
+from .latency import LatencyTrace
 from .session_context import SessionContext, SessionIdentity
 
 log = logging.getLogger("agy_proxy.runner")
@@ -28,6 +30,27 @@ class TurnProfile:
     model: str | None = None
     new_session: bool = False
     marks: dict[str, float] = field(default_factory=dict)
+    request_id: str = ""
+    protocol: str = "internal"
+    attempts: int = 0
+    repair_attempts: int = 0
+    error_code: str | None = None
+    usage_complete: bool = True
+    usage: dict = field(default_factory=dict)
+    trace: LatencyTrace = field(default_factory=LatencyTrace)
+
+    def add_usage(self, usage):
+        if not isinstance(usage, dict) or not usage:
+            self.usage_complete = False
+            return
+        for name, value in usage.items():
+            if type(value) is int and value >= 0:
+                self.usage[name] = self.usage.get(name, 0) + value
+
+    def diagnostics(self):
+        return {"request_id": self.request_id, "protocol": self.protocol,
+                "attempts": self.attempts, "repair_attempts": self.repair_attempts,
+                "error_code": self.error_code, "usage_complete": self.usage_complete}
 
     def mark(self, name: str) -> None:
         self.marks.setdefault(name, time.monotonic() - self.started)
@@ -37,6 +60,13 @@ class TurnProfile:
         return (time.monotonic() - self.started) * 1000
 
     def summary(self) -> str:
+        if self.trace.spans:
+            phases = ("models_lookup", "session_acquire", "cli_turn", "validate", "recovery_restart")
+            totals = {name: sum(s.duration_ms or 0 for s in self.trace.spans if s.name == name) for name in phases}
+            return " ".join([f"model={self.model}", f"new_session={int(self.new_session)}",
+                             *(f"{name}={value:.1f}ms" for name, value in totals.items()),
+                             f"total={self.total_ms:.0f}ms"])
+
         def ms(a: str, b: str | None = None) -> float:
             start = self.marks.get(a)
             if start is None:
@@ -55,7 +85,7 @@ class TurnProfile:
             f"models_lookup={ms('models_done', 'turn_start'):.0f}ms",
             f"acquire={ms('turn_start', 'session_ready'):.0f}ms",
             f"agy_boot={ms('session_ready', 'init_seen'):.0f}ms",
-            f"think={ms('init_seen' if self.marks.get('init_seen') is not None else 'session_ready', 'first_delta'):.0f}ms",
+            f"upstream_wait={ms('init_seen' if self.marks.get('init_seen') is not None else 'session_ready', 'first_delta'):.0f}ms",
             f"stream={ms('first_delta', 'result'):.0f}ms",
             f"total={self.total_ms:.0f}ms",
         ]
@@ -68,13 +98,13 @@ TurnEvent = tuple[Literal["ready", "delta", "result"], object]
 
 
 @dataclass
-class TurnResult:
-    text: str
-    usage: dict = field(default_factory=dict)
+class TurnResult(ExecutionOutcome):
     status: str = "SUCCESS"
-    conversation_id: str | None = None
-    num_turns: int | None = None
-    tool_calls: list[dict] = field(default_factory=list)
+
+    @property
+    def tool_calls(self):
+        return [{"id": call.id, "type": "function", "function": {
+            "name": call.name, "arguments": json.dumps_text(call.arguments, sort_keys=True)}} for call in self.calls]
 
     @property
     def finish_reason(self) -> str:
@@ -155,14 +185,20 @@ async def record_dashboard_usage(
     store = getattr(state, "store", None)
     if store is None:
         return
+    if request is not None:
+        if getattr(request.state, "usage_recorded", False):
+            return
+        request.state.usage_recorded = True
     try:
         key = api_key_record(cfg, request) if request is not None else None
+        profile = getattr(request.state, "turn_profile", None) if request is not None else None
         await store.record_usage(
             model=model or "agy-default",
             key=key,
-            usage=usage,
+            usage=profile.usage if profile is not None else usage,
             duration_ms=duration_ms,
             status=status,
+            diagnostics=profile.diagnostics() if profile is not None else None,
         )
     except Exception:  # pragma: no cover - accounting must not break chat
         log.warning("failed to record dashboard usage", exc_info=True)

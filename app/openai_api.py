@@ -17,13 +17,12 @@ from .json_codec import JSONResponse
 
 from .agy import AgyError, list_models, resolve_model
 from .model_policy import enabled_models, require_enabled_model
-from .auth import api_key_record, is_authorized, openai_error
+from .auth import is_authorized, openai_error
 from .config import Config
-from .reasoning import ReasoningError, apply_effort, model_families, parse_effort
-from .external_tools import ExternalTools
-from .images import ImageInput, MAX_REQUEST_BYTES
-from .runner import TurnProfile, TurnResult, chain_events, record_dashboard_usage, run_turn
-from .structured_output import ResponseFormat
+from .protocol_adapters import ADAPTERS
+from .reasoning import ReasoningError, model_families
+from .images import MAX_REQUEST_BYTES
+from .runner import chain_events, record_dashboard_usage
 from .session_context import client_session_key
 from .streaming import TurnStreamingResponse, heartbeat_events
 
@@ -135,7 +134,7 @@ def _resolve_model(requested: str, cfg: Config, slugs: list[str]) -> str | None:
         return "auto"
     resolved = resolve_model(requested, replace(cfg, default_model=None), slugs)
     if slugs and resolved not in slugs:
-        raise AgyError(f"Model '{requested}' not found", status_code=404)
+        raise AgyError(f"Model '{requested}' not found", status_code=404, code="model_not_found")
     return resolved
 
 
@@ -143,90 +142,30 @@ def _resolve_model(requested: str, cfg: Config, slugs: list[str]) -> str | None:
 async def chat_completions(request: Request) -> Response:
     cfg = request.app.state.cfg
     if not is_authorized(cfg, request):
-        return openai_error(401, "Invalid API key", "authentication_error", "invalid_api_key")
+        return ADAPTERS["chat"].error(401, "Invalid API key", "authentication_error", "invalid_api_key")
 
     try:
         body = await _read_json(request)
     except AgyError as exc:
-        return openai_error(exc.status_code, str(exc), _err_type(exc.status_code))
+        return ADAPTERS["chat"].error(exc.status_code, str(exc), _err_type(exc.status_code), exc.code)
     if body is None:
-        return openai_error(400, "Request body is not valid JSON", "invalid_request_error")
+        return ADAPTERS["chat"].error(400, "Request body is not valid JSON", "invalid_request_error")
 
+    from .protocol_common import prepare
     try:
-        effort = parse_effort(body.get("reasoning_effort"))
-    except ReasoningError as exc:
-        return openai_error(400, str(exc), "invalid_request_error", "invalid_value", param="reasoning_effort")
-    if effort is None and cfg.effort:
-        try:
-            effort = parse_effort(cfg.effort)
-        except ReasoningError:
-            return openai_error(500, "AGY_PROXY_EFFORT is invalid", "server_error")
-
-    try:
-        session_key = client_session_key(request, body)
-        if body.get("model") is not None and not isinstance(body["model"], str):
-            raise AgyError("model must be a string", status_code=400)
-        messages = body.get("messages")
-        if not isinstance(messages, list) or not messages or not all(isinstance(m, dict) for m in messages):
-            raise AgyError("messages must be a nonempty array of objects", status_code=400)
-        if "stream" in body and not isinstance(body["stream"], bool):
-            raise AgyError("stream must be a boolean", status_code=400)
         options = body.get("stream_options")
         if options is not None and (not isinstance(options, dict) or (
             "include_usage" in options and not isinstance(options["include_usage"], bool)
         )):
             raise AgyError("stream_options.include_usage must be a boolean", status_code=400)
-        response_format = ResponseFormat.from_body(body)
-        images = await ImageInput.prepare(body, cfg.max_prompt_chars)
-        execution = dict(body, messages=images.messages)
-        if images.attachments and not response_format:
-            execution.setdefault("tools", [])
-        external = ExternalTools.from_body(execution)
+        prepared = await prepare(request, ADAPTERS["chat"].parse(body), session_body=body)
     except AgyError as exc:
-        return openai_error(exc.status_code, str(exc), _err_type(exc.status_code))
-    system, history, final_user = _parse_messages(execution)
-    if not history and final_user is None:
-        return openai_error(400, "Request has no messages with text content", "invalid_request_error")
-    if len(system) + sum(len(t) for _, t in history) + len(final_user or "") > cfg.max_prompt_chars:
-        return openai_error(413, "Prompt too long for this proxy", "invalid_request_error")
-
-    requested_model = body.get("model") or ""
-    profile = TurnProfile()
-    try:
-        slugs = await list_models(cfg, owner=session_key.owner, model=requested_model)
-    except AgyError as exc:
-        if effort is not None:
-            # A base name cannot be mapped safely when the model catalog is
-            # unavailable. Do not silently select a different effort/model.
-            return openai_error(exc.status_code, str(exc), _err_type(exc.status_code))
-        slugs = []
-    profile.mark("models_done")
-    try:
-        model = _resolve_model(requested_model, cfg, slugs)
-        require_enabled_model(request, requested_model, model)
-    except AgyError as exc:
-        return openai_error(404, str(exc), "invalid_request_error", "model_not_found", param="model")
-    try:
-        model, effort = apply_effort(model, effort, slugs)
-    except ReasoningError as exc:
-        return openai_error(400, str(exc), "invalid_request_error", "unsupported_value", param="reasoning_effort")
-
+        return ADAPTERS["chat"].error(exc.status_code, str(exc), _err_type(exc.status_code), exc.code,
+                            param="reasoning_effort" if isinstance(exc, ReasoningError) else
+                            "model" if exc.code == "model_not_found" else None)
+    turn, profile, model = prepared.turn, prepared.profile, prepared.model
     state = request.app.state
-    if external:
-        turn = external.run(state.sessions, model=model, effort=effort, profile=profile, images=images,
-                            session_key=session_key)
-    elif response_format:
-        turn = response_format.run(
-            state.sessions,
-            system=system, history=history, final_user=final_user,
-            model=model, effort=effort, profile=profile, images=images, session_key=session_key,
-        )
-    else:
-        turn = run_turn(
-            cfg, state.sessions,
-            system=system, history=history, final_user=final_user,
-            model=model, effort=effort, profile=profile, session_key=session_key,
-        )
+    requested_model = body.get("model") or ""
 
     completion_id = "chatcmpl-" + uuid.uuid4().hex[:24]
     created = int(time.time())
@@ -243,28 +182,10 @@ async def chat_completions(request: Request) -> Response:
         }
 
     if not stream:
-        result: TurnResult | None = None
-        t0 = time.monotonic()
         try:
-            async for kind, payload in turn:
-                if kind == "result":
-                    result = payload
-            if result is None:
-                raise AgyError("agy ended without a result")
+            result = await prepared.collect()
         except AgyError as exc:
-            await record_dashboard_usage(
-                cfg, request.app.state, model=model, request=request, usage=None,
-                duration_ms=(time.monotonic() - t0) * 1000, status=f"ERROR {exc.status_code}",
-            )
-            return openai_error(exc.status_code, str(exc), _err_type(exc.status_code))
-        finally:
-            with CancelScope(shield=True):
-                await turn.aclose()
-        await record_dashboard_usage(
-            cfg, request.app.state, model=model, request=request,
-            usage=result.usage if result else None,
-            duration_ms=(time.monotonic() - t0) * 1000,
-        )
+            return ADAPTERS["chat"].error(exc.status_code, str(exc), _err_type(exc.status_code), exc.code)
         text = result.text if result else ""
         usage = _usage(result.usage) if result else {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
         return JSONResponse(
@@ -274,7 +195,7 @@ async def chat_completions(request: Request) -> Response:
                 "created": created,
                 "model": requested_model or model or "agy-default",
                 "choices": [
-                    {"index": 0, "message": result.message() if result else {"role": "assistant", "content": text},
+                    {"index": 0, "message": ADAPTERS["chat"].encode(result) if result else {"role": "assistant", "content": text},
                      "finish_reason": result.finish_reason if result else "stop"}
                 ],
                 "usage": usage,
@@ -291,7 +212,7 @@ async def chat_completions(request: Request) -> Response:
     except AgyError as exc:
         await record_dashboard_usage(cfg, state, model=model, request=request, usage=None,
                                      duration_ms=profile.total_ms, status=f"ERROR {exc.status_code}")
-        return openai_error(exc.status_code, str(exc), _err_type(exc.status_code))
+        return ADAPTERS["chat"].error(exc.status_code, str(exc), _err_type(exc.status_code), exc.code)
 
     async def sse() -> AsyncIterator[bytes]:
         def encode(obj: dict) -> bytes:
@@ -310,6 +231,7 @@ async def chat_completions(request: Request) -> Response:
             )
 
         try:
+            request.state.start_event_sent = True
             yield encode(chunk({"role": "assistant", "content": ""}, None))
             async with aclosing(heartbeat_events(chain_events([] if first is None else [first], turn),
                                                  cfg.stream_heartbeat)) as pending:
@@ -319,35 +241,25 @@ async def chat_completions(request: Request) -> Response:
                         continue
                     kind, payload = event
                     if kind == "delta":
+                        request.state.business_delivered = True
                         yield encode(chunk({"content": payload}, None))
                     elif kind == "result":
+                        request.state.business_delivered = True
                         await account(payload.usage, "SUCCESS")
-                        if payload.tool_calls:
-                            yield encode(chunk({"tool_calls": [dict(call, index=i)
-                                                               for i, call in enumerate(payload.tool_calls)]}, None))
-                        yield encode(chunk({}, payload.finish_reason))
-                        if include_usage:
-                            yield encode(
-                                {
-                                    "id": completion_id,
-                                    "object": "chat.completion.chunk",
-                                    "created": created,
-                                    "model": requested_model or model or "agy-default",
-                                    "choices": [],
-                                    "usage": _usage(payload.usage),
-                                }
-                            )
+                        for value in ADAPTERS["chat"].stream(payload, chunk=chunk, include_usage=include_usage):
+                            yield encode(value)
                         yield b"data: [DONE]\n\n"
                         yield b": agy-profile " + profile.summary().encode("utf-8") + b"\n\n"
                         return
         except AgyError as exc:
             await account(None, f"ERROR {exc.status_code}")
-            yield encode({"error": {"message": str(exc), "type": _err_type(exc.status_code)}})
-            yield b"data: [DONE]\n\n"
+            yield encode({"error": {"message": str(exc), "type": _err_type(exc.status_code), "code": exc.code}})
         except BaseException:
             # Client disconnect / cancellation: keep the session's accounting
             # honest so the dashboard shows aborted turns too.
-            await account(None, "ABORTED")
+            with CancelScope(shield=True):
+                await turn.aclose()
+                await account(None, "ABORTED")
             raise
         finally:
             # Closing the HTTP iterator must release the upstream lease even
@@ -357,6 +269,8 @@ async def chat_completions(request: Request) -> Response:
 
     return TurnStreamingResponse(
         sse(), turn=turn,
+        on_close=lambda: record_dashboard_usage(cfg, state, model=model, request=request, usage=None,
+                                                duration_ms=profile.total_ms, status="ABORTED"),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
@@ -370,7 +284,7 @@ async def models_list(request: Request) -> Response:
     try:
         slugs = await list_models(cfg, owner=client_session_key(request).owner)
     except AgyError as exc:
-        return openai_error(exc.status_code, str(exc), _err_type(exc.status_code))
+        return openai_error(exc.status_code, str(exc), _err_type(exc.status_code), exc.code)
     return JSONResponse(
         {
             "object": "list",
@@ -388,7 +302,7 @@ async def model_detail(model_id: str, request: Request) -> Response:
     try:
         slugs = await list_models(cfg, owner=client_session_key(request).owner, model=model_id)
     except AgyError as exc:
-        return openai_error(exc.status_code, str(exc), _err_type(exc.status_code))
+        return openai_error(exc.status_code, str(exc), _err_type(exc.status_code), exc.code)
     try:
         resolved = _resolve_model(model_id, cfg, slugs)
         require_enabled_model(request, model_id, resolved)

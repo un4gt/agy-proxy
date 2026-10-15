@@ -29,6 +29,12 @@ MODELS = [
 
 
 def emit(obj: dict) -> None:
+    if "--json-schema" in sys.argv and obj.get("event") == "init":
+        obj["init"].setdefault("agent", "proxy-external")
+    if (Path(sys.argv[0]).name == "fake_agy.py" and "--json-schema" in sys.argv and obj.get("event") == "result"
+            and obj["result"].get("status") == "SUCCESS" and "structured_output" not in obj["result"]):
+        obj["result"]["structured_output"] = {"kind": "message", "content": obj["result"].get("response", ""),
+                                              "tool_calls": []}
     sys.stdout.write(json.dumps(obj, ensure_ascii=False) + "\n")
     sys.stdout.flush()
 
@@ -189,6 +195,13 @@ def main() -> None:
         if account_failure(prompt):
             continue
 
+        if prompt.startswith(("[Complete client conversation]\n", "[New client messages]\n")):
+            fresh = "[Complete client conversation]" in prompt
+            incoming = json.JSONDecoder().raw_decode(prompt.split(
+                "[Complete client conversation]\n" if fresh else "[New client messages]\n", 1)[1])[0]
+            prompt = (incoming[0]["content"] if len(incoming) == 1 else
+                      "\n\n".join(f"[{m['role']}]\n{m['content']}" for m in incoming))
+
         if args.model == "bad-ndjson-model":
             print('{invalid json', flush=True)
             raise SystemExit(1)
@@ -232,7 +245,7 @@ def main() -> None:
                     "step_index": 0,
                     "state": "DONE",
                     "step_type": "tool",
-                    "tool_name": "run_command",
+                    "tool_name": "finish" if "--json-schema" in sys.argv else "run_command",
                     "text_delta": "ls -la",
                 },
             }

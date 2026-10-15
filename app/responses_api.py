@@ -14,8 +14,9 @@ from fastapi.responses import StreamingResponse
 from .json_codec import JSONResponse
 
 from .agy import AgyError
+from .protocol_adapters import ADAPTERS
 from .images import normalize_content
-from .auth import extract_key, is_authorized, openai_error
+from .auth import extract_key, is_authorized
 from .openai_api import _err_type, _read_json
 from .protocol_common import array, boolean, encode, invalid, obj, optional_obj, prepare, string, text_content
 
@@ -225,7 +226,7 @@ def completed_events(response):
 @router.post("/v1/responses")
 async def responses(request: Request):
     if not is_authorized(request.app.state.cfg, request):
-        return openai_error(401, "Invalid API key", "authentication_error", "invalid_api_key")
+        return ADAPTERS["responses"].error(401, "Invalid API key", "authentication_error", "invalid_api_key")
     try:
         body = await _read_json(request)
         if body is None:
@@ -242,10 +243,10 @@ async def responses(request: Request):
         previous = []
         if body.get("previous_response_id") is not None:
             _, previous = cache.get(owner, string(body["previous_response_id"], "previous_response_id"))
-        chat, specs = translate(body, previous)
+        chat, specs = ADAPTERS["responses"].parse(body, previous=previous)
         prepared = await prepare(request, chat, session_body=body)
     except AgyError as exc:
-        return openai_error(exc.status_code, str(exc), _err_type(exc.status_code))
+        return ADAPTERS["responses"].error(exc.status_code, str(exc), _err_type(exc.status_code), exc.code)
 
     response = {"id": "resp_" + uuid.uuid4().hex, "object": "response", "created_at": int(time.time()),
                 "status": "in_progress", "error": None, "incomplete_details": None,
@@ -260,7 +261,7 @@ async def responses(request: Request):
         usage = result.usage
         inp, out = usage.get("input_tokens", 0), usage.get("output_tokens", 0)
         thinking = usage.get("thinking_tokens", 0) or 0
-        final = dict(response, status="completed", completed_at=int(time.time()), output=output_items(result, specs),
+        final = dict(response, status="completed", completed_at=int(time.time()), output=ADAPTERS["responses"].encode(result, specs),
                      usage={"input_tokens": inp, "output_tokens": out,
                             "total_tokens": usage.get("total_tokens") or inp + out,
                             "input_tokens_details": {"cached_tokens": usage.get("cache_read_tokens", 0)},
@@ -279,7 +280,7 @@ async def responses(request: Request):
         try:
             return JSONResponse(finish(await prepared.collect()), headers={"X-Agy-Profile": prepared.profile.summary()})
         except AgyError as exc:
-            return openai_error(exc.status_code, str(exc), _err_type(exc.status_code))
+            return ADAPTERS["responses"].error(exc.status_code, str(exc), _err_type(exc.status_code), exc.code)
 
     async def stream():
         sequence = 0
@@ -290,6 +291,7 @@ async def responses(request: Request):
             sequence += 1
             return data
 
+        request.state.start_event_sent = True
         yield event({"type": "response.created", "response": response})
         yield event({"type": "response.in_progress", "response": response})
         try:
@@ -298,10 +300,11 @@ async def responses(request: Request):
                     if result is None:
                         yield b": keep-alive\n\n"
                     else:
-                        for value in completed_events(finish(result)):
+                        request.state.business_delivered = True
+                        for value in ADAPTERS["responses"].stream(finish(result)):
                             yield event(value)
         except AgyError as exc:
-            error = {"code": _err_type(exc.status_code), "message": str(exc)}
+            error = {"code": exc.code, "message": str(exc)}
             yield event({"type": "response.failed", "response": dict(response, status="failed", error=error)})
 
     return StreamingResponse(stream(), media_type="text/event-stream",
@@ -311,22 +314,22 @@ async def responses(request: Request):
 @router.get("/v1/responses/{response_id}")
 async def retrieve_response(response_id: str, request: Request):
     if not is_authorized(request.app.state.cfg, request):
-        return openai_error(401, "Invalid API key", "authentication_error")
+        return ADAPTERS["responses"].error(401, "Invalid API key", "authentication_error")
     try:
         cache, owner = cache_for(request)
         response, _ = cache.get(owner, response_id)
         return JSONResponse(response)
     except AgyError as exc:
-        return openai_error(exc.status_code, str(exc), _err_type(exc.status_code))
+        return ADAPTERS["responses"].error(exc.status_code, str(exc), _err_type(exc.status_code), exc.code)
 
 
 @router.delete("/v1/responses/{response_id}")
 async def delete_response(response_id: str, request: Request):
     if not is_authorized(request.app.state.cfg, request):
-        return openai_error(401, "Invalid API key", "authentication_error")
+        return ADAPTERS["responses"].error(401, "Invalid API key", "authentication_error")
     try:
         cache, owner = cache_for(request)
         cache.delete(owner, response_id)
         return JSONResponse({"id": response_id, "object": "response.deleted", "deleted": True})
     except AgyError as exc:
-        return openai_error(exc.status_code, str(exc), _err_type(exc.status_code))
+        return ADAPTERS["responses"].error(exc.status_code, str(exc), _err_type(exc.status_code), exc.code)
