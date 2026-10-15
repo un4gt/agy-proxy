@@ -6,6 +6,8 @@
 
 首次启动见 [README 快速开始](../README.md#docker-快速开始)。镜像发布于 `docker.io/tumuer/agy-proxy`，当前 Compose 固定为 `v0.0.16`，镜像构建会校验 agy CLI 为 `1.3.5`。运行环境无需安装 Python、Node 或 agy。
 
+升级前阅读 [v0.0.16 发布说明](releases/v0.0.16.md)，其中说明了普通 Chat/Gemini 的受限执行、流式交付变化和已知 AGY 原生兼容边界。
+
 服务器上保留 `docker-compose.yml` 和由 `.env.example` 创建的 `.env` 即可部署。至少设置 `AGY_PROXY_PASSWORD`；需要代理访问 Google 时配置 `AGY_PROXY_HTTP_PROXY`。查看启动状态：
 
 ```bash

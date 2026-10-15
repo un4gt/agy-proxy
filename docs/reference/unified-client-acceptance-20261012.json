@@ -1,0 +1,384 @@
+{
+  "date": "2026-10-12",
+  "agy_version": "1.3.3",
+  "model": "gemini-3.8-flash-low",
+  "production_changed": false,
+  "unit_tests": {
+    "passed": 482,
+    "skipped": 2
+  },
+  "clients": {
+    "pi": "1.1.0",
+    "codex": "0.161.0",
+    "claude": "2.1.295",
+    "opencode": "1.4.6",
+    "dsh": "not installed; not tested"
+  },
+  "api_and_clients": [
+    {
+      "protocol": "chat",
+      "stream": false,
+      "passed": true,
+      "seconds": 33.0,
+      "request_id": "agy_3fbc6b8da41b4b8082e75c83c1c72555"
+    },
+    {
+      "protocol": "chat",
+      "stream": true,
+      "passed": true,
+      "seconds": 19.5,
+      "request_id": "agy_aeca2e349ef849deabc68f05924c0421"
+    },
+    {
+      "protocol": "responses",
+      "stream": false,
+      "passed": true,
+      "seconds": 54.6,
+      "request_id": "agy_33d36dbc54d34720bb1662a203c4c3ea"
+    },
+    {
+      "protocol": "responses",
+      "stream": true,
+      "passed": true,
+      "seconds": 22.7,
+      "request_id": "agy_1c9004d043934a63ad7f15243d7e7fed"
+    },
+    {
+      "protocol": "messages",
+      "stream": false,
+      "passed": true,
+      "seconds": 25.6,
+      "request_id": "agy_7c39711011d04c2f8ad0a60b991fce7f"
+    },
+    {
+      "protocol": "messages",
+      "stream": true,
+      "passed": true,
+      "seconds": 18.9,
+      "request_id": "agy_9ae146559d104dd0a1800bbf5161368a"
+    },
+    {
+      "protocol": "gemini",
+      "stream": false,
+      "passed": true,
+      "seconds": 28.2,
+      "request_id": "agy_8beed38a2cfd45b09932dcf06196d410"
+    },
+    {
+      "protocol": "gemini",
+      "stream": true,
+      "passed": true,
+      "seconds": 22.3,
+      "request_id": "agy_7347eb930c914dad83198f77d67dcb1b"
+    },
+    {
+      "protocol": "chat",
+      "image": true,
+      "status": 200,
+      "passed": true
+    },
+    {
+      "protocol": "responses",
+      "image": true,
+      "status": 200,
+      "passed": true
+    },
+    {
+      "protocol": "messages",
+      "image": true,
+      "status": 200,
+      "passed": true
+    },
+    {
+      "protocol": "gemini",
+      "image": true,
+      "status": 200,
+      "passed": true
+    },
+    {
+      "client": "pi",
+      "phase": 1,
+      "exit_code": 0,
+      "tests_pass": true,
+      "tests_unchanged": true,
+      "marker": true,
+      "passed": true
+    },
+    {
+      "client": "pi",
+      "phase": 2,
+      "exit_code": 0,
+      "tests_pass": true,
+      "tests_unchanged": true,
+      "marker": true,
+      "passed": true
+    },
+    {
+      "client": "codex",
+      "phase": 1,
+      "exit_code": 0,
+      "tests_pass": true,
+      "tests_unchanged": true,
+      "marker": true,
+      "passed": true
+    },
+    {
+      "client": "codex",
+      "phase": 2,
+      "exit_code": 0,
+      "tests_pass": true,
+      "tests_unchanged": true,
+      "marker": true,
+      "passed": true
+    },
+    {
+      "client": "claude",
+      "phase": 1,
+      "exit_code": 0,
+      "tests_pass": true,
+      "tests_unchanged": true,
+      "marker": true,
+      "passed": true
+    },
+    {
+      "client": "claude",
+      "phase": 2,
+      "exit_code": 0,
+      "tests_pass": true,
+      "tests_unchanged": true,
+      "marker": true,
+      "passed": true
+    },
+    {
+      "client": "opencode",
+      "phase": 1,
+      "exit_code": 0,
+      "tests_pass": true,
+      "tests_unchanged": true,
+      "marker": true,
+      "passed": true
+    },
+    {
+      "client": "opencode",
+      "phase": 2,
+      "exit_code": 0,
+      "tests_pass": true,
+      "tests_unchanged": true,
+      "marker": true,
+      "passed": true
+    }
+  ],
+  "tool_execution_audit": [
+    {
+      "client": "pi",
+      "phase": 1,
+      "tool_calls": [
+        "mcp__filesystem__read_text_file",
+        "mcp__filesystem__read_text_file",
+        "mcp__filesystem__write_file",
+        "bash"
+      ],
+      "tool_errors": [],
+      "filesystem_read": true,
+      "filesystem_write": true,
+      "client_ran_tests": true,
+      "session_marker_present": true,
+      "passed": true
+    },
+    {
+      "client": "pi",
+      "phase": 2,
+      "tool_calls": [
+        "bash"
+      ],
+      "tool_errors": [],
+      "filesystem_read": false,
+      "filesystem_write": false,
+      "client_ran_tests": true,
+      "session_marker_present": true,
+      "passed": true
+    },
+    {
+      "client": "codex",
+      "phase": 1,
+      "tool_calls": [
+        "codex/list_mcp_resources",
+        "filesystem/read_multiple_files",
+        "filesystem/write_file",
+        "shell"
+      ],
+      "tool_errors": [],
+      "filesystem_read": true,
+      "filesystem_write": true,
+      "client_ran_tests": true,
+      "session_marker_present": true,
+      "passed": true
+    },
+    {
+      "client": "codex",
+      "phase": 2,
+      "tool_calls": [
+        "shell"
+      ],
+      "tool_errors": [],
+      "filesystem_read": false,
+      "filesystem_write": false,
+      "client_ran_tests": true,
+      "session_marker_present": true,
+      "passed": true
+    },
+    {
+      "client": "claude",
+      "phase": 1,
+      "tool_calls": [
+        "mcp__filesystem__read_text_file",
+        "mcp__filesystem__read_text_file",
+        "mcp__filesystem__write_file",
+        "Bash"
+      ],
+      "tool_errors": [],
+      "filesystem_read": true,
+      "filesystem_write": true,
+      "client_ran_tests": true,
+      "session_marker_present": true,
+      "passed": true
+    },
+    {
+      "client": "claude",
+      "phase": 2,
+      "tool_calls": [
+        "Bash"
+      ],
+      "tool_errors": [],
+      "filesystem_read": false,
+      "filesystem_write": false,
+      "client_ran_tests": true,
+      "session_marker_present": true,
+      "passed": true
+    },
+    {
+      "client": "opencode",
+      "phase": 1,
+      "tool_calls": [
+        "filesystem_read_multiple_files",
+        "filesystem_write_file",
+        "bash"
+      ],
+      "tool_errors": [],
+      "filesystem_read": true,
+      "filesystem_write": true,
+      "client_ran_tests": true,
+      "session_marker_present": true,
+      "passed": true
+    },
+    {
+      "client": "opencode",
+      "phase": 2,
+      "tool_calls": [
+        "bash"
+      ],
+      "tool_errors": [],
+      "filesystem_read": false,
+      "filesystem_write": false,
+      "client_ran_tests": true,
+      "session_marker_present": true,
+      "passed": true
+    }
+  ],
+  "stream_failure": [
+    {
+      "protocol": "chat",
+      "stream_failure": true,
+      "passed": true,
+      "request_id": "agy_a7e61a0e975b4fa7aa4859c5feea3dcf"
+    },
+    {
+      "protocol": "responses",
+      "stream_failure": true,
+      "passed": true,
+      "request_id": "agy_e9b5d232099547229e1699bcf958d609"
+    },
+    {
+      "protocol": "messages",
+      "stream_failure": true,
+      "passed": true,
+      "request_id": "agy_c4e24f88faa04ef286fd45ad837c794d"
+    },
+    {
+      "protocol": "gemini",
+      "stream_failure": true,
+      "passed": true,
+      "request_id": "agy_f8bd9a80ddc54bbc93f7c2ec3b680d3f"
+    }
+  ],
+  "failure_diagnostics": [
+    {
+      "request_id": "agy_a7e61a0e975b4fa7aa4859c5feea3dcf",
+      "protocol": "chat",
+      "attempts": 2,
+      "repair_attempts": 1,
+      "error_code": "tool_arguments_invalid",
+      "usage_complete": true,
+      "usage": {
+        "input_tokens": 5932,
+        "output_tokens": 156,
+        "thinking_tokens": 0,
+        "cache_read_tokens": 0,
+        "total_tokens": 6088
+      },
+      "status": "ERROR 502"
+    },
+    {
+      "request_id": "agy_e9b5d232099547229e1699bcf958d609",
+      "protocol": "responses",
+      "attempts": 2,
+      "repair_attempts": 1,
+      "error_code": "tool_arguments_invalid",
+      "usage_complete": true,
+      "usage": {
+        "input_tokens": 5937,
+        "output_tokens": 5276,
+        "thinking_tokens": 5163,
+        "cache_read_tokens": 0,
+        "total_tokens": 11213
+      },
+      "status": "ERROR 502"
+    },
+    {
+      "request_id": "agy_c4e24f88faa04ef286fd45ad837c794d",
+      "protocol": "messages",
+      "attempts": 2,
+      "repair_attempts": 1,
+      "error_code": "tool_arguments_invalid",
+      "usage_complete": true,
+      "usage": {
+        "input_tokens": 9166,
+        "output_tokens": 334,
+        "thinking_tokens": 134,
+        "cache_read_tokens": 0,
+        "total_tokens": 9500
+      },
+      "status": "ERROR 502"
+    },
+    {
+      "request_id": "agy_f8bd9a80ddc54bbc93f7c2ec3b680d3f",
+      "protocol": "gemini",
+      "attempts": 2,
+      "repair_attempts": 1,
+      "error_code": "tool_arguments_invalid",
+      "usage_complete": true,
+      "usage": {
+        "input_tokens": 5928,
+        "output_tokens": 158,
+        "thinking_tokens": 0,
+        "cache_read_tokens": 0,
+        "total_tokens": 6086
+      },
+      "status": "ERROR 502"
+    }
+  ],
+  "evidence_directories": [
+    ".preview/unified-cli-20261012-195852",
+    ".preview/unified-cli-20261012-200939"
+  ]
+}

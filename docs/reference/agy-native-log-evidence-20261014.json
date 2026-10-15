@@ -1,0 +1,72 @@
+{
+  "agy_version": "1.3.4",
+  "date": "2026-10-14",
+  "production_logging_changed": false,
+  "probe_method": "Isolated temporary account HOME, unauthenticated backend, empty stream-json stdin; no model prompts supplied in these verbosity probes.",
+  "verbosity_probes": [
+    {
+      "name": "default",
+      "flags": [],
+      "exit": 1,
+      "log_lines": 758,
+      "filesystem_debug_lines": 0,
+      "auth_verbose_lines": 0,
+      "sent_model_prompts": 0
+    },
+    {
+      "name": "v2",
+      "flags": [
+        "--v=2"
+      ],
+      "exit": 1,
+      "log_lines": 1641,
+      "filesystem_debug_lines": 288,
+      "auth_verbose_lines": 95,
+      "sent_model_prompts": 0
+    },
+    {
+      "name": "vmodule",
+      "flags": [
+        "--vmodule=fs_logging_decorator=2"
+      ],
+      "exit": 1,
+      "log_lines": 647,
+      "filesystem_debug_lines": 288,
+      "auth_verbose_lines": 0,
+      "sent_model_prompts": 0
+    }
+  ],
+  "rejected_flags": [
+    "--debug",
+    "--verbose",
+    "--log-level debug"
+  ],
+  "accepted_flags": [
+    "--log-file",
+    "--v=2",
+    "--vmodule=fs_logging_decorator=2"
+  ],
+  "native_benchmark": {
+    "log_file": "cli-20261013_155245.log",
+    "conversation_id": "4e015e0b-f3e4-48c3-b6c6-7e0290a1444c",
+    "metric": "SEND_USER_CASCADE_MESSAGE_LATENCY",
+    "records": 47,
+    "total_latency_ms": {
+      "sum": 218,
+      "median": 4,
+      "max": 32
+    },
+    "load_trajectory_latency_ms": {
+      "sum": 127,
+      "median": 2,
+      "max": 18
+    },
+    "cascade_send_latency_ms": {
+      "sum": 53,
+      "median": 0,
+      "max": 19
+    },
+    "scope": "Internal message submission; excludes subsequent model generation wait."
+  },
+  "native_profiler_message": "Continuous pprof profiling is disabled."
+}

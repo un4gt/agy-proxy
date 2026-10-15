@@ -1,0 +1,5436 @@
+{
+  "schema_version": 1,
+  "experiment": "DSH complex Taskbox modifications on production image with targeted native logging",
+  "production_image": "agy-proxy:no-prompt-cap-20261013",
+  "model": "gemini-3.8-flash-high",
+  "reasoning_effort": "high",
+  "dsh_session_id": "session-5c8a5b8e-3551-43be-98a7-b7dbf1582240",
+  "totals": {
+    "main_requests": 20,
+    "auxiliary_requests": 1,
+    "http_wall_union_s": 996.0425620000001,
+    "tools_wall_union_s": 28.922724999999915,
+    "server_http_sum_s": 991.8100565355271,
+    "network_ssh_relays_residual_sum_s": 4.232505464472975,
+    "tool_errors": 1,
+    "reasoning_tokens": 91753,
+    "output_tokens": 128095,
+    "max_context_tokens": 196785,
+    "wall_s": 1034.923866,
+    "client_outside_http_tools_s": 9.9585790000001,
+    "agy_logged_turn_sum_s": 977.57,
+    "server_outside_logged_turns_s": 14.24005653552706,
+    "headers_median_s": 0.2865210000000502,
+    "first_business_median_s": 15.290850999999947
+  },
+  "requests": [
+    {
+      "number": 1,
+      "main_task": true,
+      "request_id": "agy_ed52b44a200d4baeade73922d9a2d5b9",
+      "start_s": 9.362096,
+      "end_s": 28.784936,
+      "client_total_s": 19.42284,
+      "server_total_s": 18.978350113146007,
+      "network_ssh_relays_residual_s": 0.4444898868539937,
+      "headers_s": 0.4238490000000006,
+      "first_event_s": 0.535502000000001,
+      "first_business_s": 19.289490999999998,
+      "request_bytes": 30843,
+      "tool_count": 25,
+      "tool_definition_chars": 22407,
+      "message_count": 4,
+      "status": 200,
+      "finish_reason": "tool_calls",
+      "error_code": null,
+      "profile": {
+        "odel": "gemini-3.8-flash-high",
+        "new_session": "1",
+        "models_lookup": "0ms",
+        "acquire": "10ms",
+        "agy_boot": "6605ms",
+        "think": "-1ms",
+        "stream": "-1ms",
+        "total": "18911ms"
+      },
+      "usage": {
+        "prompt_tokens": 9560,
+        "completion_tokens": 1280,
+        "total_tokens": 10840,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 1222
+        }
+      },
+      "input_context_tokens": 9560,
+      "reasoning_tokens": 1222,
+      "heartbeat_count": 1,
+      "done_count": 1,
+      "attempts": 1,
+      "repair_attempts": 0
+    },
+    {
+      "number": 2,
+      "main_task": false,
+      "request_id": "agy_cd67f5593a524e308c563f331e2706d5",
+      "start_s": 9.418833,
+      "end_s": 25.819999,
+      "client_total_s": 16.401166,
+      "server_total_s": 16.00947057735175,
+      "network_ssh_relays_residual_s": 0.39169542264825097,
+      "headers_s": 0.4797919999999998,
+      "first_event_s": 0.48103400000000107,
+      "first_business_s": 16.267615,
+      "request_bytes": 4008,
+      "tool_count": 0,
+      "tool_definition_chars": 2,
+      "message_count": 2,
+      "status": 200,
+      "finish_reason": "stop",
+      "error_code": null,
+      "profile": {
+        "odel": "gemini-3.8-flash-high",
+        "new_session": "1",
+        "models_lookup": "0ms",
+        "acquire": "35ms",
+        "agy_boot": "7823ms",
+        "think": "8076ms",
+        "stream": "0ms",
+        "total": "15939ms"
+      },
+      "usage": {
+        "prompt_tokens": 3670,
+        "completion_tokens": 965,
+        "total_tokens": 4635,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 917
+        }
+      },
+      "input_context_tokens": 3670,
+      "reasoning_tokens": 917,
+      "heartbeat_count": 1,
+      "done_count": 1,
+      "attempts": 1,
+      "repair_attempts": 0
+    },
+    {
+      "number": 3,
+      "main_task": true,
+      "request_id": "agy_ffc73cb3687a48a1a541527521034554",
+      "start_s": 29.279664,
+      "end_s": 40.782912,
+      "client_total_s": 11.503248000000003,
+      "server_total_s": 11.414631695486605,
+      "network_ssh_relays_residual_s": 0.08861630451339764,
+      "headers_s": 0.16699900000000056,
+      "first_event_s": 0.16825299999999999,
+      "first_business_s": 11.497902,
+      "request_bytes": 31207,
+      "tool_count": 25,
+      "tool_definition_chars": 22407,
+      "message_count": 6,
+      "status": 200,
+      "finish_reason": "tool_calls",
+      "error_code": null,
+      "profile": {
+        "odel": "gemini-3.8-flash-high",
+        "new_session": "0",
+        "models_lookup": "1ms",
+        "acquire": "2ms",
+        "agy_boot": "-1ms",
+        "think": "-1ms",
+        "stream": "-1ms",
+        "total": "11335ms"
+      },
+      "usage": {
+        "prompt_tokens": 16243,
+        "completion_tokens": 1045,
+        "total_tokens": 17288,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 806
+        }
+      },
+      "input_context_tokens": 16243,
+      "reasoning_tokens": 806,
+      "heartbeat_count": 1,
+      "done_count": 1,
+      "attempts": 1,
+      "repair_attempts": 0
+    },
+    {
+      "number": 4,
+      "main_task": true,
+      "request_id": "agy_5a7b5b741f744004942b1219093e3e9c",
+      "start_s": 41.002618,
+      "end_s": 45.41038,
+      "client_total_s": 4.407762000000005,
+      "server_total_s": 4.225647334009409,
+      "network_ssh_relays_residual_s": 0.18211466599059634,
+      "headers_s": 0.33482500000000215,
+      "first_event_s": 0.45996500000000395,
+      "first_business_s": 4.4013300000000015,
+      "request_bytes": 79504,
+      "tool_count": 25,
+      "tool_definition_chars": 22407,
+      "message_count": 11,
+      "status": 200,
+      "finish_reason": "tool_calls",
+      "error_code": null,
+      "profile": {
+        "odel": "gemini-3.8-flash-high",
+        "new_session": "0",
+        "models_lookup": "0ms",
+        "acquire": "1ms",
+        "agy_boot": "-1ms",
+        "think": "-1ms",
+        "stream": "-1ms",
+        "total": "4071ms"
+      },
+      "usage": {
+        "prompt_tokens": 39495,
+        "completion_tokens": 179,
+        "total_tokens": 39674,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 99
+        }
+      },
+      "input_context_tokens": 39495,
+      "reasoning_tokens": 99,
+      "heartbeat_count": 0,
+      "done_count": 1,
+      "attempts": 1,
+      "repair_attempts": 0
+    },
+    {
+      "number": 5,
+      "main_task": true,
+      "request_id": "agy_d40a8e6f30b14159aa62aad1a1c47299",
+      "start_s": 54.57329,
+      "end_s": 253.223577,
+      "client_total_s": 198.650287,
+      "server_total_s": 198.4052734039724,
+      "network_ssh_relays_residual_s": 0.2450135960276043,
+      "headers_s": 0.3285109999999989,
+      "first_event_s": 0.44642100000000084,
+      "first_business_s": 198.573236,
+      "request_bytes": 83871,
+      "tool_count": 25,
+      "tool_definition_chars": 22407,
+      "message_count": 13,
+      "status": 200,
+      "finish_reason": "tool_calls",
+      "error_code": null,
+      "profile": {
+        "odel": "gemini-3.8-flash-high",
+        "new_session": "0",
+        "models_lookup": "0ms",
+        "acquire": "1ms",
+        "agy_boot": "-1ms",
+        "think": "-1ms",
+        "stream": "-1ms",
+        "total": "198247ms"
+      },
+      "usage": {
+        "prompt_tokens": 6750,
+        "completion_tokens": 30727,
+        "total_tokens": 37477,
+        "prompt_tokens_details": {
+          "cached_tokens": 39490
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 30553
+        }
+      },
+      "input_context_tokens": 46240,
+      "reasoning_tokens": 30553,
+      "heartbeat_count": 19,
+      "done_count": 1,
+      "attempts": 1,
+      "repair_attempts": 0
+    },
+    {
+      "number": 6,
+      "main_task": true,
+      "request_id": "agy_c35aa133d5994e8599e8875b4a7562d8",
+      "start_s": 253.263953,
+      "end_s": 381.208745,
+      "client_total_s": 127.94479200000004,
+      "server_total_s": 127.69957882910967,
+      "network_ssh_relays_residual_s": 0.24521317089036643,
+      "headers_s": 0.2175020000000245,
+      "first_event_s": 0.2181410000000028,
+      "first_business_s": 127.94351700000001,
+      "request_bytes": 84732,
+      "tool_count": 25,
+      "tool_definition_chars": 22407,
+      "message_count": 15,
+      "status": 200,
+      "finish_reason": "tool_calls",
+      "error_code": null,
+      "profile": {
+        "odel": "gemini-3.8-flash-high",
+        "new_session": "0",
+        "models_lookup": "0ms",
+        "acquire": "1ms",
+        "agy_boot": "-1ms",
+        "think": "-1ms",
+        "stream": "-1ms",
+        "total": "127611ms"
+      },
+      "usage": {
+        "prompt_tokens": 36164,
+        "completion_tokens": 21906,
+        "total_tokens": 58070,
+        "prompt_tokens_details": {
+          "cached_tokens": 46273
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 12489
+        }
+      },
+      "input_context_tokens": 82437,
+      "reasoning_tokens": 12489,
+      "heartbeat_count": 12,
+      "done_count": 1,
+      "attempts": 1,
+      "repair_attempts": 0
+    },
+    {
+      "number": 7,
+      "main_task": true,
+      "request_id": "agy_27f7f12cca6740389eb6d6902edc7654",
+      "start_s": 381.256076,
+      "end_s": 386.267498,
+      "client_total_s": 5.011421999999982,
+      "server_total_s": 4.820801827125251,
+      "network_ssh_relays_residual_s": 0.19062017287473054,
+      "headers_s": 0.24108899999998812,
+      "first_event_s": 0.24170199999997521,
+      "first_business_s": 4.896507999999983,
+      "request_bytes": 125080,
+      "tool_count": 25,
+      "tool_definition_chars": 22407,
+      "message_count": 17,
+      "status": 200,
+      "finish_reason": "tool_calls",
+      "error_code": null,
+      "profile": {
+        "odel": "gemini-3.8-flash-high",
+        "new_session": "0",
+        "models_lookup": "0ms",
+        "acquire": "1ms",
+        "agy_boot": "-1ms",
+        "think": "-1ms",
+        "stream": "-1ms",
+        "total": "4714ms"
+      },
+      "usage": {
+        "prompt_tokens": 38775,
+        "completion_tokens": 216,
+        "total_tokens": 38991,
+        "prompt_tokens_details": {
+          "cached_tokens": 82462
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 150
+        }
+      },
+      "input_context_tokens": 121237,
+      "reasoning_tokens": 150,
+      "heartbeat_count": 0,
+      "done_count": 1,
+      "attempts": 1,
+      "repair_attempts": 0
+    },
+    {
+      "number": 8,
+      "main_task": true,
+      "request_id": "agy_2a3e21f53c6f45b1af7a0ce70b8b141d",
+      "start_s": 386.362313,
+      "end_s": 446.307604,
+      "client_total_s": 59.945291000000054,
+      "server_total_s": 59.83580344263464,
+      "network_ssh_relays_residual_s": 0.10948755736541216,
+      "headers_s": 0.24220900000000256,
+      "first_event_s": 0.24294200000002775,
+      "first_business_s": 59.94358500000004,
+      "request_bytes": 142346,
+      "tool_count": 25,
+      "tool_definition_chars": 22407,
+      "message_count": 19,
+      "status": 200,
+      "finish_reason": "tool_calls",
+      "error_code": null,
+      "profile": {
+        "odel": "gemini-3.8-flash-high",
+        "new_session": "0",
+        "models_lookup": "0ms",
+        "acquire": "1ms",
+        "agy_boot": "-1ms",
+        "think": "-1ms",
+        "stream": "-1ms",
+        "total": "59740ms"
+      },
+      "usage": {
+        "prompt_tokens": 11644,
+        "completion_tokens": 9156,
+        "total_tokens": 20800,
+        "prompt_tokens_details": {
+          "cached_tokens": 121231
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 23
+        }
+      },
+      "input_context_tokens": 132875,
+      "reasoning_tokens": 23,
+      "heartbeat_count": 5,
+      "done_count": 1,
+      "attempts": 1,
+      "repair_attempts": 0
+    },
+    {
+      "number": 9,
+      "main_task": true,
+      "request_id": "agy_77cb8866bf2f4b1b8bc3f200194225f4",
+      "start_s": 446.40961,
+      "end_s": 450.929487,
+      "client_total_s": 4.519877000000008,
+      "server_total_s": 4.434775819070637,
+      "network_ssh_relays_residual_s": 0.08510118092937091,
+      "headers_s": 0.22037900000003674,
+      "first_event_s": 0.22139200000003711,
+      "first_business_s": 4.517329000000018,
+      "request_bytes": 179630,
+      "tool_count": 25,
+      "tool_definition_chars": 22407,
+      "message_count": 21,
+      "status": 200,
+      "finish_reason": "tool_calls",
+      "error_code": null,
+      "profile": {
+        "odel": "gemini-3.8-flash-high",
+        "new_session": "0",
+        "models_lookup": "0ms",
+        "acquire": "1ms",
+        "agy_boot": "-1ms",
+        "think": "-1ms",
+        "stream": "-1ms",
+        "total": "4321ms"
+      },
+      "usage": {
+        "prompt_tokens": 25257,
+        "completion_tokens": 113,
+        "total_tokens": 25370,
+        "prompt_tokens_details": {
+          "cached_tokens": 132884
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 29
+        }
+      },
+      "input_context_tokens": 158141,
+      "reasoning_tokens": 29,
+      "heartbeat_count": 0,
+      "done_count": 1,
+      "attempts": 1,
+      "repair_attempts": 0
+    },
+    {
+      "number": 10,
+      "main_task": true,
+      "request_id": "agy_9d110e3e87f947b38caa18525bf38013",
+      "start_s": 457.528219,
+      "end_s": 462.678136,
+      "client_total_s": 5.149917000000016,
+      "server_total_s": 4.829591221176088,
+      "network_ssh_relays_residual_s": 0.32032577882392843,
+      "headers_s": 0.32331400000003896,
+      "first_event_s": 0.32385300000004236,
+      "first_business_s": 5.015693999999996,
+      "request_bytes": 184005,
+      "tool_count": 25,
+      "tool_definition_chars": 22407,
+      "message_count": 23,
+      "status": 200,
+      "finish_reason": "tool_calls",
+      "error_code": null,
+      "profile": {
+        "odel": "gemini-3.8-flash-high",
+        "new_session": "0",
+        "models_lookup": "0ms",
+        "acquire": "1ms",
+        "agy_boot": "-1ms",
+        "think": "-1ms",
+        "stream": "-1ms",
+        "total": "4726ms"
+      },
+      "usage": {
+        "prompt_tokens": 6691,
+        "completion_tokens": 378,
+        "total_tokens": 7069,
+        "prompt_tokens_details": {
+          "cached_tokens": 158129
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 181
+        }
+      },
+      "input_context_tokens": 164820,
+      "reasoning_tokens": 181,
+      "heartbeat_count": 0,
+      "done_count": 1,
+      "attempts": 1,
+      "repair_attempts": 0
+    },
+    {
+      "number": 11,
+      "main_task": true,
+      "request_id": "agy_4700d3ed62e94896b81dd1691d12395c",
+      "start_s": 462.742407,
+      "end_s": 481.377663,
+      "client_total_s": 18.63525599999997,
+      "server_total_s": 18.471375529654324,
+      "network_ssh_relays_residual_s": 0.1638804703456458,
+      "headers_s": 0.2464769999999703,
+      "first_event_s": 0.2469939999999724,
+      "first_business_s": 18.554745999999966,
+      "request_bytes": 190736,
+      "tool_count": 25,
+      "tool_definition_chars": 22407,
+      "message_count": 26,
+      "status": 200,
+      "finish_reason": "tool_calls",
+      "error_code": null,
+      "profile": {
+        "odel": "gemini-3.8-flash-high",
+        "new_session": "0",
+        "models_lookup": "0ms",
+        "acquire": "1ms",
+        "agy_boot": "-1ms",
+        "think": "-1ms",
+        "stream": "-1ms",
+        "total": "18352ms"
+      },
+      "usage": {
+        "prompt_tokens": 7844,
+        "completion_tokens": 2287,
+        "total_tokens": 10131,
+        "prompt_tokens_details": {
+          "cached_tokens": 164810
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 225
+        }
+      },
+      "input_context_tokens": 172654,
+      "reasoning_tokens": 225,
+      "heartbeat_count": 1,
+      "done_count": 1,
+      "attempts": 1,
+      "repair_attempts": 0
+    },
+    {
+      "number": 12,
+      "main_task": true,
+      "request_id": "agy_87b86b85d5ed4b1da629bc44cb0918ef",
+      "start_s": 481.471999,
+      "end_s": 489.691074,
+      "client_total_s": 8.219075000000032,
+      "server_total_s": 8.13525215536356,
+      "network_ssh_relays_residual_s": 0.08382284463647238,
+      "headers_s": 0.23946300000000065,
+      "first_event_s": 0.2400100000000407,
+      "first_business_s": 8.214174000000014,
+      "request_bytes": 200214,
+      "tool_count": 25,
+      "tool_definition_chars": 22407,
+      "message_count": 28,
+      "status": 200,
+      "finish_reason": "tool_calls",
+      "error_code": null,
+      "profile": {
+        "odel": "gemini-3.8-flash-high",
+        "new_session": "0",
+        "models_lookup": "0ms",
+        "acquire": "2ms",
+        "agy_boot": "-1ms",
+        "think": "-1ms",
+        "stream": "-1ms",
+        "total": "8028ms"
+      },
+      "usage": {
+        "prompt_tokens": 10117,
+        "completion_tokens": 152,
+        "total_tokens": 10269,
+        "prompt_tokens_details": {
+          "cached_tokens": 172647
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 81
+        }
+      },
+      "input_context_tokens": 182764,
+      "reasoning_tokens": 81,
+      "heartbeat_count": 0,
+      "done_count": 1,
+      "attempts": 1,
+      "repair_attempts": 0
+    },
+    {
+      "number": 13,
+      "main_task": true,
+      "request_id": "agy_980c5635df37422bb7cc5d114c19af6c",
+      "start_s": 489.776159,
+      "end_s": 613.982423,
+      "client_total_s": 124.20626400000003,
+      "server_total_s": 123.92371856793761,
+      "network_ssh_relays_residual_s": 0.28254543206242033,
+      "headers_s": 0.481207999999981,
+      "first_event_s": 0.4820879999999761,
+      "first_business_s": 124.19859399999996,
+      "request_bytes": 224624,
+      "tool_count": 25,
+      "tool_definition_chars": 22407,
+      "message_count": 30,
+      "status": 200,
+      "finish_reason": "tool_calls",
+      "error_code": null,
+      "profile": {
+        "odel": "gemini-3.8-flash-high",
+        "new_session": "0",
+        "models_lookup": "0ms",
+        "acquire": "2ms",
+        "agy_boot": "-1ms",
+        "think": "-1ms",
+        "stream": "-1ms",
+        "total": "123814ms"
+      },
+      "usage": {
+        "prompt_tokens": 14022,
+        "completion_tokens": 21617,
+        "total_tokens": 35639,
+        "prompt_tokens_details": {
+          "cached_tokens": 182763
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 8797
+        }
+      },
+      "input_context_tokens": 196785,
+      "reasoning_tokens": 8797,
+      "heartbeat_count": 12,
+      "done_count": 1,
+      "attempts": 1,
+      "repair_attempts": 0
+    },
+    {
+      "number": 14,
+      "main_task": true,
+      "request_id": "agy_175c8398ac4c45bb909a2633ed39af72",
+      "start_s": 614.052412,
+      "end_s": 794.528919,
+      "client_total_s": 180.47650699999997,
+      "server_total_s": 180.30050534009933,
+      "network_ssh_relays_residual_s": 0.17600165990063488,
+      "headers_s": 0.3901859999999715,
+      "first_event_s": 0.3909929999999804,
+      "first_business_s": 180.35699899999997,
+      "request_bytes": 276049,
+      "tool_count": 25,
+      "tool_definition_chars": 22407,
+      "message_count": 32,
+      "status": 200,
+      "finish_reason": "tool_calls",
+      "error_code": null,
+      "profile": {
+        "odel": "gemini-3.8-flash-high",
+        "new_session": "0",
+        "models_lookup": "0ms",
+        "acquire": "5ms",
+        "agy_boot": "154273ms",
+        "think": "25720ms",
+        "stream": "0ms",
+        "total": "180004ms"
+      },
+      "usage": {
+        "prompt_tokens": 64998,
+        "completion_tokens": 5886,
+        "total_tokens": 70884,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 5639
+        }
+      },
+      "input_context_tokens": null,
+      "reasoning_tokens": 5639,
+      "heartbeat_count": 17,
+      "done_count": 1,
+      "attempts": 2,
+      "repair_attempts": 1,
+      "usage_is_attempt_aggregate": true
+    },
+    {
+      "number": 15,
+      "main_task": true,
+      "request_id": "agy_903cd6c6168e41ebac37a3d5e9144fef",
+      "start_s": 794.603675,
+      "end_s": 855.219135,
+      "client_total_s": 60.6154600000001,
+      "server_total_s": 60.28528236690909,
+      "network_ssh_relays_residual_s": 0.33017763309101156,
+      "headers_s": 1.5334520000000111,
+      "first_event_s": 1.5340920000001006,
+      "first_business_s": 60.4929810000001,
+      "request_bytes": 286356,
+      "tool_count": 25,
+      "tool_definition_chars": 22407,
+      "message_count": 34,
+      "status": 200,
+      "finish_reason": "tool_calls",
+      "error_code": null,
+      "profile": {
+        "odel": "gemini-3.8-flash-high",
+        "new_session": "1",
+        "models_lookup": "0ms",
+        "acquire": "1188ms",
+        "agy_boot": "5162ms",
+        "think": "53797ms",
+        "stream": "0ms",
+        "total": "60156ms"
+      },
+      "usage": {
+        "prompt_tokens": 60229,
+        "completion_tokens": 8342,
+        "total_tokens": 68571,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 8259
+        }
+      },
+      "input_context_tokens": 60229,
+      "reasoning_tokens": 8259,
+      "heartbeat_count": 5,
+      "done_count": 1,
+      "attempts": 1,
+      "repair_attempts": 0
+    },
+    {
+      "number": 16,
+      "main_task": true,
+      "request_id": "agy_d914e521b93f4beaa8a942113462378c",
+      "start_s": 856.012731,
+      "end_s": 948.642445,
+      "client_total_s": 92.62971399999992,
+      "server_total_s": 92.42187279183418,
+      "network_ssh_relays_residual_s": 0.20784120816574614,
+      "headers_s": 0.2537009999999782,
+      "first_event_s": 0.2542589999999336,
+      "first_business_s": 92.49886099999992,
+      "request_bytes": 289966,
+      "tool_count": 25,
+      "tool_definition_chars": 22407,
+      "message_count": 36,
+      "status": 200,
+      "finish_reason": "tool_calls",
+      "error_code": null,
+      "profile": {
+        "odel": "gemini-3.8-flash-high",
+        "new_session": "0",
+        "models_lookup": "0ms",
+        "acquire": "2ms",
+        "agy_boot": "-1ms",
+        "think": "92275ms",
+        "stream": "0ms",
+        "total": "92281ms"
+      },
+      "usage": {
+        "prompt_tokens": 75123,
+        "completion_tokens": 14704,
+        "total_tokens": 89827,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 14635
+        }
+      },
+      "input_context_tokens": 75123,
+      "reasoning_tokens": 14635,
+      "heartbeat_count": 9,
+      "done_count": 1,
+      "attempts": 1,
+      "repair_attempts": 0
+    },
+    {
+      "number": 17,
+      "main_task": true,
+      "request_id": "agy_db8b999e77bf4d249bf6a0dd1360c382",
+      "start_s": 948.735777,
+      "end_s": 994.110297,
+      "client_total_s": 45.37451999999996,
+      "server_total_s": 45.14414378069341,
+      "network_ssh_relays_residual_s": 0.2303762193065495,
+      "headers_s": 0.25579500000003463,
+      "first_event_s": 0.2566830000000664,
+      "first_business_s": 45.245937000000026,
+      "request_bytes": 300229,
+      "tool_count": 25,
+      "tool_definition_chars": 22407,
+      "message_count": 38,
+      "status": 200,
+      "finish_reason": "tool_calls",
+      "error_code": null,
+      "profile": {
+        "odel": "gemini-3.8-flash-high",
+        "new_session": "0",
+        "models_lookup": "0ms",
+        "acquire": "2ms",
+        "agy_boot": "-1ms",
+        "think": "45006ms",
+        "stream": "0ms",
+        "total": "45012ms"
+      },
+      "usage": {
+        "prompt_tokens": 23393,
+        "completion_tokens": 7403,
+        "total_tokens": 30796,
+        "prompt_tokens_details": {
+          "cached_tokens": 75123
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 7315
+        }
+      },
+      "input_context_tokens": 98516,
+      "reasoning_tokens": 7315,
+      "heartbeat_count": 4,
+      "done_count": 1,
+      "attempts": 1,
+      "repair_attempts": 0
+    },
+    {
+      "number": 18,
+      "main_task": true,
+      "request_id": "agy_35f0721077534c32a2e2194f18d0fae2",
+      "start_s": 994.204792,
+      "end_s": 998.928106,
+      "client_total_s": 4.723313999999959,
+      "server_total_s": 4.502502983435988,
+      "network_ssh_relays_residual_s": 0.22081101656397095,
+      "headers_s": 0.25216100000000097,
+      "first_event_s": 0.2529459999999517,
+      "first_business_s": 4.587088999999992,
+      "request_bytes": 326095,
+      "tool_count": 25,
+      "tool_definition_chars": 22407,
+      "message_count": 40,
+      "status": 200,
+      "finish_reason": "tool_calls",
+      "error_code": null,
+      "profile": {
+        "odel": "gemini-3.8-flash-high",
+        "new_session": "0",
+        "models_lookup": "0ms",
+        "acquire": "3ms",
+        "agy_boot": "-1ms",
+        "think": "4351ms",
+        "stream": "0ms",
+        "total": "4357ms"
+      },
+      "usage": {
+        "prompt_tokens": 21751,
+        "completion_tokens": 177,
+        "total_tokens": 21928,
+        "prompt_tokens_details": {
+          "cached_tokens": 98515
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 84
+        }
+      },
+      "input_context_tokens": 120266,
+      "reasoning_tokens": 84,
+      "heartbeat_count": 0,
+      "done_count": 1,
+      "attempts": 1,
+      "repair_attempts": 0
+    },
+    {
+      "number": 19,
+      "main_task": true,
+      "request_id": "agy_e75d42e10f744af8a645c136184df833",
+      "start_s": 999.021858,
+      "end_s": 1005.757366,
+      "client_total_s": 6.735508000000095,
+      "server_total_s": 6.544909398071468,
+      "network_ssh_relays_residual_s": 0.19059860192862743,
+      "headers_s": 0.3824520000000575,
+      "first_event_s": 0.38312100000007376,
+      "first_business_s": 6.619001000000026,
+      "request_bytes": 351863,
+      "tool_count": 25,
+      "tool_definition_chars": 22407,
+      "message_count": 42,
+      "status": 200,
+      "finish_reason": "tool_calls",
+      "error_code": null,
+      "profile": {
+        "odel": "gemini-3.8-flash-high",
+        "new_session": "0",
+        "models_lookup": "0ms",
+        "acquire": "2ms",
+        "agy_boot": "-1ms",
+        "think": "6366ms",
+        "stream": "0ms",
+        "total": "6376ms"
+      },
+      "usage": {
+        "prompt_tokens": 14674,
+        "completion_tokens": 657,
+        "total_tokens": 15331,
+        "prompt_tokens_details": {
+          "cached_tokens": 120260
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 566
+        }
+      },
+      "input_context_tokens": 134934,
+      "reasoning_tokens": 566,
+      "heartbeat_count": 0,
+      "done_count": 1,
+      "attempts": 1,
+      "repair_attempts": 0
+    },
+    {
+      "number": 20,
+      "main_task": true,
+      "request_id": "agy_29a6f68fa6d4495ca1094f195aae28fe",
+      "start_s": 1017.490173,
+      "end_s": 1023.265172,
+      "client_total_s": 5.77499899999998,
+      "server_total_s": 5.499763350002468,
+      "network_ssh_relays_residual_s": 0.27523564999751216,
+      "headers_s": 0.44245300000000043,
+      "first_event_s": 0.4431200000000217,
+      "first_business_s": 5.675927999999999,
+      "request_bytes": 361057,
+      "tool_count": 25,
+      "tool_definition_chars": 22407,
+      "message_count": 44,
+      "status": 200,
+      "finish_reason": "tool_calls",
+      "error_code": null,
+      "profile": {
+        "odel": "gemini-3.8-flash-high",
+        "new_session": "0",
+        "models_lookup": "0ms",
+        "acquire": "2ms",
+        "agy_boot": "-1ms",
+        "think": "5349ms",
+        "stream": "0ms",
+        "total": "5357ms"
+      },
+      "usage": {
+        "prompt_tokens": 8585,
+        "completion_tokens": 411,
+        "total_tokens": 8996,
+        "prompt_tokens_details": {
+          "cached_tokens": 134923
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 228
+        }
+      },
+      "input_context_tokens": 143508,
+      "reasoning_tokens": 228,
+      "heartbeat_count": 0,
+      "done_count": 1,
+      "attempts": 1,
+      "repair_attempts": 0
+    },
+    {
+      "number": 21,
+      "main_task": true,
+      "request_id": "agy_61b776845f564f86b968e60bea21c3c9",
+      "start_s": 1023.327006,
+      "end_s": 1035.423515,
+      "client_total_s": 12.096508999999969,
+      "server_total_s": 11.936276585794985,
+      "network_ssh_relays_residual_s": 0.1602324142049838,
+      "headers_s": 0.3172470000000658,
+      "first_event_s": 0.3180439999999862,
+      "first_business_s": 12.026955999999927,
+      "request_bytes": 361973,
+      "tool_count": 25,
+      "tool_definition_chars": 22407,
+      "message_count": 46,
+      "status": 200,
+      "finish_reason": "stop",
+      "error_code": null,
+      "profile": {
+        "odel": "gemini-3.8-flash-high",
+        "new_session": "0",
+        "models_lookup": "0ms",
+        "acquire": "2ms",
+        "agy_boot": "-1ms",
+        "think": "11776ms",
+        "stream": "0ms",
+        "total": "11782ms"
+      },
+      "usage": {
+        "prompt_tokens": 5896,
+        "completion_tokens": 1459,
+        "total_tokens": 7355,
+        "prompt_tokens_details": {
+          "cached_tokens": 143495
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 372
+        }
+      },
+      "input_context_tokens": 149391,
+      "reasoning_tokens": 372,
+      "heartbeat_count": 1,
+      "done_count": 1,
+      "attempts": 1,
+      "repair_attempts": 0
+    }
+  ],
+  "tools": [
+    {
+      "tool": "glob",
+      "start_s": 28.792166,
+      "end_s": 29.223414,
+      "duration_s": 0.4312479999999965,
+      "status": "completed",
+      "result_chars": 113,
+      "error_code": null,
+      "test_summaries": []
+    },
+    {
+      "tool": "todo_write",
+      "start_s": 40.784968,
+      "end_s": 40.793393,
+      "duration_s": 0.00842500000000257,
+      "status": "completed",
+      "result_chars": 57,
+      "error_code": null,
+      "test_summaries": []
+    },
+    {
+      "tool": "read",
+      "start_s": 40.794218,
+      "end_s": 40.840059,
+      "duration_s": 0.0458409999999958,
+      "status": "completed",
+      "result_chars": 8192,
+      "error_code": null,
+      "test_summaries": []
+    },
+    {
+      "tool": "read",
+      "start_s": 40.795706,
+      "end_s": 40.87445,
+      "duration_s": 0.07874400000000037,
+      "status": "completed",
+      "result_chars": 8085,
+      "error_code": null,
+      "test_summaries": []
+    },
+    {
+      "tool": "read",
+      "start_s": 40.797247,
+      "end_s": 40.886367,
+      "duration_s": 0.0891200000000012,
+      "status": "completed",
+      "result_chars": 5459,
+      "error_code": null,
+      "test_summaries": []
+    },
+    {
+      "tool": "pwsh",
+      "start_s": 45.411419,
+      "end_s": 54.526005,
+      "duration_s": 9.114585999999996,
+      "status": "completed",
+      "result_chars": 3938,
+      "error_code": null,
+      "test_summaries": [
+        "Ran 21 tests in 7.835s"
+      ]
+    },
+    {
+      "tool": "todo_write",
+      "start_s": 253.225256,
+      "end_s": 253.230223,
+      "duration_s": 0.004966999999993504,
+      "status": "completed",
+      "result_chars": 57,
+      "error_code": null,
+      "test_summaries": []
+    },
+    {
+      "tool": "write",
+      "start_s": 381.211508,
+      "end_s": 381.22263,
+      "duration_s": 0.011122000000000298,
+      "status": "error",
+      "result_chars": 178,
+      "error_code": "FS_STALE_VERSION",
+      "test_summaries": []
+    },
+    {
+      "tool": "read",
+      "start_s": 386.269215,
+      "end_s": 386.292831,
+      "duration_s": 0.023616000000004078,
+      "status": "completed",
+      "result_chars": 8192,
+      "error_code": null,
+      "test_summaries": []
+    },
+    {
+      "tool": "write",
+      "start_s": 446.310343,
+      "end_s": 446.361336,
+      "duration_s": 0.050993000000005395,
+      "status": "completed",
+      "result_chars": 158,
+      "error_code": null,
+      "test_summaries": []
+    },
+    {
+      "tool": "pwsh",
+      "start_s": 450.930021,
+      "end_s": 457.480062,
+      "duration_s": 6.550040999999965,
+      "status": "completed",
+      "result_chars": 3938,
+      "error_code": null,
+      "test_summaries": [
+        "Ran 21 tests in 5.668s"
+      ]
+    },
+    {
+      "tool": "todo_write",
+      "start_s": 462.680442,
+      "end_s": 462.686072,
+      "duration_s": 0.005629999999996471,
+      "status": "completed",
+      "result_chars": 57,
+      "error_code": null,
+      "test_summaries": []
+    },
+    {
+      "tool": "read",
+      "start_s": 462.687242,
+      "end_s": 462.699503,
+      "duration_s": 0.01226099999996677,
+      "status": "completed",
+      "result_chars": 5459,
+      "error_code": null,
+      "test_summaries": []
+    },
+    {
+      "tool": "write",
+      "start_s": 481.379503,
+      "end_s": 481.415215,
+      "duration_s": 0.03571199999998953,
+      "status": "completed",
+      "result_chars": 157,
+      "error_code": null,
+      "test_summaries": []
+    },
+    {
+      "tool": "read",
+      "start_s": 489.692113,
+      "end_s": 489.730366,
+      "duration_s": 0.03825299999999743,
+      "status": "completed",
+      "result_chars": 8085,
+      "error_code": null,
+      "test_summaries": []
+    },
+    {
+      "tool": "write",
+      "start_s": 613.984524,
+      "end_s": 614.001491,
+      "duration_s": 0.01696700000002238,
+      "status": "completed",
+      "result_chars": 163,
+      "error_code": null,
+      "test_summaries": []
+    },
+    {
+      "tool": "read",
+      "start_s": 794.529726,
+      "end_s": 794.547576,
+      "duration_s": 0.017850000000066757,
+      "status": "completed",
+      "result_chars": 8192,
+      "error_code": null,
+      "test_summaries": []
+    },
+    {
+      "tool": "pwsh",
+      "start_s": 855.2222,
+      "end_s": 855.968727,
+      "duration_s": 0.7465269999999009,
+      "status": "completed",
+      "result_chars": 3093,
+      "error_code": null,
+      "test_summaries": []
+    },
+    {
+      "tool": "read",
+      "start_s": 948.645014,
+      "end_s": 948.659982,
+      "duration_s": 0.01496800000006715,
+      "status": "completed",
+      "result_chars": 8192,
+      "error_code": null,
+      "test_summaries": []
+    },
+    {
+      "tool": "read",
+      "start_s": 994.113894,
+      "end_s": 994.142001,
+      "duration_s": 0.02810700000009092,
+      "status": "completed",
+      "result_chars": 8085,
+      "error_code": null,
+      "test_summaries": []
+    },
+    {
+      "tool": "read",
+      "start_s": 998.931541,
+      "end_s": 998.959573,
+      "duration_s": 0.028031999999939217,
+      "status": "completed",
+      "result_chars": 8192,
+      "error_code": null,
+      "test_summaries": []
+    },
+    {
+      "tool": "pwsh",
+      "start_s": 1005.759132,
+      "end_s": 1017.443505,
+      "duration_s": 11.684372999999937,
+      "status": "completed",
+      "result_chars": 8192,
+      "error_code": null,
+      "test_summaries": []
+    },
+    {
+      "tool": "todo_write",
+      "start_s": 1023.266941,
+      "end_s": 1023.273839,
+      "duration_s": 0.00689799999997831,
+      "status": "completed",
+      "result_chars": 57,
+      "error_code": null,
+      "test_summaries": []
+    }
+  ],
+  "proxy_turns": [
+    {
+      "pid": 100,
+      "conversation_id": "49cfed2d-d0db-4689-9e64-f3424884f80b",
+      "turn": 1,
+      "status": "SUCCESS",
+      "elapsed_s": 15.9,
+      "start_s": 9.71126413345337,
+      "end_s": 25.607264041900635
+    },
+    {
+      "pid": 95,
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "turn": 1,
+      "status": "SUCCESS",
+      "elapsed_s": 18.86,
+      "start_s": 9.708264112472534,
+      "end_s": 28.572263956069946
+    },
+    {
+      "pid": 95,
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "turn": 2,
+      "status": "SUCCESS",
+      "elapsed_s": 11.32,
+      "start_s": 29.368263959884644,
+      "end_s": 40.69226408004761
+    },
+    {
+      "pid": 95,
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "turn": 3,
+      "status": "SUCCESS",
+      "elapsed_s": 4.06,
+      "start_s": 41.25426411628723,
+      "end_s": 45.316264152526855
+    },
+    {
+      "pid": 95,
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "turn": 4,
+      "status": "SUCCESS",
+      "elapsed_s": 198.24,
+      "start_s": 54.82426404953003,
+      "end_s": 253.06026411056519
+    },
+    {
+      "pid": 95,
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "turn": 5,
+      "status": "SUCCESS",
+      "elapsed_s": 127.6,
+      "start_s": 253.3632640838623,
+      "end_s": 380.9642639160156
+    },
+    {
+      "pid": 95,
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "turn": 6,
+      "status": "SUCCESS",
+      "elapsed_s": 4.71,
+      "start_s": 381.3672640323639,
+      "end_s": 386.0732641220093
+    },
+    {
+      "pid": 95,
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "turn": 7,
+      "status": "SUCCESS",
+      "elapsed_s": 59.73,
+      "start_s": 386.46926403045654,
+      "end_s": 446.20226407051086
+    },
+    {
+      "pid": 95,
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "turn": 8,
+      "status": "SUCCESS",
+      "elapsed_s": 4.31,
+      "start_s": 446.52626395225525,
+      "end_s": 450.8392639160156
+    },
+    {
+      "pid": 95,
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "turn": 9,
+      "status": "SUCCESS",
+      "elapsed_s": 4.72,
+      "start_s": 457.7312641143799,
+      "end_s": 462.4482641220093
+    },
+    {
+      "pid": 95,
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "turn": 10,
+      "status": "SUCCESS",
+      "elapsed_s": 18.34,
+      "start_s": 462.86626410484314,
+      "end_s": 481.21126413345337
+    },
+    {
+      "pid": 95,
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "turn": 11,
+      "status": "SUCCESS",
+      "elapsed_s": 8.02,
+      "start_s": 481.57926392555237,
+      "end_s": 489.6002640724182
+    },
+    {
+      "pid": 95,
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "turn": 12,
+      "status": "SUCCESS",
+      "elapsed_s": 123.8,
+      "start_s": 490.063264131546,
+      "end_s": 613.8682639598846
+    },
+    {
+      "pid": 95,
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "turn": 13,
+      "status": "SUCCESS",
+      "elapsed_s": 149.24,
+      "start_s": 614.3422639369965,
+      "end_s": 763.5802640914917
+    },
+    {
+      "pid": 393,
+      "conversation_id": "e1a0a02f-c7a0-4b0c-97e6-7ed71753bcbb",
+      "turn": 1,
+      "status": "SUCCESS",
+      "elapsed_s": 25.72,
+      "start_s": 768.6112639904022,
+      "end_s": 794.3312640190125
+    },
+    {
+      "pid": 438,
+      "conversation_id": "1b550230-046c-4e7f-9a9d-b53a5d065a89",
+      "turn": 1,
+      "status": "SUCCESS",
+      "elapsed_s": 53.8,
+      "start_s": 801.2082641124725,
+      "end_s": 855.005264043808
+    },
+    {
+      "pid": 438,
+      "conversation_id": "1b550230-046c-4e7f-9a9d-b53a5d065a89",
+      "turn": 2,
+      "status": "SUCCESS",
+      "elapsed_s": 92.27,
+      "start_s": 856.1612639427185,
+      "end_s": 948.4322640895844
+    },
+    {
+      "pid": 438,
+      "conversation_id": "1b550230-046c-4e7f-9a9d-b53a5d065a89",
+      "turn": 3,
+      "status": "SUCCESS",
+      "elapsed_s": 45.0,
+      "start_s": 948.9002640247345,
+      "end_s": 993.9012639522552
+    },
+    {
+      "pid": 438,
+      "conversation_id": "1b550230-046c-4e7f-9a9d-b53a5d065a89",
+      "turn": 4,
+      "status": "SUCCESS",
+      "elapsed_s": 4.35,
+      "start_s": 994.3662641048431,
+      "end_s": 998.7122640609741
+    },
+    {
+      "pid": 438,
+      "conversation_id": "1b550230-046c-4e7f-9a9d-b53a5d065a89",
+      "turn": 5,
+      "status": "SUCCESS",
+      "elapsed_s": 6.36,
+      "start_s": 999.1962640285492,
+      "end_s": 1005.5602641105652
+    },
+    {
+      "pid": 438,
+      "conversation_id": "1b550230-046c-4e7f-9a9d-b53a5d065a89",
+      "turn": 6,
+      "status": "SUCCESS",
+      "elapsed_s": 5.35,
+      "start_s": 1017.7412641048431,
+      "end_s": 1023.0862641334534
+    },
+    {
+      "pid": 438,
+      "conversation_id": "1b550230-046c-4e7f-9a9d-b53a5d065a89",
+      "turn": 7,
+      "status": "SUCCESS",
+      "elapsed_s": 11.77,
+      "start_s": 1023.4932639598846,
+      "end_s": 1035.268264055252
+    }
+  ],
+  "proxy_executions": [
+    {
+      "protocol": "chat",
+      "request_id": "agy_cd67f5593a524e308c563f331e2706d5",
+      "attempts": 1,
+      "repair_attempts": 0,
+      "outcome": "success",
+      "error_code": "None",
+      "usage_complete": true
+    },
+    {
+      "protocol": "chat",
+      "request_id": "agy_ed52b44a200d4baeade73922d9a2d5b9",
+      "attempts": 1,
+      "repair_attempts": 0,
+      "outcome": "success",
+      "error_code": "None",
+      "usage_complete": true
+    },
+    {
+      "protocol": "chat",
+      "request_id": "agy_ffc73cb3687a48a1a541527521034554",
+      "attempts": 1,
+      "repair_attempts": 0,
+      "outcome": "success",
+      "error_code": "None",
+      "usage_complete": true
+    },
+    {
+      "protocol": "chat",
+      "request_id": "agy_5a7b5b741f744004942b1219093e3e9c",
+      "attempts": 1,
+      "repair_attempts": 0,
+      "outcome": "success",
+      "error_code": "None",
+      "usage_complete": true
+    },
+    {
+      "protocol": "chat",
+      "request_id": "agy_d40a8e6f30b14159aa62aad1a1c47299",
+      "attempts": 1,
+      "repair_attempts": 0,
+      "outcome": "success",
+      "error_code": "None",
+      "usage_complete": true
+    },
+    {
+      "protocol": "chat",
+      "request_id": "agy_c35aa133d5994e8599e8875b4a7562d8",
+      "attempts": 1,
+      "repair_attempts": 0,
+      "outcome": "success",
+      "error_code": "None",
+      "usage_complete": true
+    },
+    {
+      "protocol": "chat",
+      "request_id": "agy_27f7f12cca6740389eb6d6902edc7654",
+      "attempts": 1,
+      "repair_attempts": 0,
+      "outcome": "success",
+      "error_code": "None",
+      "usage_complete": true
+    },
+    {
+      "protocol": "chat",
+      "request_id": "agy_2a3e21f53c6f45b1af7a0ce70b8b141d",
+      "attempts": 1,
+      "repair_attempts": 0,
+      "outcome": "success",
+      "error_code": "None",
+      "usage_complete": true
+    },
+    {
+      "protocol": "chat",
+      "request_id": "agy_77cb8866bf2f4b1b8bc3f200194225f4",
+      "attempts": 1,
+      "repair_attempts": 0,
+      "outcome": "success",
+      "error_code": "None",
+      "usage_complete": true
+    },
+    {
+      "protocol": "chat",
+      "request_id": "agy_9d110e3e87f947b38caa18525bf38013",
+      "attempts": 1,
+      "repair_attempts": 0,
+      "outcome": "success",
+      "error_code": "None",
+      "usage_complete": true
+    },
+    {
+      "protocol": "chat",
+      "request_id": "agy_4700d3ed62e94896b81dd1691d12395c",
+      "attempts": 1,
+      "repair_attempts": 0,
+      "outcome": "success",
+      "error_code": "None",
+      "usage_complete": true
+    },
+    {
+      "protocol": "chat",
+      "request_id": "agy_87b86b85d5ed4b1da629bc44cb0918ef",
+      "attempts": 1,
+      "repair_attempts": 0,
+      "outcome": "success",
+      "error_code": "None",
+      "usage_complete": true
+    },
+    {
+      "protocol": "chat",
+      "request_id": "agy_980c5635df37422bb7cc5d114c19af6c",
+      "attempts": 1,
+      "repair_attempts": 0,
+      "outcome": "success",
+      "error_code": "None",
+      "usage_complete": true
+    },
+    {
+      "protocol": "chat",
+      "request_id": "agy_175c8398ac4c45bb909a2633ed39af72",
+      "attempts": 2,
+      "repair_attempts": 1,
+      "outcome": "success",
+      "error_code": "None",
+      "usage_complete": true
+    },
+    {
+      "protocol": "chat",
+      "request_id": "agy_903cd6c6168e41ebac37a3d5e9144fef",
+      "attempts": 1,
+      "repair_attempts": 0,
+      "outcome": "success",
+      "error_code": "None",
+      "usage_complete": true
+    },
+    {
+      "protocol": "chat",
+      "request_id": "agy_d914e521b93f4beaa8a942113462378c",
+      "attempts": 1,
+      "repair_attempts": 0,
+      "outcome": "success",
+      "error_code": "None",
+      "usage_complete": true
+    },
+    {
+      "protocol": "chat",
+      "request_id": "agy_db8b999e77bf4d249bf6a0dd1360c382",
+      "attempts": 1,
+      "repair_attempts": 0,
+      "outcome": "success",
+      "error_code": "None",
+      "usage_complete": true
+    },
+    {
+      "protocol": "chat",
+      "request_id": "agy_35f0721077534c32a2e2194f18d0fae2",
+      "attempts": 1,
+      "repair_attempts": 0,
+      "outcome": "success",
+      "error_code": "None",
+      "usage_complete": true
+    },
+    {
+      "protocol": "chat",
+      "request_id": "agy_e75d42e10f744af8a645c136184df833",
+      "attempts": 1,
+      "repair_attempts": 0,
+      "outcome": "success",
+      "error_code": "None",
+      "usage_complete": true
+    },
+    {
+      "protocol": "chat",
+      "request_id": "agy_29a6f68fa6d4495ca1094f195aae28fe",
+      "attempts": 1,
+      "repair_attempts": 0,
+      "outcome": "success",
+      "error_code": "None",
+      "usage_complete": true
+    },
+    {
+      "protocol": "chat",
+      "request_id": "agy_61b776845f564f86b968e60bea21c3c9",
+      "attempts": 1,
+      "repair_attempts": 0,
+      "outcome": "success",
+      "error_code": "None",
+      "usage_complete": true
+    }
+  ],
+  "native_transcript": [
+    {
+      "step_index": 0,
+      "type": "USER_INPUT",
+      "status": "DONE",
+      "source": "USER_EXPLICIT",
+      "created_at": "2026-10-14T07:18:32Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "content_chars": 32795,
+      "thinking_chars": 0,
+      "configuration_blocks": 1,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 1,
+      "type": "PLANNER_RESPONSE",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:18:32Z",
+      "input_tokens": 9560,
+      "cache_read_tokens": 0,
+      "output_tokens": 1280,
+      "content_chars": 0,
+      "thinking_chars": 1568,
+      "configuration_blocks": 0,
+      "tool_names": [
+        "finish"
+      ],
+      "client_tool_names": [
+        "glob"
+      ]
+    },
+    {
+      "step_index": 2,
+      "type": "GENERIC",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:18:44Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "content_chars": 140,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 3,
+      "type": "USER_INPUT",
+      "status": "DONE",
+      "source": "USER_EXPLICIT",
+      "created_at": "2026-10-14T07:18:45Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "content_chars": 23824,
+      "thinking_chars": 0,
+      "configuration_blocks": 1,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 4,
+      "type": "PLANNER_RESPONSE",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:18:45Z",
+      "input_tokens": 16243,
+      "cache_read_tokens": 0,
+      "output_tokens": 1045,
+      "content_chars": 0,
+      "thinking_chars": 592,
+      "configuration_blocks": 0,
+      "tool_names": [
+        "finish"
+      ],
+      "client_tool_names": [
+        "todo_write",
+        "read",
+        "read",
+        "read"
+      ]
+    },
+    {
+      "step_index": 5,
+      "type": "GENERIC",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:18:56Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "content_chars": 140,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 6,
+      "type": "USER_INPUT",
+      "status": "DONE",
+      "source": "USER_EXPLICIT",
+      "created_at": "2026-10-14T07:18:57Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "content_chars": 71650,
+      "thinking_chars": 0,
+      "configuration_blocks": 1,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 7,
+      "type": "PLANNER_RESPONSE",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:18:57Z",
+      "input_tokens": 39495,
+      "cache_read_tokens": 0,
+      "output_tokens": 179,
+      "content_chars": 0,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [
+        "finish"
+      ],
+      "client_tool_names": [
+        "pwsh"
+      ]
+    },
+    {
+      "step_index": 8,
+      "type": "GENERIC",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:19:01Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "content_chars": 140,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 9,
+      "type": "USER_INPUT",
+      "status": "DONE",
+      "source": "USER_EXPLICIT",
+      "created_at": "2026-10-14T07:19:11Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "content_chars": 27827,
+      "thinking_chars": 0,
+      "configuration_blocks": 1,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 10,
+      "type": "PLANNER_RESPONSE",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:19:11Z",
+      "input_tokens": 6750,
+      "cache_read_tokens": 39490,
+      "output_tokens": 30727,
+      "content_chars": 0,
+      "thinking_chars": 29409,
+      "configuration_blocks": 0,
+      "tool_names": [
+        "finish"
+      ],
+      "client_tool_names": [
+        "todo_write"
+      ]
+    },
+    {
+      "step_index": 11,
+      "type": "GENERIC",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:22:28Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "content_chars": 140,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 12,
+      "type": "USER_INPUT",
+      "status": "DONE",
+      "source": "USER_EXPLICIT",
+      "created_at": "2026-10-14T07:22:29Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "content_chars": 24321,
+      "thinking_chars": 0,
+      "configuration_blocks": 1,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 13,
+      "type": "PLANNER_RESPONSE",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:22:29Z",
+      "input_tokens": 36164,
+      "cache_read_tokens": 46273,
+      "output_tokens": 21906,
+      "content_chars": 0,
+      "thinking_chars": 13280,
+      "configuration_blocks": 0,
+      "tool_names": [
+        "finish"
+      ],
+      "client_tool_names": [
+        "write"
+      ]
+    },
+    {
+      "step_index": 14,
+      "type": "GENERIC",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:24:36Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "content_chars": 140,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 15,
+      "type": "USER_INPUT",
+      "status": "DONE",
+      "source": "USER_EXPLICIT",
+      "created_at": "2026-10-14T07:24:37Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "content_chars": 63806,
+      "thinking_chars": 0,
+      "configuration_blocks": 1,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 16,
+      "type": "PLANNER_RESPONSE",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:24:37Z",
+      "input_tokens": 38775,
+      "cache_read_tokens": 82462,
+      "output_tokens": 216,
+      "content_chars": 0,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [
+        "finish"
+      ],
+      "client_tool_names": [
+        "read"
+      ]
+    },
+    {
+      "step_index": 17,
+      "type": "GENERIC",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:24:41Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "content_chars": 140,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 18,
+      "type": "USER_INPUT",
+      "status": "DONE",
+      "source": "USER_EXPLICIT",
+      "created_at": "2026-10-14T07:24:42Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "content_chars": 40726,
+      "thinking_chars": 0,
+      "configuration_blocks": 1,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 19,
+      "type": "PLANNER_RESPONSE",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:24:42Z",
+      "input_tokens": 11644,
+      "cache_read_tokens": 121231,
+      "output_tokens": 9156,
+      "content_chars": 0,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [
+        "finish"
+      ],
+      "client_tool_names": [
+        "write"
+      ]
+    },
+    {
+      "step_index": 20,
+      "type": "GENERIC",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:25:42Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "content_chars": 140,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 21,
+      "type": "USER_INPUT",
+      "status": "DONE",
+      "source": "USER_EXPLICIT",
+      "created_at": "2026-10-14T07:25:42Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "content_chars": 60744,
+      "thinking_chars": 0,
+      "configuration_blocks": 1,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 22,
+      "type": "PLANNER_RESPONSE",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:25:42Z",
+      "input_tokens": 25257,
+      "cache_read_tokens": 132884,
+      "output_tokens": 113,
+      "content_chars": 0,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [
+        "finish"
+      ],
+      "client_tool_names": [
+        "pwsh"
+      ]
+    },
+    {
+      "step_index": 23,
+      "type": "GENERIC",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:25:46Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "content_chars": 140,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 24,
+      "type": "USER_INPUT",
+      "status": "DONE",
+      "source": "USER_EXPLICIT",
+      "created_at": "2026-10-14T07:25:53Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "content_chars": 27835,
+      "thinking_chars": 0,
+      "configuration_blocks": 1,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 25,
+      "type": "PLANNER_RESPONSE",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:25:54Z",
+      "input_tokens": 6691,
+      "cache_read_tokens": 158129,
+      "output_tokens": 378,
+      "content_chars": 0,
+      "thinking_chars": 223,
+      "configuration_blocks": 0,
+      "tool_names": [
+        "finish"
+      ],
+      "client_tool_names": [
+        "todo_write",
+        "read"
+      ]
+    },
+    {
+      "step_index": 26,
+      "type": "GENERIC",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:25:58Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "content_chars": 140,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 27,
+      "type": "USER_INPUT",
+      "status": "DONE",
+      "source": "USER_EXPLICIT",
+      "created_at": "2026-10-14T07:25:59Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "content_chars": 30191,
+      "thinking_chars": 0,
+      "configuration_blocks": 1,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 28,
+      "type": "PLANNER_RESPONSE",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:25:59Z",
+      "input_tokens": 7844,
+      "cache_read_tokens": 164810,
+      "output_tokens": 2287,
+      "content_chars": 0,
+      "thinking_chars": 356,
+      "configuration_blocks": 0,
+      "tool_names": [
+        "finish"
+      ],
+      "client_tool_names": [
+        "write"
+      ]
+    },
+    {
+      "step_index": 29,
+      "type": "GENERIC",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:26:17Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "content_chars": 140,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 30,
+      "type": "USER_INPUT",
+      "status": "DONE",
+      "source": "USER_EXPLICIT",
+      "created_at": "2026-10-14T07:26:17Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "content_chars": 32938,
+      "thinking_chars": 0,
+      "configuration_blocks": 1,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 31,
+      "type": "PLANNER_RESPONSE",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:26:17Z",
+      "input_tokens": 10117,
+      "cache_read_tokens": 172647,
+      "output_tokens": 152,
+      "content_chars": 0,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [
+        "finish"
+      ],
+      "client_tool_names": [
+        "read"
+      ]
+    },
+    {
+      "step_index": 32,
+      "type": "GENERIC",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:26:25Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "content_chars": 140,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 33,
+      "type": "USER_INPUT",
+      "status": "DONE",
+      "source": "USER_EXPLICIT",
+      "created_at": "2026-10-14T07:26:26Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "content_chars": 47763,
+      "thinking_chars": 0,
+      "configuration_blocks": 1,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 34,
+      "type": "PLANNER_RESPONSE",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:26:26Z",
+      "input_tokens": 14022,
+      "cache_read_tokens": 182763,
+      "output_tokens": 21617,
+      "content_chars": 0,
+      "thinking_chars": 8961,
+      "configuration_blocks": 0,
+      "tool_names": [
+        "finish"
+      ],
+      "client_tool_names": [
+        "write"
+      ]
+    },
+    {
+      "step_index": 35,
+      "type": "GENERIC",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:28:29Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "content_chars": 140,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 36,
+      "type": "USER_INPUT",
+      "status": "DONE",
+      "source": "USER_EXPLICIT",
+      "created_at": "2026-10-14T07:28:30Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "content_chars": 74778,
+      "thinking_chars": 0,
+      "configuration_blocks": 1,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 37,
+      "type": "CHECKPOINT",
+      "status": "DONE",
+      "source": "SYSTEM",
+      "created_at": "2026-10-14T07:28:30Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "content_chars": 11121,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 38,
+      "type": "PLANNER_RESPONSE",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:30:40Z",
+      "input_tokens": 4774,
+      "cache_read_tokens": 0,
+      "output_tokens": 2621,
+      "content_chars": 0,
+      "thinking_chars": 1606,
+      "configuration_blocks": 0,
+      "tool_names": [
+        "finish"
+      ],
+      "client_tool_names": [
+        "pwsh"
+      ]
+    },
+    {
+      "step_index": 39,
+      "type": "GENERIC",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:30:59Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "content_chars": 140,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [],
+      "client_tool_names": []
+    }
+  ],
+  "all_native_transcripts": [
+    {
+      "step_index": 0,
+      "type": "USER_INPUT",
+      "status": "DONE",
+      "source": "USER_EXPLICIT",
+      "created_at": "2026-10-14T07:18:32Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "phase": "initial",
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "truncation_markers": [],
+      "content_chars": 32795,
+      "thinking_chars": 0,
+      "configuration_blocks": 1,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 1,
+      "type": "PLANNER_RESPONSE",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:18:32Z",
+      "input_tokens": 9560,
+      "cache_read_tokens": 0,
+      "output_tokens": 1280,
+      "phase": "initial",
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "truncation_markers": [],
+      "content_chars": 0,
+      "thinking_chars": 1568,
+      "configuration_blocks": 0,
+      "tool_names": [
+        "finish"
+      ],
+      "client_tool_names": [
+        "glob"
+      ]
+    },
+    {
+      "step_index": 2,
+      "type": "GENERIC",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:18:44Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "phase": "initial",
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "truncation_markers": [],
+      "content_chars": 140,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 3,
+      "type": "USER_INPUT",
+      "status": "DONE",
+      "source": "USER_EXPLICIT",
+      "created_at": "2026-10-14T07:18:45Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "phase": "initial",
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "truncation_markers": [],
+      "content_chars": 23824,
+      "thinking_chars": 0,
+      "configuration_blocks": 1,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 4,
+      "type": "PLANNER_RESPONSE",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:18:45Z",
+      "input_tokens": 16243,
+      "cache_read_tokens": 0,
+      "output_tokens": 1045,
+      "phase": "initial",
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "truncation_markers": [],
+      "content_chars": 0,
+      "thinking_chars": 592,
+      "configuration_blocks": 0,
+      "tool_names": [
+        "finish"
+      ],
+      "client_tool_names": [
+        "todo_write",
+        "read",
+        "read",
+        "read"
+      ]
+    },
+    {
+      "step_index": 5,
+      "type": "GENERIC",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:18:56Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "phase": "initial",
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "truncation_markers": [],
+      "content_chars": 140,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 6,
+      "type": "USER_INPUT",
+      "status": "DONE",
+      "source": "USER_EXPLICIT",
+      "created_at": "2026-10-14T07:18:57Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "phase": "initial",
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "truncation_markers": [],
+      "content_chars": 71650,
+      "thinking_chars": 0,
+      "configuration_blocks": 1,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 7,
+      "type": "PLANNER_RESPONSE",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:18:57Z",
+      "input_tokens": 39495,
+      "cache_read_tokens": 0,
+      "output_tokens": 179,
+      "phase": "initial",
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "truncation_markers": [],
+      "content_chars": 0,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [
+        "finish"
+      ],
+      "client_tool_names": [
+        "pwsh"
+      ]
+    },
+    {
+      "step_index": 8,
+      "type": "GENERIC",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:19:01Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "phase": "initial",
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "truncation_markers": [],
+      "content_chars": 140,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 9,
+      "type": "USER_INPUT",
+      "status": "DONE",
+      "source": "USER_EXPLICIT",
+      "created_at": "2026-10-14T07:19:11Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "phase": "initial",
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "truncation_markers": [],
+      "content_chars": 27827,
+      "thinking_chars": 0,
+      "configuration_blocks": 1,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 10,
+      "type": "PLANNER_RESPONSE",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:19:11Z",
+      "input_tokens": 6750,
+      "cache_read_tokens": 39490,
+      "output_tokens": 30727,
+      "phase": "initial",
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "truncation_markers": [],
+      "content_chars": 0,
+      "thinking_chars": 29409,
+      "configuration_blocks": 0,
+      "tool_names": [
+        "finish"
+      ],
+      "client_tool_names": [
+        "todo_write"
+      ]
+    },
+    {
+      "step_index": 11,
+      "type": "GENERIC",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:22:28Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "phase": "initial",
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "truncation_markers": [],
+      "content_chars": 140,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 12,
+      "type": "USER_INPUT",
+      "status": "DONE",
+      "source": "USER_EXPLICIT",
+      "created_at": "2026-10-14T07:22:29Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "phase": "initial",
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "truncation_markers": [],
+      "content_chars": 24321,
+      "thinking_chars": 0,
+      "configuration_blocks": 1,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 13,
+      "type": "PLANNER_RESPONSE",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:22:29Z",
+      "input_tokens": 36164,
+      "cache_read_tokens": 46273,
+      "output_tokens": 21906,
+      "phase": "initial",
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "truncation_markers": [],
+      "content_chars": 0,
+      "thinking_chars": 13280,
+      "configuration_blocks": 0,
+      "tool_names": [
+        "finish"
+      ],
+      "client_tool_names": [
+        "write"
+      ]
+    },
+    {
+      "step_index": 14,
+      "type": "GENERIC",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:24:36Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "phase": "initial",
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "truncation_markers": [],
+      "content_chars": 140,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 15,
+      "type": "USER_INPUT",
+      "status": "DONE",
+      "source": "USER_EXPLICIT",
+      "created_at": "2026-10-14T07:24:37Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "phase": "initial",
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "truncation_markers": [],
+      "content_chars": 63806,
+      "thinking_chars": 0,
+      "configuration_blocks": 1,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 16,
+      "type": "PLANNER_RESPONSE",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:24:37Z",
+      "input_tokens": 38775,
+      "cache_read_tokens": 82462,
+      "output_tokens": 216,
+      "phase": "initial",
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "truncation_markers": [],
+      "content_chars": 0,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [
+        "finish"
+      ],
+      "client_tool_names": [
+        "read"
+      ]
+    },
+    {
+      "step_index": 17,
+      "type": "GENERIC",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:24:41Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "phase": "initial",
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "truncation_markers": [],
+      "content_chars": 140,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 18,
+      "type": "USER_INPUT",
+      "status": "DONE",
+      "source": "USER_EXPLICIT",
+      "created_at": "2026-10-14T07:24:42Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "phase": "initial",
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "truncation_markers": [],
+      "content_chars": 40726,
+      "thinking_chars": 0,
+      "configuration_blocks": 1,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 19,
+      "type": "PLANNER_RESPONSE",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:24:42Z",
+      "input_tokens": 11644,
+      "cache_read_tokens": 121231,
+      "output_tokens": 9156,
+      "phase": "initial",
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "truncation_markers": [],
+      "content_chars": 0,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [
+        "finish"
+      ],
+      "client_tool_names": [
+        "write"
+      ]
+    },
+    {
+      "step_index": 20,
+      "type": "GENERIC",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:25:42Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "phase": "initial",
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "truncation_markers": [],
+      "content_chars": 140,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 21,
+      "type": "USER_INPUT",
+      "status": "DONE",
+      "source": "USER_EXPLICIT",
+      "created_at": "2026-10-14T07:25:42Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "phase": "initial",
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "truncation_markers": [],
+      "content_chars": 60744,
+      "thinking_chars": 0,
+      "configuration_blocks": 1,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 22,
+      "type": "PLANNER_RESPONSE",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:25:42Z",
+      "input_tokens": 25257,
+      "cache_read_tokens": 132884,
+      "output_tokens": 113,
+      "phase": "initial",
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "truncation_markers": [],
+      "content_chars": 0,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [
+        "finish"
+      ],
+      "client_tool_names": [
+        "pwsh"
+      ]
+    },
+    {
+      "step_index": 23,
+      "type": "GENERIC",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:25:46Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "phase": "initial",
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "truncation_markers": [],
+      "content_chars": 140,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 24,
+      "type": "USER_INPUT",
+      "status": "DONE",
+      "source": "USER_EXPLICIT",
+      "created_at": "2026-10-14T07:25:53Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "phase": "initial",
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "truncation_markers": [],
+      "content_chars": 27835,
+      "thinking_chars": 0,
+      "configuration_blocks": 1,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 25,
+      "type": "PLANNER_RESPONSE",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:25:54Z",
+      "input_tokens": 6691,
+      "cache_read_tokens": 158129,
+      "output_tokens": 378,
+      "phase": "initial",
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "truncation_markers": [],
+      "content_chars": 0,
+      "thinking_chars": 223,
+      "configuration_blocks": 0,
+      "tool_names": [
+        "finish"
+      ],
+      "client_tool_names": [
+        "todo_write",
+        "read"
+      ]
+    },
+    {
+      "step_index": 26,
+      "type": "GENERIC",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:25:58Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "phase": "initial",
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "truncation_markers": [],
+      "content_chars": 140,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 27,
+      "type": "USER_INPUT",
+      "status": "DONE",
+      "source": "USER_EXPLICIT",
+      "created_at": "2026-10-14T07:25:59Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "phase": "initial",
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "truncation_markers": [],
+      "content_chars": 30191,
+      "thinking_chars": 0,
+      "configuration_blocks": 1,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 28,
+      "type": "PLANNER_RESPONSE",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:25:59Z",
+      "input_tokens": 7844,
+      "cache_read_tokens": 164810,
+      "output_tokens": 2287,
+      "phase": "initial",
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "truncation_markers": [],
+      "content_chars": 0,
+      "thinking_chars": 356,
+      "configuration_blocks": 0,
+      "tool_names": [
+        "finish"
+      ],
+      "client_tool_names": [
+        "write"
+      ]
+    },
+    {
+      "step_index": 29,
+      "type": "GENERIC",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:26:17Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "phase": "initial",
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "truncation_markers": [],
+      "content_chars": 140,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 30,
+      "type": "USER_INPUT",
+      "status": "DONE",
+      "source": "USER_EXPLICIT",
+      "created_at": "2026-10-14T07:26:17Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "phase": "initial",
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "truncation_markers": [],
+      "content_chars": 32938,
+      "thinking_chars": 0,
+      "configuration_blocks": 1,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 31,
+      "type": "PLANNER_RESPONSE",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:26:17Z",
+      "input_tokens": 10117,
+      "cache_read_tokens": 172647,
+      "output_tokens": 152,
+      "phase": "initial",
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "truncation_markers": [],
+      "content_chars": 0,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [
+        "finish"
+      ],
+      "client_tool_names": [
+        "read"
+      ]
+    },
+    {
+      "step_index": 32,
+      "type": "GENERIC",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:26:25Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "phase": "initial",
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "truncation_markers": [],
+      "content_chars": 140,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 33,
+      "type": "USER_INPUT",
+      "status": "DONE",
+      "source": "USER_EXPLICIT",
+      "created_at": "2026-10-14T07:26:26Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "phase": "initial",
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "truncation_markers": [],
+      "content_chars": 47763,
+      "thinking_chars": 0,
+      "configuration_blocks": 1,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 34,
+      "type": "PLANNER_RESPONSE",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:26:26Z",
+      "input_tokens": 14022,
+      "cache_read_tokens": 182763,
+      "output_tokens": 21617,
+      "phase": "initial",
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "truncation_markers": [],
+      "content_chars": 0,
+      "thinking_chars": 8961,
+      "configuration_blocks": 0,
+      "tool_names": [
+        "finish"
+      ],
+      "client_tool_names": [
+        "write"
+      ]
+    },
+    {
+      "step_index": 35,
+      "type": "GENERIC",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:28:29Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "phase": "initial",
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "truncation_markers": [],
+      "content_chars": 140,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 36,
+      "type": "USER_INPUT",
+      "status": "DONE",
+      "source": "USER_EXPLICIT",
+      "created_at": "2026-10-14T07:28:30Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "phase": "initial",
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "truncation_markers": [],
+      "content_chars": 74778,
+      "thinking_chars": 0,
+      "configuration_blocks": 1,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 37,
+      "type": "CHECKPOINT",
+      "status": "DONE",
+      "source": "SYSTEM",
+      "created_at": "2026-10-14T07:28:30Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "phase": "initial",
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "truncation_markers": [
+        "<truncated 26727 bytes>",
+        "<truncated 23221 bytes>",
+        "<truncated 62708 bytes>",
+        "<truncated 39626 bytes>",
+        "<truncated 59644 bytes>",
+        "<truncated 26735 bytes>",
+        "<truncated 29091 bytes>",
+        "<truncated 31838 bytes>",
+        "<truncated 46770 bytes>",
+        "<truncated 73786 bytes>"
+      ],
+      "content_chars": 11121,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 38,
+      "type": "PLANNER_RESPONSE",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:30:40Z",
+      "input_tokens": 4774,
+      "cache_read_tokens": 0,
+      "output_tokens": 2621,
+      "phase": "initial",
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "truncation_markers": [],
+      "content_chars": 0,
+      "thinking_chars": 1606,
+      "configuration_blocks": 0,
+      "tool_names": [
+        "finish"
+      ],
+      "client_tool_names": [
+        "pwsh"
+      ]
+    },
+    {
+      "step_index": 39,
+      "type": "GENERIC",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:30:59Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "phase": "initial",
+      "conversation_id": "9f0df29c-3ae0-48f7-8a6b-b1f667b02e43",
+      "truncation_markers": [],
+      "content_chars": 140,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 0,
+      "type": "USER_INPUT",
+      "status": "DONE",
+      "source": "USER_EXPLICIT",
+      "created_at": "2026-10-14T07:31:04Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "phase": "repair",
+      "conversation_id": "e1a0a02f-c7a0-4b0c-97e6-7ed71753bcbb",
+      "truncation_markers": [
+        "<truncated 86712 bytes>"
+      ],
+      "content_chars": 191988,
+      "thinking_chars": 0,
+      "configuration_blocks": 1,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 1,
+      "type": "PLANNER_RESPONSE",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:31:04Z",
+      "input_tokens": 60224,
+      "cache_read_tokens": 0,
+      "output_tokens": 3265,
+      "phase": "repair",
+      "conversation_id": "e1a0a02f-c7a0-4b0c-97e6-7ed71753bcbb",
+      "truncation_markers": [],
+      "content_chars": 0,
+      "thinking_chars": 3041,
+      "configuration_blocks": 0,
+      "tool_names": [
+        "finish"
+      ],
+      "client_tool_names": [
+        "read"
+      ]
+    },
+    {
+      "step_index": 2,
+      "type": "GENERIC",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:31:30Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "phase": "repair",
+      "conversation_id": "e1a0a02f-c7a0-4b0c-97e6-7ed71753bcbb",
+      "truncation_markers": [],
+      "content_chars": 140,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 0,
+      "type": "USER_INPUT",
+      "status": "DONE",
+      "source": "USER_EXPLICIT",
+      "created_at": "2026-10-14T07:31:37Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "phase": "resumed",
+      "conversation_id": "1b550230-046c-4e7f-9a9d-b53a5d065a89",
+      "truncation_markers": [
+        "<truncated 96346 bytes>"
+      ],
+      "content_chars": 191988,
+      "thinking_chars": 0,
+      "configuration_blocks": 1,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 1,
+      "type": "PLANNER_RESPONSE",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:31:37Z",
+      "input_tokens": 60229,
+      "cache_read_tokens": 0,
+      "output_tokens": 8342,
+      "phase": "resumed",
+      "conversation_id": "1b550230-046c-4e7f-9a9d-b53a5d065a89",
+      "truncation_markers": [],
+      "content_chars": 0,
+      "thinking_chars": 6474,
+      "configuration_blocks": 0,
+      "tool_names": [
+        "finish"
+      ],
+      "client_tool_names": [
+        "pwsh"
+      ]
+    },
+    {
+      "step_index": 2,
+      "type": "GENERIC",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:32:30Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "phase": "resumed",
+      "conversation_id": "1b550230-046c-4e7f-9a9d-b53a5d065a89",
+      "truncation_markers": [],
+      "content_chars": 140,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 3,
+      "type": "USER_INPUT",
+      "status": "DONE",
+      "source": "USER_EXPLICIT",
+      "created_at": "2026-10-14T07:32:32Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "phase": "resumed",
+      "conversation_id": "1b550230-046c-4e7f-9a9d-b53a5d065a89",
+      "truncation_markers": [],
+      "content_chars": 27072,
+      "thinking_chars": 0,
+      "configuration_blocks": 1,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 4,
+      "type": "PLANNER_RESPONSE",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:32:32Z",
+      "input_tokens": 75123,
+      "cache_read_tokens": 0,
+      "output_tokens": 14704,
+      "phase": "resumed",
+      "conversation_id": "1b550230-046c-4e7f-9a9d-b53a5d065a89",
+      "truncation_markers": [],
+      "content_chars": 0,
+      "thinking_chars": 14899,
+      "configuration_blocks": 0,
+      "tool_names": [
+        "finish"
+      ],
+      "client_tool_names": [
+        "read"
+      ]
+    },
+    {
+      "step_index": 5,
+      "type": "GENERIC",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:34:04Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "phase": "resumed",
+      "conversation_id": "1b550230-046c-4e7f-9a9d-b53a5d065a89",
+      "truncation_markers": [],
+      "content_chars": 140,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 6,
+      "type": "USER_INPUT",
+      "status": "DONE",
+      "source": "USER_EXPLICIT",
+      "created_at": "2026-10-14T07:34:05Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "phase": "resumed",
+      "conversation_id": "1b550230-046c-4e7f-9a9d-b53a5d065a89",
+      "truncation_markers": [],
+      "content_chars": 33725,
+      "thinking_chars": 0,
+      "configuration_blocks": 1,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 7,
+      "type": "PLANNER_RESPONSE",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:34:05Z",
+      "input_tokens": 23393,
+      "cache_read_tokens": 75123,
+      "output_tokens": 7403,
+      "phase": "resumed",
+      "conversation_id": "1b550230-046c-4e7f-9a9d-b53a5d065a89",
+      "truncation_markers": [],
+      "content_chars": 0,
+      "thinking_chars": 7025,
+      "configuration_blocks": 0,
+      "tool_names": [
+        "finish"
+      ],
+      "client_tool_names": [
+        "read"
+      ]
+    },
+    {
+      "step_index": 8,
+      "type": "GENERIC",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:34:49Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "phase": "resumed",
+      "conversation_id": "1b550230-046c-4e7f-9a9d-b53a5d065a89",
+      "truncation_markers": [],
+      "content_chars": 140,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 9,
+      "type": "USER_INPUT",
+      "status": "DONE",
+      "source": "USER_EXPLICIT",
+      "created_at": "2026-10-14T07:34:50Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "phase": "resumed",
+      "conversation_id": "1b550230-046c-4e7f-9a9d-b53a5d065a89",
+      "truncation_markers": [],
+      "content_chars": 49221,
+      "thinking_chars": 0,
+      "configuration_blocks": 1,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 10,
+      "type": "PLANNER_RESPONSE",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:34:50Z",
+      "input_tokens": 21751,
+      "cache_read_tokens": 98515,
+      "output_tokens": 177,
+      "phase": "resumed",
+      "conversation_id": "1b550230-046c-4e7f-9a9d-b53a5d065a89",
+      "truncation_markers": [],
+      "content_chars": 0,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [
+        "finish"
+      ],
+      "client_tool_names": [
+        "read"
+      ]
+    },
+    {
+      "step_index": 11,
+      "type": "GENERIC",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:34:54Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "phase": "resumed",
+      "conversation_id": "1b550230-046c-4e7f-9a9d-b53a5d065a89",
+      "truncation_markers": [],
+      "content_chars": 140,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 12,
+      "type": "USER_INPUT",
+      "status": "DONE",
+      "source": "USER_EXPLICIT",
+      "created_at": "2026-10-14T07:34:55Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "phase": "resumed",
+      "conversation_id": "1b550230-046c-4e7f-9a9d-b53a5d065a89",
+      "truncation_markers": [],
+      "content_chars": 49230,
+      "thinking_chars": 0,
+      "configuration_blocks": 1,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 13,
+      "type": "PLANNER_RESPONSE",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:34:55Z",
+      "input_tokens": 14674,
+      "cache_read_tokens": 120260,
+      "output_tokens": 657,
+      "phase": "resumed",
+      "conversation_id": "1b550230-046c-4e7f-9a9d-b53a5d065a89",
+      "truncation_markers": [],
+      "content_chars": 0,
+      "thinking_chars": 354,
+      "configuration_blocks": 0,
+      "tool_names": [
+        "finish"
+      ],
+      "client_tool_names": [
+        "pwsh"
+      ]
+    },
+    {
+      "step_index": 14,
+      "type": "GENERIC",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:35:01Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "phase": "resumed",
+      "conversation_id": "1b550230-046c-4e7f-9a9d-b53a5d065a89",
+      "truncation_markers": [],
+      "content_chars": 140,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 15,
+      "type": "USER_INPUT",
+      "status": "DONE",
+      "source": "USER_EXPLICIT",
+      "created_at": "2026-10-14T07:35:13Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "phase": "resumed",
+      "conversation_id": "1b550230-046c-4e7f-9a9d-b53a5d065a89",
+      "truncation_markers": [],
+      "content_chars": 32656,
+      "thinking_chars": 0,
+      "configuration_blocks": 1,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 16,
+      "type": "PLANNER_RESPONSE",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:35:14Z",
+      "input_tokens": 8585,
+      "cache_read_tokens": 134923,
+      "output_tokens": 411,
+      "phase": "resumed",
+      "conversation_id": "1b550230-046c-4e7f-9a9d-b53a5d065a89",
+      "truncation_markers": [],
+      "content_chars": 0,
+      "thinking_chars": 231,
+      "configuration_blocks": 0,
+      "tool_names": [
+        "finish"
+      ],
+      "client_tool_names": [
+        "todo_write"
+      ]
+    },
+    {
+      "step_index": 17,
+      "type": "GENERIC",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:35:19Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "phase": "resumed",
+      "conversation_id": "1b550230-046c-4e7f-9a9d-b53a5d065a89",
+      "truncation_markers": [],
+      "content_chars": 140,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 18,
+      "type": "USER_INPUT",
+      "status": "DONE",
+      "source": "USER_EXPLICIT",
+      "created_at": "2026-10-14T07:35:19Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "phase": "resumed",
+      "conversation_id": "1b550230-046c-4e7f-9a9d-b53a5d065a89",
+      "truncation_markers": [],
+      "content_chars": 24378,
+      "thinking_chars": 0,
+      "configuration_blocks": 1,
+      "tool_names": [],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 19,
+      "type": "PLANNER_RESPONSE",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:35:19Z",
+      "input_tokens": 5896,
+      "cache_read_tokens": 143495,
+      "output_tokens": 1459,
+      "phase": "resumed",
+      "conversation_id": "1b550230-046c-4e7f-9a9d-b53a5d065a89",
+      "truncation_markers": [],
+      "content_chars": 0,
+      "thinking_chars": 336,
+      "configuration_blocks": 0,
+      "tool_names": [
+        "finish"
+      ],
+      "client_tool_names": []
+    },
+    {
+      "step_index": 20,
+      "type": "GENERIC",
+      "status": "DONE",
+      "source": "MODEL",
+      "created_at": "2026-10-14T07:35:31Z",
+      "input_tokens": null,
+      "cache_read_tokens": null,
+      "output_tokens": null,
+      "phase": "resumed",
+      "conversation_id": "1b550230-046c-4e7f-9a9d-b53a5d065a89",
+      "truncation_markers": [],
+      "content_chars": 140,
+      "thinking_chars": 0,
+      "configuration_blocks": 0,
+      "tool_names": [],
+      "client_tool_names": []
+    }
+  ],
+  "checkpoints": [
+    {
+      "start_utc": "2026-10-14T07:28:30Z",
+      "next_planner_utc": "2026-10-14T07:30:40Z",
+      "approximate_seconds": 130.0,
+      "resolution_seconds": 1
+    }
+  ],
+  "dsh_actual_test_summaries": [
+    "Ran 21 tests in 7.835s",
+    "Ran 21 tests in 5.668s",
+    "Ran 42 tests in 10.836s"
+  ],
+  "dsh_summary": {
+    "launch": {
+      "seconds": 0.661478,
+      "utc": "2026-10-14T07:18:16.896617+00:00"
+    },
+    "ended": {
+      "seconds": 1035.585344,
+      "utc": "2026-10-14T07:35:31.820332+00:00"
+    },
+    "exit_code": 0,
+    "wall_seconds": 1034.923866,
+    "requests": 21
+  },
+  "limitations": [
+    "Auxiliary title request runs concurrently and is excluded from main-task sums.",
+    "Network residual includes SSH, both relays, scheduling and transfer; it is not pure RTT.",
+    "AGY default log collision: PIDs 95 and 100 opened the same inode with independent non-append offsets; raw log is incomplete.",
+    "AGY intervals include native preparation, upstream network, generation and bridge finish; no upstream first-token instrument is available.",
+    "This production image still repeats tool configuration. The local once-per-session fix is not deployed.",
+    "Trace lanes use recorded wall-clock alignment for visualization only. Network residuals use same-host monotonic durations.",
+    "Logged CLI turn durations have 0.01-second resolution; repair and resumed process boot partly fall outside these intervals.",
+    "This is a complex modification task, not the previous from-scratch task; do not infer a performance multiplier."
+  ],
+  "network_before": [
+    {
+      "number": 1,
+      "status": 200,
+      "seconds": 0.35082900000270456
+    },
+    {
+      "number": 2,
+      "status": 200,
+      "seconds": 0.17699920001905411
+    },
+    {
+      "number": 3,
+      "status": 200,
+      "seconds": 0.1850930000655353
+    },
+    {
+      "number": 4,
+      "status": 200,
+      "seconds": 0.14501380000729114
+    },
+    {
+      "number": 5,
+      "status": 200,
+      "seconds": 0.18794400000479072
+    },
+    {
+      "number": 6,
+      "status": 200,
+      "seconds": 0.20200869999825954
+    }
+  ],
+  "network_after": [
+    {
+      "number": 1,
+      "status": 200,
+      "seconds": 0.2799352000001818
+    },
+    {
+      "number": 2,
+      "status": 200,
+      "seconds": 0.1711352999554947
+    },
+    {
+      "number": 3,
+      "status": 200,
+      "seconds": 0.17149320000316948
+    },
+    {
+      "number": 4,
+      "status": 200,
+      "seconds": 0.1616107999579981
+    },
+    {
+      "number": 5,
+      "status": 200,
+      "seconds": 0.14111490000505
+    },
+    {
+      "number": 6,
+      "status": 200,
+      "seconds": 0.16506999998819083
+    }
+  ],
+  "independent_acceptance": {
+    "passed": 37,
+    "total": 37,
+    "checks": [
+      {
+        "name": "legacy records gain empty dependencies without rewriting storage",
+        "passed": true
+      },
+      {
+        "name": "add Root",
+        "passed": true
+      },
+      {
+        "name": "add Branch A",
+        "passed": true
+      },
+      {
+        "name": "add Branch B",
+        "passed": true
+      },
+      {
+        "name": "add Leaf",
+        "passed": true
+      },
+      {
+        "name": "blocked completion is atomic",
+        "passed": true
+      },
+      {
+        "name": "ready filter",
+        "passed": true
+      },
+      {
+        "name": "blocked filter",
+        "passed": true
+      },
+      {
+        "name": "stable topological order",
+        "passed": true
+      },
+      {
+        "name": "reject cycle without writing",
+        "passed": true
+      },
+      {
+        "name": "reject self dependency",
+        "passed": true
+      },
+      {
+        "name": "reject unknown dependency",
+        "passed": true
+      },
+      {
+        "name": "reject referenced deletion",
+        "passed": true
+      },
+      {
+        "name": "reject add with unknown dependency",
+        "passed": true
+      },
+      {
+        "name": "dependency replacement",
+        "passed": true
+      },
+      {
+        "name": "dependency clearing",
+        "passed": true
+      },
+      {
+        "name": "complete prerequisites then task",
+        "passed": true
+      },
+      {
+        "name": "done task cannot depend on pending task",
+        "passed": true
+      },
+      {
+        "name": "dry-run predicts IDs and preserves bytes",
+        "passed": true
+      },
+      {
+        "name": "dry-run does not create storage",
+        "passed": true
+      },
+      {
+        "name": "forward refs import in manifest ID order",
+        "passed": true
+      },
+      {
+        "name": "imported edge points to allocated ID",
+        "passed": true
+      },
+      {
+        "name": "topological order honors forward refs",
+        "passed": true
+      },
+      {
+        "name": "transactional rejection: duplicate refs",
+        "passed": true
+      },
+      {
+        "name": "transactional rejection: unknown ref",
+        "passed": true
+      },
+      {
+        "name": "transactional rejection: cyclic batch",
+        "passed": true
+      },
+      {
+        "name": "transactional rejection: duplicate edges",
+        "passed": true
+      },
+      {
+        "name": "transactional rejection: invalid priority",
+        "passed": true
+      },
+      {
+        "name": "transactional rejection: invalid tags type",
+        "passed": true
+      },
+      {
+        "name": "transactional rejection: invalid title type",
+        "passed": true
+      },
+      {
+        "name": "transactional rejection: blank title",
+        "passed": true
+      },
+      {
+        "name": "transactional rejection: invalid ref type",
+        "passed": true
+      },
+      {
+        "name": "failed imports consume no IDs",
+        "passed": true
+      },
+      {
+        "name": "corrupt stored graph: self",
+        "passed": true
+      },
+      {
+        "name": "corrupt stored graph: missing",
+        "passed": true
+      },
+      {
+        "name": "corrupt stored graph: duplicate",
+        "passed": true
+      },
+      {
+        "name": "corrupt stored graph: cycle",
+        "passed": true
+      }
+    ]
+  },
+  "verification": {
+    "exit_code": 0,
+    "wall_seconds": 12.347241599927656,
+    "test_summary": [
+      "Ran 42 tests in 12.173s"
+    ],
+    "original_test_methods": 21,
+    "new_test_methods": 21,
+    "missing_original_methods": [],
+    "modified_original_methods": [
+      "TestTaskboxSchemaAndDefaults.test_json_list_output_schema"
+    ],
+    "files": {
+      "README.md": {
+        "before_sha256": "7ffe59631e3d9bf91f09fbc4f75faa8c5e7e285d07f5c1c405b4829195e6a001",
+        "after_sha256": "d22dff48d4b1fd3795e85c3d7337d6401bdefe76ca523641dcdea2350b2b1beb"
+      },
+      "taskbox.py": {
+        "before_sha256": "e2bd533dc3f782ba8c6825e4b07e45806b7ec4fcf6871a118f392d41ad9f07b1",
+        "after_sha256": "5502c77d9ecc4e73d43fb51cbd8650e705fca384d1bf8469107f4c8221d1a7cd"
+      },
+      "test_taskbox.py": {
+        "before_sha256": "3371309382f5963f1a2d9728edb098e5aed73fbdbf1c21662feab2686f920061",
+        "after_sha256": "68fae2bf0dcba074d02687fde60c72ab55be7119c3f929910fed561a1fdc938c"
+      }
+    }
+  },
+  "native_log_meta": {
+    "log_file": "cli-20261014_071826.log",
+    "bytes": 487361,
+    "sources": {
+      "resolver.go:85": 1,
+      "resolver.go:111": 1,
+      "server.go:1633": 1,
+      "server.go:1684": 1,
+      "server.go:636": 1,
+      "server.go:651": 1,
+      "server.go:659": 1,
+      "errorreport.go:224": 30,
+      "model_configs.go:284": 1,
+      "cache.go:135": 27,
+      "store_client.go:704": 1,
+      "auth_store.go:136": 2,
+      "defaults.go:711": 1,
+      "manager.go:108": 1,
+      "store_client.go:754": 1,
+      "manager.go:88": 6,
+      "manager.go:91": 6,
+      "manager.go:100": 6,
+      "server.go:3226": 1,
+      "server.go:3233": 1,
+      "server.go:3244": 1,
+      "server.go:3247": 1,
+      "server.go:4016": 3,
+      "server.go:3719": 3,
+      "profiler.go:231": 1,
+      "server.go:2653": 1,
+      "reconcile_summaries.go:94": 1,
+      "auto_updater.go:281": 1,
+      "common.go:156": 1,
+      "launchsteps.go:86": 1,
+      "common.go:178": 1,
+      "server.go:337": 1,
+      "composite_token_storage.go:123": 1,
+      "auth_provider.go:952": 1,
+      "server.go:2182": 2,
+      "analytics.go:200": 1,
+      "printmode.go:202": 1,
+      "manager.go:483": 1,
+      "cli_setting_manager.go:364": 1,
+      "cli_setting_manager.go:79": 1,
+      "cli_setting_manager.go:92": 1,
+      "hooks_manager.go:53": 2,
+      "manager.go:667": 1,
+      "manager.go:1430": 2,
+      "manager.go:1407": 4,
+      "manager.go:1411": 3,
+      "encoder_embed.go:85": 1,
+      "printmode.go:403": 1,
+      "keyring.go:64": 1,
+      "auth.go:157": 1,
+      "server_oauth.go:204": 1,
+      "server_oauth.go:209": 1,
+      "server_oauth.go:215": 1,
+      "cache.go:163": 2,
+      "http_helpers.go:349": 15,
+      "http_helpers.go:369": 57,
+      "http_helpers.go:375": 57,
+      "http_helpers.go:381": 57,
+      "http_helpers.go:352": 26,
+      "remote_agent.go:166": 1,
+      "experiment_manager.go:70": 2,
+      "model_resolver.go:107": 3,
+      "model_config_manager.go:340": 2,
+      "quota_manager.go:45": 2,
+      "experiment_manager.go:66": 2,
+      "conversation_manager.go:575": 1,
+      "server.go:1184": 1,
+      "server.go:1187": 1,
+      "server.go:1219": 1,
+      "server.go:3128": 3,
+      "conversation_manager.go:622": 1,
+      "cli_setting_manager.go:218": 1,
+      "conversation_manager.go:668": 1,
+      "conversation_manager.go:969": 1,
+      "server.go:1229": 1,
+      "manager.go:1535": 1,
+      "session.go:194": 8,
+      "printmode.go:894": 8,
+      "conversation_manager.go:779": 8,
+      "server.go:1805": 8,
+      "latency_breakdown.go:170": 8,
+      "declarative_config_loader.go:280": 21
+    },
+    "network_events": [
+      {
+        "at": "1014 07:18:28.318660",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:loadCodeAssist",
+        "source": "http_helpers.go:349"
+      },
+      {
+        "at": "1014 07:18:28.318739",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:loadCodeAssist:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:18:28.318770",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:loadCodeAssist:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:18:28.318918",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:loadCodeAssist:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:18:28.361010",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:loadCodeAssist:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:18:28.361044",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:loadCodeAssist:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:18:28.361228",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:loadCodeAssist:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:18:28.528517",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:fetchUserInfo:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:18:28.528553",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:fetchUserInfo:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:18:28.528723",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:fetchUserInfo:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:18:29.154077",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:fetchAdminControls",
+        "source": "http_helpers.go:352"
+      },
+      {
+        "at": "1014 07:18:29.154119",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:fetchAdminControls:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:18:29.154140",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:fetchAdminControls:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:18:29.154290",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:fetchAdminControls:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:18:29.359823",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:fetchAvailableModels",
+        "source": "http_helpers.go:349"
+      },
+      {
+        "at": "1014 07:18:29.359896",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:fetchAvailableModels:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:18:29.359921",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:fetchAvailableModels:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:18:29.363383",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:fetchAvailableModels:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:18:29.460165",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:fetchAvailableModels:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:18:29.460183",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:fetchAvailableModels:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:18:29.462867",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:fetchAvailableModels:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:18:29.476597",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:retrieveUserQuotaSummary:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:18:29.476664",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:retrieveUserQuotaSummary:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:18:29.476841",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:retrieveUserQuotaSummary:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:18:29.557406",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:18:29.557489",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:18:29.558181",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:18:30.090217",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:18:30.090253",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:18:30.090927",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:18:30.369476",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:loadCodeAssist",
+        "source": "http_helpers.go:349"
+      },
+      {
+        "at": "1014 07:18:30.369535",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:loadCodeAssist:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:18:30.369559",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:loadCodeAssist:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:18:30.369818",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:loadCodeAssist:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:18:31.228461",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:loadCodeAssist:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:18:31.228576",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:loadCodeAssist:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:18:31.229103",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:loadCodeAssist:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:18:33.568019",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:loadCodeAssist:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:18:33.568055",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:loadCodeAssist:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:18:33.568234",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:loadCodeAssist:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:18:33.691434",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:fetchUserInfo",
+        "source": "http_helpers.go:352"
+      },
+      {
+        "at": "1014 07:18:33.691478",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:fetchUserInfo:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:18:33.691501",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:fetchUserInfo:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:18:33.692163",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:fetchUserInfo:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:18:34.141467",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:writeTrajectoryAcls",
+        "source": "http_helpers.go:352"
+      },
+      {
+        "at": "1014 07:18:34.141526",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:writeTrajectoryAcls:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:18:34.141555",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:writeTrajectoryAcls:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:18:34.141696",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:writeTrajectoryAcls:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:18:34.185455",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:retrieveUserQuotaSummary",
+        "source": "http_helpers.go:352"
+      },
+      {
+        "at": "1014 07:18:34.185511",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:retrieveUserQuotaSummary:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:18:34.185552",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:retrieveUserQuotaSummary:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:18:34.185964",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:retrieveUserQuotaSummary:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:18:34.276774",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments",
+        "source": "http_helpers.go:352"
+      },
+      {
+        "at": "1014 07:18:34.276838",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:18:34.276901",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:18:34.277467",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:18:34.436071",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments",
+        "source": "http_helpers.go:352"
+      },
+      {
+        "at": "1014 07:18:34.436135",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:18:34.436162",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:18:34.437168",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:18:39.872724",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:streamGenerateContent",
+        "source": "http_helpers.go:349"
+      },
+      {
+        "at": "1014 07:18:44.989040",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:recordTrajectoryAnalytics",
+        "source": "http_helpers.go:352"
+      },
+      {
+        "at": "1014 07:18:44.989105",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:recordTrajectoryAnalytics:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:18:44.989135",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:recordTrajectoryAnalytics:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:18:44.989233",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:recordTrajectoryAnalytics:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:18:54.260138",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:streamGenerateContent",
+        "source": "http_helpers.go:349"
+      },
+      {
+        "at": "1014 07:18:57.066853",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:recordTrajectoryAnalytics",
+        "source": "http_helpers.go:352"
+      },
+      {
+        "at": "1014 07:18:57.066921",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:recordTrajectoryAnalytics:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:18:57.066954",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:recordTrajectoryAnalytics:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:18:57.067049",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:recordTrajectoryAnalytics:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:19:01.380132",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:streamGenerateContent",
+        "source": "http_helpers.go:349"
+      },
+      {
+        "at": "1014 07:19:01.759154",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:recordTrajectoryAnalytics",
+        "source": "http_helpers.go:352"
+      },
+      {
+        "at": "1014 07:19:01.759203",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:recordTrajectoryAnalytics:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:19:01.759233",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:recordTrajectoryAnalytics:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:19:01.759997",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:recordTrajectoryAnalytics:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:19:16.661227",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:streamGenerateContent",
+        "source": "http_helpers.go:349"
+      },
+      {
+        "at": "1014 07:19:27.143425",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments",
+        "source": "http_helpers.go:352"
+      },
+      {
+        "at": "1014 07:19:27.143474",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:19:27.143504",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:19:27.143942",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:20:26.487705",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments",
+        "source": "http_helpers.go:352"
+      },
+      {
+        "at": "1014 07:20:26.487757",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:20:26.487777",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:20:26.488211",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:20:27.113075",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:20:27.113100",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:20:27.113695",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:21:26.483999",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:21:26.484020",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:21:26.484374",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:21:26.513452",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:21:26.513486",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:21:26.514090",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:22:26.494883",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:22:26.494918",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:22:26.495774",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:22:28.023649",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:22:28.023676",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:22:28.024045",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:22:29.569431",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:recordTrajectoryAnalytics:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:22:29.569455",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:recordTrajectoryAnalytics:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:22:29.569538",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:recordTrajectoryAnalytics:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:22:41.877458",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:streamGenerateContent",
+        "source": "http_helpers.go:349"
+      },
+      {
+        "at": "1014 07:23:26.506309",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments",
+        "source": "http_helpers.go:352"
+      },
+      {
+        "at": "1014 07:23:26.506335",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:23:26.506354",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:23:26.507672",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:24:26.493795",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments",
+        "source": "http_helpers.go:352"
+      },
+      {
+        "at": "1014 07:24:26.493869",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:24:26.493904",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:24:26.494364",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:24:26.497120",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:24:26.497144",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:24:26.497474",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:24:26.848140",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:fetchAvailableModels:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:24:26.848159",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:fetchAvailableModels:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:24:26.849767",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:fetchAvailableModels:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:24:27.376674",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:loadCodeAssist",
+        "source": "http_helpers.go:349"
+      },
+      {
+        "at": "1014 07:24:27.376720",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:loadCodeAssist:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:24:27.376743",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:loadCodeAssist:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:24:27.376893",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:loadCodeAssist:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:24:37.233554",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:fetchUserInfo",
+        "source": "http_helpers.go:352"
+      },
+      {
+        "at": "1014 07:24:37.233644",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:fetchUserInfo:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:24:37.233674",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:fetchUserInfo:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:24:37.233774",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:fetchUserInfo:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:24:37.478317",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:recordTrajectoryAnalytics",
+        "source": "http_helpers.go:352"
+      },
+      {
+        "at": "1014 07:24:37.478365",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:recordTrajectoryAnalytics:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:24:37.478386",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:recordTrajectoryAnalytics:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:24:37.478460",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:recordTrajectoryAnalytics:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:24:41.951171",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:streamGenerateContent",
+        "source": "http_helpers.go:349"
+      },
+      {
+        "at": "1014 07:24:42.507778",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:recordTrajectoryAnalytics",
+        "source": "http_helpers.go:352"
+      },
+      {
+        "at": "1014 07:24:42.507829",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:recordTrajectoryAnalytics:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:24:42.507851",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:recordTrajectoryAnalytics:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:24:42.507924",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:recordTrajectoryAnalytics:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:25:26.679329",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments",
+        "source": "http_helpers.go:352"
+      },
+      {
+        "at": "1014 07:25:26.679379",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:25:26.679403",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:25:26.679833",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:25:42.202393",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:streamGenerateContent",
+        "source": "http_helpers.go:349"
+      },
+      {
+        "at": "1014 07:25:42.680517",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:recordTrajectoryAnalytics",
+        "source": "http_helpers.go:352"
+      },
+      {
+        "at": "1014 07:25:42.680587",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:recordTrajectoryAnalytics:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:25:42.680655",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:recordTrajectoryAnalytics:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:25:42.681142",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:recordTrajectoryAnalytics:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:26:26.455694",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:26:26.455714",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:26:26.456083",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:26:27.226334",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:26:27.226365",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:26:27.226895",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:27:26.510838",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:27:26.510861",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:27:26.512207",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:28:26.507796",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments",
+        "source": "http_helpers.go:352"
+      },
+      {
+        "at": "1014 07:28:26.507837",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:28:26.507861",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:28:26.508379",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:28:26.524791",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:28:26.524815",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:28:26.527733",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:29:26.592820",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:29:26.592853",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:29:26.593471",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:29:27.020345",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:29:27.020370",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:29:27.020959",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:30:26.455553",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:30:26.455608",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:30:26.456144",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:30:26.826046",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:fetchAvailableModels",
+        "source": "http_helpers.go:349"
+      },
+      {
+        "at": "1014 07:30:26.826104",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:fetchAvailableModels:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:30:26.826129",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:fetchAvailableModels:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:30:26.827017",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:fetchAvailableModels:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:30:27.688355",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:loadCodeAssist",
+        "source": "http_helpers.go:349"
+      },
+      {
+        "at": "1014 07:30:27.688414",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:loadCodeAssist:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:30:27.688436",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:loadCodeAssist:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:30:27.688566",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:loadCodeAssist:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:31:26.640416",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments",
+        "source": "http_helpers.go:352"
+      },
+      {
+        "at": "1014 07:31:26.640472",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:31:26.640499",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:31:26.641714",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:32:26.413885",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments",
+        "source": "http_helpers.go:352"
+      },
+      {
+        "at": "1014 07:32:26.413940",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:32:26.413961",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:32:26.414313",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:33:26.413903",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments",
+        "source": "http_helpers.go:352"
+      },
+      {
+        "at": "1014 07:33:26.413952",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:33:26.413978",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:33:26.414362",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:34:26.767776",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments",
+        "source": "http_helpers.go:352"
+      },
+      {
+        "at": "1014 07:34:26.767856",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:34:26.767895",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:34:26.768453",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:35:26.641941",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments",
+        "source": "http_helpers.go:352"
+      },
+      {
+        "at": "1014 07:35:26.642019",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:35:26.642054",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:35:26.642677",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:36:26.611047",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments",
+        "source": "http_helpers.go:352"
+      },
+      {
+        "at": "1014 07:36:26.611123",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:36:26.611161",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:36:26.611972",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:36:27.418569",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:fetchAvailableModels",
+        "source": "http_helpers.go:349"
+      },
+      {
+        "at": "1014 07:36:27.418728",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:fetchAvailableModels:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:36:27.418804",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:fetchAvailableModels:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:36:27.420029",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:fetchAvailableModels:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:36:27.463978",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:loadCodeAssist",
+        "source": "http_helpers.go:349"
+      },
+      {
+        "at": "1014 07:36:27.464052",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:loadCodeAssist:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:36:27.464105",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:loadCodeAssist:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:36:27.464239",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:loadCodeAssist:",
+        "source": "http_helpers.go:381"
+      },
+      {
+        "at": "1014 07:37:26.500859",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments",
+        "source": "http_helpers.go:352"
+      },
+      {
+        "at": "1014 07:37:26.500919",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:369"
+      },
+      {
+        "at": "1014 07:37:26.500945",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:375"
+      },
+      {
+        "at": "1014 07:37:26.501340",
+        "host": "daily-cloudcode-pa.googleapis.com",
+        "path": "/v1internal:listExperiments:",
+        "source": "http_helpers.go:381"
+      }
+    ],
+    "message_submission": [
+      {
+        "at": "1014 07:18:33.790431",
+        "fields_ms": {
+          "active_user_state_latency_ms": 0,
+          "cascade_send_latency_ms": 13,
+          "hydrate_slash_commands_latency_ms": 0,
+          "load_trajectory_latency_ms": 0,
+          "media_summaries_latency_ms": 0,
+          "resolve_agent_config_latency_ms": 0,
+          "save_media_latency_ms": 0,
+          "total_latency_ms": 14
+        }
+      },
+      {
+        "at": "1014 07:18:45.607241",
+        "fields_ms": {
+          "active_user_state_latency_ms": 0,
+          "cascade_send_latency_ms": 1,
+          "hydrate_slash_commands_latency_ms": 0,
+          "load_trajectory_latency_ms": 0,
+          "media_summaries_latency_ms": 0,
+          "resolve_agent_config_latency_ms": 0,
+          "save_media_latency_ms": 0,
+          "total_latency_ms": 1
+        }
+      },
+      {
+        "at": "1014 07:18:57.494420",
+        "fields_ms": {
+          "active_user_state_latency_ms": 0,
+          "cascade_send_latency_ms": 1,
+          "hydrate_slash_commands_latency_ms": 0,
+          "load_trajectory_latency_ms": 0,
+          "media_summaries_latency_ms": 0,
+          "resolve_agent_config_latency_ms": 0,
+          "save_media_latency_ms": 0,
+          "total_latency_ms": 1
+        }
+      },
+      {
+        "at": "1014 07:19:11.063462",
+        "fields_ms": {
+          "active_user_state_latency_ms": 0,
+          "cascade_send_latency_ms": 0,
+          "hydrate_slash_commands_latency_ms": 0,
+          "load_trajectory_latency_ms": 0,
+          "media_summaries_latency_ms": 0,
+          "resolve_agent_config_latency_ms": 0,
+          "save_media_latency_ms": 0,
+          "total_latency_ms": 1
+        }
+      },
+      {
+        "at": "1014 07:22:29.602663",
+        "fields_ms": {
+          "active_user_state_latency_ms": 0,
+          "cascade_send_latency_ms": 1,
+          "hydrate_slash_commands_latency_ms": 0,
+          "load_trajectory_latency_ms": 0,
+          "media_summaries_latency_ms": 0,
+          "resolve_agent_config_latency_ms": 0,
+          "save_media_latency_ms": 0,
+          "total_latency_ms": 2
+        }
+      },
+      {
+        "at": "1014 07:24:37.607937",
+        "fields_ms": {
+          "active_user_state_latency_ms": 0,
+          "cascade_send_latency_ms": 1,
+          "hydrate_slash_commands_latency_ms": 0,
+          "load_trajectory_latency_ms": 0,
+          "media_summaries_latency_ms": 0,
+          "resolve_agent_config_latency_ms": 0,
+          "save_media_latency_ms": 0,
+          "total_latency_ms": 1
+        }
+      },
+      {
+        "at": "1014 07:24:42.709557",
+        "fields_ms": {
+          "active_user_state_latency_ms": 0,
+          "cascade_send_latency_ms": 0,
+          "hydrate_slash_commands_latency_ms": 0,
+          "load_trajectory_latency_ms": 0,
+          "media_summaries_latency_ms": 0,
+          "resolve_agent_config_latency_ms": 0,
+          "save_media_latency_ms": 0,
+          "total_latency_ms": 1
+        }
+      },
+      {
+        "at": "1014 07:25:42.768266",
+        "fields_ms": {
+          "active_user_state_latency_ms": 0,
+          "cascade_send_latency_ms": 0,
+          "hydrate_slash_commands_latency_ms": 0,
+          "load_trajectory_latency_ms": 0
+        }
+      }
+    ]
+  },
+  "native_log_collision": {
+    "captured_open_files": [
+      {
+        "pid": 95,
+        "fd": "1",
+        "target": "/root/.agy-proxy/accounts/7bf7a4e269ff493ead2eb6d59ba136aa/home/.gemini/antigravity-cli/log/cli-20261014_071826.log",
+        "fdinfo": {
+          "pos": "\t371288",
+          "flags": "\t0100001",
+          "mnt_id": "\t979",
+          "ino": "\t2142402"
+        }
+      },
+      {
+        "pid": 95,
+        "fd": "2",
+        "target": "/root/.agy-proxy/accounts/7bf7a4e269ff493ead2eb6d59ba136aa/home/.gemini/antigravity-cli/log/cli-20261014_071826.log",
+        "fdinfo": {
+          "pos": "\t371288",
+          "flags": "\t0100001",
+          "mnt_id": "\t979",
+          "ino": "\t2142402"
+        }
+      },
+      {
+        "pid": 100,
+        "fd": "1",
+        "target": "/root/.agy-proxy/accounts/7bf7a4e269ff493ead2eb6d59ba136aa/home/.gemini/antigravity-cli/log/cli-20261014_071826.log",
+        "fdinfo": {
+          "pos": "\t355226",
+          "flags": "\t0100001",
+          "mnt_id": "\t979",
+          "ino": "\t2142402"
+        }
+      },
+      {
+        "pid": 100,
+        "fd": "2",
+        "target": "/root/.agy-proxy/accounts/7bf7a4e269ff493ead2eb6d59ba136aa/home/.gemini/antigravity-cli/log/cli-20261014_071826.log",
+        "fdinfo": {
+          "pos": "\t355226",
+          "flags": "\t0100001",
+          "mnt_id": "\t979",
+          "ino": "\t2142402"
+        }
+      }
+    ],
+    "same_inode_independent_offsets": true,
+    "append_enabled": false
+  },
+  "logging_verification": {
+    "health_status": 200,
+    "models_status": 200,
+    "probes": [
+      {
+        "label": "A",
+        "seconds": 11.264574100030586,
+        "status": 200,
+        "request_id": "agy_472b78bf83e14405b9badea5707d02a2",
+        "expected_text": true
+      },
+      {
+        "label": "B",
+        "seconds": 14.236219199956395,
+        "status": 200,
+        "request_id": "agy_39f18ec9380447829e0da97e0cf03c5a",
+        "expected_text": true
+      }
+    ]
+  },
+  "native_diag_verified": {
+    "processes": [
+      {
+        "pid": 40,
+        "vmodule": "--vmodule=http_helpers=2,conversation_manager=2,printmode=2,latency_breakdown=2",
+        "log_file": "/root/.agy-proxy/accounts/7bf7a4e269ff493ead2eb6d59ba136aa/home/.gemini/antigravity-cli/log/cli-diag-20261014_074041-40.log",
+        "exists": true,
+        "log_bytes": 123887,
+        "fds": [
+          {
+            "fd": "1",
+            "target": "/root/.agy-proxy/accounts/7bf7a4e269ff493ead2eb6d59ba136aa/home/.gemini/antigravity-cli/log/cli-diag-20261014_074041-40.log"
+          },
+          {
+            "fd": "2",
+            "target": "/root/.agy-proxy/accounts/7bf7a4e269ff493ead2eb6d59ba136aa/home/.gemini/antigravity-cli/log/cli-diag-20261014_074041-40.log"
+          }
+        ]
+      },
+      {
+        "pid": 48,
+        "vmodule": "--vmodule=http_helpers=2,conversation_manager=2,printmode=2,latency_breakdown=2",
+        "log_file": "/root/.agy-proxy/accounts/7bf7a4e269ff493ead2eb6d59ba136aa/home/.gemini/antigravity-cli/log/cli-diag-20261014_074041-48.log",
+        "exists": true,
+        "log_bytes": 122415,
+        "fds": [
+          {
+            "fd": "1",
+            "target": "/root/.agy-proxy/accounts/7bf7a4e269ff493ead2eb6d59ba136aa/home/.gemini/antigravity-cli/log/cli-diag-20261014_074041-48.log"
+          },
+          {
+            "fd": "2",
+            "target": "/root/.agy-proxy/accounts/7bf7a4e269ff493ead2eb6d59ba136aa/home/.gemini/antigravity-cli/log/cli-diag-20261014_074041-48.log"
+          }
+        ]
+      }
+    ],
+    "unique_log_files": 2,
+    "process_count": 2
+  },
+  "native_diag_change": {
+    "backup": "/home/docker_depolyments/agy-proxy/docker-compose.yml.before-native-diag-20261014T071432Z",
+    "agy_bin": "agy --vmodule=http_helpers=2,conversation_manager=2,printmode=2,latency_breakdown=2",
+    "image_unchanged": true
+  },
+  "unique_native_diag_change": {
+    "backup": "/home/docker_depolyments/agy-proxy/docker-compose.yml.before-unique-native-log-20261014T073915Z",
+    "agy_bin": "/bin/sh /root/.agy-proxy/agy-native-diag.sh",
+    "image_unchanged": true,
+    "compose_valid": true
+  },
+  "files": {
+    "README.md": {
+      "sha256": "d22dff48d4b1fd3795e85c3d7337d6401bdefe76ca523641dcdea2350b2b1beb",
+      "bytes": 8118
+    },
+    "taskbox.py": {
+      "sha256": "5502c77d9ecc4e73d43fb51cbd8650e705fca384d1bf8469107f4c8221d1a7cd",
+      "bytes": 32771
+    },
+    "test_taskbox.py": {
+      "sha256": "68fae2bf0dcba074d02687fde60c72ab55be7119c3f929910fed561a1fdc938c",
+      "bytes": 42716
+    }
+  }
+}

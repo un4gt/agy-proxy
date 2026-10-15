@@ -1,0 +1,72 @@
+{
+  "agy_version": "1.3.5",
+  "app_version": "0.0.16",
+  "transport": "in-process ASGI TestClient; real isolated AGY subprocesses",
+  "production_changed": false,
+  "checks": [
+    {
+      "protocol": "chat",
+      "stream": false,
+      "model": "gemini-3.8-flash-low",
+      "passed": true,
+      "request_id": "agy_a80b6d7585fa4ca68faf74fe04525e2d",
+      "seconds": 17.059
+    },
+    {
+      "protocol": "chat",
+      "stream": true,
+      "model": "gemini-3.8-flash-low",
+      "passed": true,
+      "request_id": "agy_b348a02111444498b0d461b78db3235e",
+      "seconds": 13.732
+    },
+    {
+      "protocol": "responses",
+      "stream": false,
+      "model": "gemini-3.8-flash-low",
+      "passed": true,
+      "request_id": "agy_5bd48ddd60bd4e09b1f01cc879962f14",
+      "seconds": 11.37
+    },
+    {
+      "protocol": "responses",
+      "stream": true,
+      "model": "gemini-3.8-flash-low",
+      "passed": true,
+      "request_id": "agy_a54d76fe38c348169441ef72bbfae23a",
+      "seconds": 12.632
+    },
+    {
+      "protocol": "messages",
+      "stream": false,
+      "model": "gemini-3.8-flash-low",
+      "passed": true,
+      "request_id": "agy_0ba0a13322ab48ed84b06d8a75a65a0f",
+      "seconds": 11.347
+    },
+    {
+      "protocol": "messages",
+      "stream": true,
+      "model": "gemini-3.8-flash-low",
+      "passed": true,
+      "request_id": "agy_5ff4446e1eb842f1b46daeb013b7187b",
+      "seconds": 11.568
+    },
+    {
+      "protocol": "gemini",
+      "stream": false,
+      "model": "gemini-3.8-flash-low",
+      "passed": true,
+      "request_id": "agy_94ff8dc4d70d47829d40f3dbc1be489c",
+      "seconds": 10.663
+    },
+    {
+      "protocol": "gemini",
+      "stream": true,
+      "model": "gemini-3.8-flash-low",
+      "passed": true,
+      "request_id": "agy_b62ab1d4b5ae4472be15c2e5da4c878b",
+      "seconds": 10.448
+    }
+  ]
+}

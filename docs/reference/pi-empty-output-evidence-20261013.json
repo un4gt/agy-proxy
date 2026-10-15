@@ -1,0 +1,299 @@
+{
+  "analysis_date": "2026-10-13",
+  "session_id": "01a131b6-ec8f-74cf-82f7-84ce7e8a5b03",
+  "scope": {
+    "production_code_changed": false,
+    "pi_configuration_changed": false,
+    "deployed": false,
+    "historical_tools_reexecuted": false,
+    "raw_transcript_included": false
+  },
+  "client": {
+    "package": "@earendil-works/pi-coding-agent",
+    "version": "0.87.1",
+    "provider": "agy-proxy",
+    "api": "openai-completions",
+    "model": "gemini-3.8-flash",
+    "thinking_level": "high",
+    "configured_context_window_tokens": 1048576,
+    "max_tokens": 65536
+  },
+  "server_observation": {
+    "image": "agy-proxy:unified-20261012",
+    "container_health": "healthy",
+    "key_label": "home",
+    "resolved_model": "gemini-3.8-flash-high",
+    "max_prompt_chars": 200000,
+    "turn_timeout_seconds": 600,
+    "recovery_attempts": 1,
+    "access_log_http_413_count": 2,
+    "usage_window_utc": {
+      "start": "2026-10-12T20:03:50Z",
+      "end": "2026-10-12T20:37:10Z"
+    },
+    "matching_usage_records": 46,
+    "matching_success_records": 46,
+    "preparation_failures_in_usage_records": 0,
+    "last_success_request_id": "agy_1106534998a54f90885814b831408ef6"
+  },
+  "session": {
+    "lines": 102,
+    "bytes": 269117,
+    "compaction_entries": 0,
+    "failures": [
+      {
+        "line": 100,
+        "timestamp_utc": "2026-10-12T20:35:42.840Z",
+        "timestamp_local": "2026-10-13T04:35:42.840000+08:00",
+        "stopReason": "error",
+        "content_blocks": 0,
+        "errorMessage": "413: {\"message\":\"Prompt and tool definitions too long for this proxy\",\"type\":\"invalid_request_error\",\"param\":null,\"code\":\"cli_protocol_error\"}"
+      },
+      {
+        "line": 102,
+        "timestamp_utc": "2026-10-12T20:36:59.593Z",
+        "timestamp_local": "2026-10-13T04:36:59.593000+08:00",
+        "stopReason": "error",
+        "content_blocks": 0,
+        "errorMessage": "413: {\"message\":\"Prompt and tool definitions too long for this proxy\",\"type\":\"invalid_request_error\",\"param\":null,\"code\":\"cli_protocol_error\"}"
+      }
+    ]
+  },
+  "offline_reproduction": {
+    "network_calls": 0,
+    "request_serialization": [
+      {
+        "beforeLine": 98,
+        "messages": 92,
+        "tools": 4,
+        "reasoningEffort": "high",
+        "serializedCodePoints": 194927,
+        "bytes": 218195
+      },
+      {
+        "beforeLine": 100,
+        "messages": 94,
+        "tools": 4,
+        "reasoningEffort": "high",
+        "serializedCodePoints": 211162,
+        "bytes": 236149
+      },
+      {
+        "beforeLine": 102,
+        "messages": 95,
+        "tools": 4,
+        "reasoningEffort": "high",
+        "serializedCodePoints": 211225,
+        "bytes": 236230
+      }
+    ],
+    "proxy_input_checks": [
+      {
+        "before_line": 98,
+        "normalized_chars": 194827,
+        "limit_chars": 200000,
+        "image_attachments": 0,
+        "accepted": true
+      },
+      {
+        "before_line": 100,
+        "normalized_chars": 211062,
+        "limit_chars": 200000,
+        "image_attachments": 0,
+        "accepted": false,
+        "status": 413,
+        "code": "cli_protocol_error",
+        "message": "Prompt and tool definitions too long for this proxy"
+      },
+      {
+        "before_line": 102,
+        "normalized_chars": 211100,
+        "limit_chars": 200000,
+        "image_attachments": 0,
+        "accepted": false,
+        "status": 413,
+        "code": "cli_protocol_error",
+        "message": "Prompt and tool definitions too long for this proxy"
+      }
+    ],
+    "overflow_detection": [
+      {
+        "line": 100,
+        "actualErrorDetected": false,
+        "standardErrorDetected": true
+      },
+      {
+        "line": 102,
+        "actualErrorDetected": false,
+        "standardErrorDetected": true
+      }
+    ],
+    "compaction_threshold": {
+      "contextWindow": 1048576,
+      "reserveTokens": 16384,
+      "threshold": 1032192,
+      "lastUsageTokens": 161220,
+      "shouldCompact": false
+    },
+    "error_time_estimates": [
+      {
+        "line": 100,
+        "tokens": 164859,
+        "usageTokens": 161220,
+        "trailingTokens": 3639,
+        "lastUsageIndex": 92,
+        "shouldCompact": false
+      },
+      {
+        "line": 102,
+        "tokens": 164862,
+        "usageTokens": 161220,
+        "trailingTokens": 3642,
+        "lastUsageIndex": 92,
+        "shouldCompact": false
+      }
+    ],
+    "counterfactual_error": {
+      "message": "Prompt is too long for this proxy",
+      "code": "context_length_exceeded"
+    },
+    "end_to_end_compaction_recovery_tested": false
+  },
+  "tool_history": {
+    "result_count": 43,
+    "by_name": {
+      "read": 1,
+      "bash": 42
+    },
+    "result_text_chars": 171023,
+    "error_classes": [
+      {
+        "result_line": 13,
+        "category": "command_not_found"
+      },
+      {
+        "result_line": 33,
+        "category": "unknown_element_ref"
+      },
+      {
+        "result_line": 47,
+        "category": "unknown_element_ref"
+      },
+      {
+        "result_line": 63,
+        "category": "unknown_element_ref"
+      },
+      {
+        "result_line": 73,
+        "category": "target_covered_by_dialog"
+      }
+    ],
+    "largest_results": [
+      {
+        "result_line": 15,
+        "text_chars": 37980
+      },
+      {
+        "result_line": 99,
+        "text_chars": 14553
+      },
+      {
+        "result_line": 95,
+        "text_chars": 14447
+      },
+      {
+        "result_line": 89,
+        "text_chars": 11238
+      },
+      {
+        "result_line": 59,
+        "text_chars": 11181
+      }
+    ],
+    "qa_timing": {
+      "start_utc": "2026-10-12T20:11:19.401Z",
+      "first_failure_utc": "2026-10-12T20:35:42.840Z",
+      "elapsed_seconds": 1463.439,
+      "tool_call_count": 38,
+      "tool_elapsed_seconds": 1243.026
+    },
+    "qa_tool_time_fraction": 0.8494,
+    "longest_calls": [
+      {
+        "line": 61,
+        "name": "bash",
+        "chars": 1137,
+        "error": false,
+        "elapsed_seconds": 329.268,
+        "call_line": 60,
+        "has_wait": true,
+        "has_timeout": false,
+        "browser_operations": [
+          "click",
+          "wait",
+          "snapshot"
+        ]
+      },
+      {
+        "line": 81,
+        "name": "bash",
+        "chars": 3076,
+        "error": false,
+        "elapsed_seconds": 64.938,
+        "call_line": 80,
+        "has_wait": true,
+        "has_timeout": false,
+        "browser_operations": [
+          "click",
+          "wait",
+          "find",
+          "wait",
+          "find",
+          "wait",
+          "snapshot"
+        ]
+      },
+      {
+        "line": 89,
+        "name": "bash",
+        "chars": 11238,
+        "error": false,
+        "elapsed_seconds": 58.71,
+        "call_line": 88,
+        "has_wait": true,
+        "has_timeout": false,
+        "browser_operations": [
+          "click",
+          "wait",
+          "find",
+          "wait",
+          "find",
+          "wait",
+          "snapshot"
+        ]
+      }
+    ],
+    "write_edit_tool_calls": 0,
+    "shell_report_redirects": 0
+  },
+  "report_output": {
+    "final_qa_report_found": false,
+    "inspected_workspace_entries": [
+      ".agents",
+      ".claude",
+      "skills-lock.json"
+    ],
+    "intermediate_results_retained_in_session": true
+  },
+  "ui": {
+    "reported_visible_status": "Turn completed",
+    "persisted_stop_reason": "error",
+    "pebrel_bridge_sends_done_on_agent_end_without_error_check": true,
+    "exact_gui_rendering_cause_confirmed": false
+  },
+  "privacy": {
+    "api_key_values_included": false,
+    "website_content_included": false,
+    "raw_payloads_git_ignored": true
+  }
+}

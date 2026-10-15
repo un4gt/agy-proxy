@@ -1,0 +1,284 @@
+{
+  "incident_date": "2026-10-12",
+  "timezone": "Asia/Shanghai",
+  "deployment": "tumuer/agy-proxy:v0.0.15",
+  "repository_commit": "01f7156",
+  "resolved_model": "gemini-3.8-flash-low",
+  "correlation": {
+    "conversation_id": "9f3c01cc-8dad-4af1-81af-d1726fc7c105",
+    "pid": 7583,
+    "owner_session": "b8a469903b27",
+    "affinity": "history",
+    "client_turn": 1,
+    "failed_model_request": 22
+  },
+  "timeline": {
+    "start": "2026-10-12T15:34:37.104+08:00",
+    "failed_request_start": "2026-10-12T15:37:49.894+08:00",
+    "agy_result": "2026-10-12T15:38:43.355+08:00",
+    "agy_status": "SUCCESS",
+    "agy_elapsed_seconds": 53.46,
+    "proxy_error": "2026-10-12T15:38:44.681292+08:00",
+    "proxy_status": "ERROR 502",
+    "proxy_duration_ms": 54790.7,
+    "http_status": 200
+  },
+  "source_sha256": {
+    "app/external_tools.py": "1c00cf6765988a874229e2e7a2ec6b70273b3e19624935734e30db5f04898235",
+    "app/openai_api.py": "650a8c5939296fc2a704623268c02a629aebdc63bdb1fa47415534fc46b9c547",
+    "app/agy.py": "935c3c82a7075bc2da44d9d88cbdcaf7d457e0758769d7baedf8a9f1014e7965"
+  },
+  "extraction": {
+    "database_access": "SQLite URI mode=ro; only public user-input tool configuration and finish output inspected; no commands executed",
+    "user_input_path": [
+      19,
+      2
+    ],
+    "finish_public_output_path": [
+      140,
+      2,
+      6,
+      2,
+      12,
+      2
+    ],
+    "tool_config_unchanged_across_requests": 22
+  },
+  "bash_schema": {
+    "type": "object",
+    "required": [
+      "command",
+      "description"
+    ],
+    "properties": {
+      "command": {
+        "type": "string"
+      },
+      "description": {
+        "type": "string"
+      },
+      "justification": {
+        "type": "string"
+      },
+      "run_in_background": {
+        "type": "boolean"
+      },
+      "sandbox_permissions": {
+        "enum": [
+          "workspace-write",
+          "danger-full-access"
+        ],
+        "type": "string"
+      },
+      "timeoutMs": {
+        "type": "number"
+      },
+      "workdir": {
+        "type": "string"
+      }
+    }
+  },
+  "failed_call": {
+    "name": "bash",
+    "argument_keys": [
+      "cmd"
+    ],
+    "argument_types": {
+      "cmd": "string"
+    },
+    "missing_required": [
+      "command",
+      "description"
+    ],
+    "command_chars": 9141,
+    "command_utf8_bytes": 9501,
+    "command_literal_newlines": 253,
+    "starts_python3_c": false,
+    "contains_cat_heredoc": true,
+    "command_sha256": "22fc19db04f887fb06d1927b00c48d929c1405bc5e65d0105ed734f73fd54451"
+  },
+  "replay": [
+    {
+      "turn": 1,
+      "db_idx": 2,
+      "json_valid": true,
+      "outer_schema_valid": true,
+      "result": "pass",
+      "public_output_sha256": "ae5fc6ab5194cae52d12b78d3b3129999ad56d356e4fec8c970b064eb12e55f7"
+    },
+    {
+      "turn": 2,
+      "db_idx": 5,
+      "json_valid": true,
+      "outer_schema_valid": true,
+      "result": "pass",
+      "public_output_sha256": "b81c4c0e44e986a96fd8ae34197309c6c8e72e133fa38da068084754b38d55c0"
+    },
+    {
+      "turn": 3,
+      "db_idx": 8,
+      "json_valid": true,
+      "outer_schema_valid": true,
+      "result": "pass",
+      "public_output_sha256": "74b4ae9e75f9e8c040980b47e2c9d43c45acf1ab066e7ae4fcf79ede675fa0f3"
+    },
+    {
+      "turn": 4,
+      "db_idx": 11,
+      "json_valid": true,
+      "outer_schema_valid": true,
+      "result": "pass",
+      "public_output_sha256": "d4c4488f8bc7e73689037808abe248429035d76968b628d5c1ae69ca6b95d301"
+    },
+    {
+      "turn": 5,
+      "db_idx": 14,
+      "json_valid": true,
+      "outer_schema_valid": true,
+      "result": "pass",
+      "public_output_sha256": "43fa238bb2099214c717982c94019cbb3386f53ea64915832c1fe5d1eb79f56c"
+    },
+    {
+      "turn": 6,
+      "db_idx": 17,
+      "json_valid": true,
+      "outer_schema_valid": true,
+      "result": "pass",
+      "public_output_sha256": "492a178cbbc7217e787c175fd5183ce6f5ff43609ee8c3b10449ebbffb9a2033"
+    },
+    {
+      "turn": 7,
+      "db_idx": 20,
+      "json_valid": true,
+      "outer_schema_valid": true,
+      "result": "pass",
+      "public_output_sha256": "b5735608bfad003b2710f69f28be42ae76e332d385685170bc0d28efd987aff8"
+    },
+    {
+      "turn": 8,
+      "db_idx": 23,
+      "json_valid": true,
+      "outer_schema_valid": true,
+      "result": "pass",
+      "public_output_sha256": "e8014fb9f68c1065f369c4e49236de21e08f414722105bdf849a265eb7e07697"
+    },
+    {
+      "turn": 9,
+      "db_idx": 26,
+      "json_valid": true,
+      "outer_schema_valid": true,
+      "result": "pass",
+      "public_output_sha256": "58385c6a10750f86dcac5133dd67bfd61db40c1348c61b1b94005160360e67e8"
+    },
+    {
+      "turn": 10,
+      "db_idx": 29,
+      "json_valid": true,
+      "outer_schema_valid": true,
+      "result": "pass",
+      "public_output_sha256": "874d8248c3d63b51ff85d9edb071b58e4bea73ebf264750c9de6db42c9379a22"
+    },
+    {
+      "turn": 11,
+      "db_idx": 32,
+      "json_valid": true,
+      "outer_schema_valid": true,
+      "result": "pass",
+      "public_output_sha256": "c81f5020a14dfb2d38b8e2aa87b44ce8da4f0ac0c4bb409ae8a6a4a83705bc28"
+    },
+    {
+      "turn": 12,
+      "db_idx": 35,
+      "json_valid": true,
+      "outer_schema_valid": true,
+      "result": "pass",
+      "public_output_sha256": "d8be07583f9f3ef6e3b3759fce46f9ea2bb63c6b628a49b0be83bc4b7b3087c0"
+    },
+    {
+      "turn": 13,
+      "db_idx": 38,
+      "json_valid": true,
+      "outer_schema_valid": true,
+      "result": "pass",
+      "public_output_sha256": "f5d93be60f682fbd0efb883b51513f592c76e387d0cafa8edd6a103db7b8b82e"
+    },
+    {
+      "turn": 14,
+      "db_idx": 41,
+      "json_valid": true,
+      "outer_schema_valid": true,
+      "result": "pass",
+      "public_output_sha256": "cdd9521e839461fff1cfa38a3a48538f42bf9732487b87840263774ed84cd959"
+    },
+    {
+      "turn": 15,
+      "db_idx": 44,
+      "json_valid": true,
+      "outer_schema_valid": true,
+      "result": "pass",
+      "public_output_sha256": "d907b9f0ca413bbf7eeed17aac8dc5df87fe6a7e3e600d44e7ce21786b97333a"
+    },
+    {
+      "turn": 16,
+      "db_idx": 47,
+      "json_valid": true,
+      "outer_schema_valid": true,
+      "result": "pass",
+      "public_output_sha256": "ef50db1516e555533af43885ce245730aac3bdbcb8a6e99fc700ca725d6a7b67"
+    },
+    {
+      "turn": 17,
+      "db_idx": 50,
+      "json_valid": true,
+      "outer_schema_valid": true,
+      "result": "pass",
+      "public_output_sha256": "63887e10900f82e76ee7b4f475ab6009930b702984c5082a929900b1b71e31d8"
+    },
+    {
+      "turn": 18,
+      "db_idx": 53,
+      "json_valid": true,
+      "outer_schema_valid": true,
+      "result": "pass",
+      "public_output_sha256": "b857642f04f321d34aa6d62013bac570115d97764edb9f2b04d81de70e032de5"
+    },
+    {
+      "turn": 19,
+      "db_idx": 56,
+      "json_valid": true,
+      "outer_schema_valid": true,
+      "result": "pass",
+      "public_output_sha256": "f77fad5cb59c9a116cd47c56bed5baf736bc08e60f2f287f217962e368f81147"
+    },
+    {
+      "turn": 20,
+      "db_idx": 59,
+      "json_valid": true,
+      "outer_schema_valid": true,
+      "result": "pass",
+      "public_output_sha256": "49f97f6f919e7fe27b0393d7fa05d49a63e2457144046543707ddee5f9cb59e1"
+    },
+    {
+      "turn": 21,
+      "db_idx": 62,
+      "json_valid": true,
+      "outer_schema_valid": true,
+      "result": "pass",
+      "public_output_sha256": "054dbf3ee36dc4143e3a4be03ca80845cb31ad008c9ce99d5c90c665e8ff2783"
+    },
+    {
+      "turn": 22,
+      "db_idx": 66,
+      "json_valid": true,
+      "outer_schema_valid": true,
+      "result": "agy returned invalid arguments for client tool bash",
+      "public_output_sha256": "da007e73e498ee5a7093d5cad3520084b8cd8e3a650e7b6fcb312bd9e9f30bb4"
+    }
+  ],
+  "limits": [
+    "No original client session supplied; DSH installed classifier and retry policy not independently inspected.",
+    "Why the model switched argument field names is not established.",
+    "Dashboard zero usage is an error-path accounting artifact, not proof of no upstream token consumption."
+  ],
+  "privacy": "No API keys, user work text, client file paths, command bodies, or raw database exported."
+}

@@ -1,0 +1,485 @@
+{
+  "server_image": "agy-proxy:unified-20261012",
+  "image_id": "sha256:fc154e3e242e5a337b1d11bba7f47a94d3fdd9b06f0fe79b91f17804376f4ad2",
+  "app_version": "0.0.15",
+  "agy_version": "1.3.3",
+  "source_hash_verification": {
+    "files": 39,
+    "all_match": true
+  },
+  "health": "healthy",
+  "recovery_attempts": 1,
+  "preserved_volumes": [
+    "agy-proxy_agy-gemini",
+    "agy-proxy_agy-data"
+  ],
+  "rollback_compose": "/home/docker_depolyments/agy-proxy/docker-compose.yml.before-unified-20261012",
+  "protocol_checks": [
+    {
+      "protocol": "chat",
+      "passed": true,
+      "stream": true,
+      "request_id": "agy_4d84451b81da40aba069de502510ca42",
+      "final_request_id": "agy_2068351935f24ce1905e53a8f8b5b9cb"
+    },
+    {
+      "protocol": "responses",
+      "passed": true,
+      "stream": true,
+      "request_id": "agy_b414e5dea89e4f859b52ea58f4efffc8",
+      "final_request_id": "agy_fd41d6083af24330babb8baec5dbd3ae"
+    },
+    {
+      "protocol": "messages",
+      "passed": true,
+      "stream": true,
+      "request_id": "agy_cfdfd18ad552419495665d6e32ade760",
+      "final_request_id": "agy_fc28cac0112048e5b2d38a185dfb3713"
+    },
+    {
+      "protocol": "gemini",
+      "passed": true,
+      "stream": true,
+      "request_id": "agy_11dce459cf7e463d960b4843a647b67c",
+      "final_request_id": "agy_714756399ba044849a9b030071183de1"
+    }
+  ],
+  "dsh": {
+    "commit": "d743267388641bc76f17c45ce8b4c231aed1d32c",
+    "branch": "master",
+    "shallow": true,
+    "main_absent": true,
+    "pnpm": "11.28.5",
+    "node": "24.19.0",
+    "install_exit_code": 0,
+    "build_exit_code": 0,
+    "checkout_clean": true
+  },
+  "harbor": {
+    "version": "0.24.0",
+    "dsh_in_builtin_agents": false
+  },
+  "dsh_phases": [
+    {
+      "phase": "headless",
+      "session_id": "session-27263b9c-eb40-4adc-8341-d00e6cd520a0",
+      "tool_calls": 17,
+      "tool_counts": {
+        "glob": 2,
+        "skill": 2,
+        "todo_write": 2,
+        "write": 8,
+        "pwsh": 3
+      },
+      "tool_results": 17,
+      "unique_call_ids": true,
+      "all_calls_paired": true,
+      "end_reason": {
+        "kind": "completed"
+      },
+      "tool_status_error_count": 3,
+      "nonzero_command_results": 0
+    },
+    {
+      "phase": "followup",
+      "session_id": "session-27263b9c-eb40-4adc-8341-d00e6cd520a0",
+      "tool_calls": 12,
+      "tool_counts": {
+        "todo_write": 2,
+        "pwsh": 3,
+        "read": 3,
+        "edit": 4
+      },
+      "tool_results": 12,
+      "unique_call_ids": true,
+      "all_calls_paired": true,
+      "end_reason": {
+        "kind": "completed"
+      },
+      "tool_status_error_count": 1,
+      "nonzero_command_results": 1
+    }
+  ],
+  "server_audit": {
+    "window_start_utc": "2026-10-12T12:42:22Z",
+    "window_end_utc": "2026-10-12T12:48:36Z",
+    "scope": "server execution records during DSH acceptance window",
+    "records": 32,
+    "failures": [],
+    "repairs": [],
+    "requests": [
+      {
+        "protocol": "chat",
+        "request_id": "agy_90245b31c1114045826e205045b91a32",
+        "attempts": "1",
+        "repair_attempts": "0",
+        "outcome": "success",
+        "error_code": "None",
+        "usage_complete": "True"
+      },
+      {
+        "protocol": "chat",
+        "request_id": "agy_e2940b1f10224838ab3db9c6d854f720",
+        "attempts": "1",
+        "repair_attempts": "0",
+        "outcome": "success",
+        "error_code": "None",
+        "usage_complete": "True"
+      },
+      {
+        "protocol": "chat",
+        "request_id": "agy_b4c7daba3fd341bb9ffdc9f5c2d9cc04",
+        "attempts": "1",
+        "repair_attempts": "0",
+        "outcome": "success",
+        "error_code": "None",
+        "usage_complete": "True"
+      },
+      {
+        "protocol": "chat",
+        "request_id": "agy_e59011383ed64c29a1c73795fb7a482c",
+        "attempts": "1",
+        "repair_attempts": "0",
+        "outcome": "success",
+        "error_code": "None",
+        "usage_complete": "True"
+      },
+      {
+        "protocol": "chat",
+        "request_id": "agy_798684d3422b476f9c2e367f447b610a",
+        "attempts": "1",
+        "repair_attempts": "0",
+        "outcome": "success",
+        "error_code": "None",
+        "usage_complete": "True"
+      },
+      {
+        "protocol": "chat",
+        "request_id": "agy_ad95ae68df444a2083dbc475e3ff9d9f",
+        "attempts": "1",
+        "repair_attempts": "0",
+        "outcome": "success",
+        "error_code": "None",
+        "usage_complete": "True"
+      },
+      {
+        "protocol": "chat",
+        "request_id": "agy_96e9b41139ae4c3389cf80e47cde63d7",
+        "attempts": "1",
+        "repair_attempts": "0",
+        "outcome": "success",
+        "error_code": "None",
+        "usage_complete": "True"
+      },
+      {
+        "protocol": "chat",
+        "request_id": "agy_bac85b16d10b42da9262b6fb984a78ac",
+        "attempts": "1",
+        "repair_attempts": "0",
+        "outcome": "success",
+        "error_code": "None",
+        "usage_complete": "True"
+      },
+      {
+        "protocol": "chat",
+        "request_id": "agy_0570870612ce4a9c9fc3cd353eb3de8e",
+        "attempts": "1",
+        "repair_attempts": "0",
+        "outcome": "success",
+        "error_code": "None",
+        "usage_complete": "True"
+      },
+      {
+        "protocol": "chat",
+        "request_id": "agy_7ff83fddf2cb47678857e4b0049b6c3e",
+        "attempts": "1",
+        "repair_attempts": "0",
+        "outcome": "success",
+        "error_code": "None",
+        "usage_complete": "True"
+      },
+      {
+        "protocol": "chat",
+        "request_id": "agy_609a90cd90d54dba9c9113079d22dc93",
+        "attempts": "1",
+        "repair_attempts": "0",
+        "outcome": "success",
+        "error_code": "None",
+        "usage_complete": "True"
+      },
+      {
+        "protocol": "chat",
+        "request_id": "agy_e9cff8a0a0084ef783a7a61dc32f9c9e",
+        "attempts": "1",
+        "repair_attempts": "0",
+        "outcome": "success",
+        "error_code": "None",
+        "usage_complete": "True"
+      },
+      {
+        "protocol": "chat",
+        "request_id": "agy_4f08a4c97a3848fc9355149a2e0c74db",
+        "attempts": "1",
+        "repair_attempts": "0",
+        "outcome": "success",
+        "error_code": "None",
+        "usage_complete": "True"
+      },
+      {
+        "protocol": "chat",
+        "request_id": "agy_364fbbe2f91e4f348a24df6b592c3b0a",
+        "attempts": "1",
+        "repair_attempts": "0",
+        "outcome": "success",
+        "error_code": "None",
+        "usage_complete": "True"
+      },
+      {
+        "protocol": "chat",
+        "request_id": "agy_ca4d6390aead43cda1abb480c1c33a16",
+        "attempts": "1",
+        "repair_attempts": "0",
+        "outcome": "success",
+        "error_code": "None",
+        "usage_complete": "True"
+      },
+      {
+        "protocol": "chat",
+        "request_id": "agy_038672c051af4ac393105b950f28cd2a",
+        "attempts": "1",
+        "repair_attempts": "0",
+        "outcome": "success",
+        "error_code": "None",
+        "usage_complete": "True"
+      },
+      {
+        "protocol": "chat",
+        "request_id": "agy_d11b89afc089460397278487addf499d",
+        "attempts": "1",
+        "repair_attempts": "0",
+        "outcome": "success",
+        "error_code": "None",
+        "usage_complete": "True"
+      },
+      {
+        "protocol": "chat",
+        "request_id": "agy_5ba59540424d4722b02c5cd02cbd44bf",
+        "attempts": "1",
+        "repair_attempts": "0",
+        "outcome": "success",
+        "error_code": "None",
+        "usage_complete": "True"
+      },
+      {
+        "protocol": "chat",
+        "request_id": "agy_561efd50aaa1471db09bf2089627500b",
+        "attempts": "1",
+        "repair_attempts": "0",
+        "outcome": "success",
+        "error_code": "None",
+        "usage_complete": "True"
+      },
+      {
+        "protocol": "chat",
+        "request_id": "agy_21786643bcae4b79b5410797adf0cafc",
+        "attempts": "1",
+        "repair_attempts": "0",
+        "outcome": "success",
+        "error_code": "None",
+        "usage_complete": "True"
+      },
+      {
+        "protocol": "chat",
+        "request_id": "agy_11feb0a6c5034d548e93e4f41f72fde0",
+        "attempts": "1",
+        "repair_attempts": "0",
+        "outcome": "success",
+        "error_code": "None",
+        "usage_complete": "True"
+      },
+      {
+        "protocol": "chat",
+        "request_id": "agy_08d77915616c44ec8dbdc50fcfe0193b",
+        "attempts": "1",
+        "repair_attempts": "0",
+        "outcome": "success",
+        "error_code": "None",
+        "usage_complete": "True"
+      },
+      {
+        "protocol": "chat",
+        "request_id": "agy_5b4dc47e3c9e423e9c326a82a416f6bc",
+        "attempts": "1",
+        "repair_attempts": "0",
+        "outcome": "success",
+        "error_code": "None",
+        "usage_complete": "True"
+      },
+      {
+        "protocol": "chat",
+        "request_id": "agy_de52febcf1634060a4ea222f3ce948c7",
+        "attempts": "1",
+        "repair_attempts": "0",
+        "outcome": "success",
+        "error_code": "None",
+        "usage_complete": "True"
+      },
+      {
+        "protocol": "chat",
+        "request_id": "agy_1b4537e4a1a74f8f9d3bec7a8b54a391",
+        "attempts": "1",
+        "repair_attempts": "0",
+        "outcome": "success",
+        "error_code": "None",
+        "usage_complete": "True"
+      },
+      {
+        "protocol": "chat",
+        "request_id": "agy_86c6008f8c884c4598c3247f5f6cb25b",
+        "attempts": "1",
+        "repair_attempts": "0",
+        "outcome": "success",
+        "error_code": "None",
+        "usage_complete": "True"
+      },
+      {
+        "protocol": "chat",
+        "request_id": "agy_190a3bfccb6a4bb2ae53d6fce663e95f",
+        "attempts": "1",
+        "repair_attempts": "0",
+        "outcome": "success",
+        "error_code": "None",
+        "usage_complete": "True"
+      },
+      {
+        "protocol": "chat",
+        "request_id": "agy_dff307fe1eda4545a08584b48bf6a601",
+        "attempts": "1",
+        "repair_attempts": "0",
+        "outcome": "success",
+        "error_code": "None",
+        "usage_complete": "True"
+      },
+      {
+        "protocol": "chat",
+        "request_id": "agy_7b75664e189344bdb0167c8deaee8e8f",
+        "attempts": "1",
+        "repair_attempts": "0",
+        "outcome": "success",
+        "error_code": "None",
+        "usage_complete": "True"
+      },
+      {
+        "protocol": "chat",
+        "request_id": "agy_382fe5edf4ab46b4a8ca87a22679305c",
+        "attempts": "1",
+        "repair_attempts": "0",
+        "outcome": "success",
+        "error_code": "None",
+        "usage_complete": "True"
+      },
+      {
+        "protocol": "chat",
+        "request_id": "agy_53ff5a07dda54ff79a68a463116a0a0f",
+        "attempts": "1",
+        "repair_attempts": "0",
+        "outcome": "success",
+        "error_code": "None",
+        "usage_complete": "True"
+      },
+      {
+        "protocol": "chat",
+        "request_id": "agy_57726a9d0f534403802a4f0bd92b85e2",
+        "attempts": "1",
+        "repair_attempts": "0",
+        "outcome": "success",
+        "error_code": "None",
+        "usage_complete": "True"
+      }
+    ]
+  },
+  "web": {
+    "status": 200,
+    "bytes": 35727,
+    "content_type": "text/html; charset=utf-8",
+    "has_html": true
+  },
+  "game_http": [
+    {
+      "path": "/",
+      "status": 200,
+      "bytes": 3291
+    },
+    {
+      "path": "/app.js",
+      "status": 200,
+      "bytes": 14733
+    },
+    {
+      "path": "/style.css",
+      "status": 200,
+      "bytes": 8474
+    },
+    {
+      "path": "/engine/physics.js",
+      "status": 200,
+      "bytes": 9152
+    },
+    {
+      "path": "/test-runner.html",
+      "status": 200,
+      "bytes": 5728
+    }
+  ],
+  "game_unit_tests": {
+    "passed": 13,
+    "failed": 0,
+    "dsh_command": "node test/pong.test.js",
+    "independent_command": "node --test test/pong.test.js"
+  },
+  "game_dom_checks": {
+    "kind": "jsdom-integration",
+    "canvas": "mocked",
+    "visual_browser_test": false,
+    "checks": [
+      {
+        "name": "initial canvas, score and start overlay",
+        "passed": true
+      },
+      {
+        "name": "start and canvas render",
+        "passed": true
+      },
+      {
+        "name": "keyboard and mouse paddle input",
+        "passed": true
+      },
+      {
+        "name": "pause freezes ball, resume preserves score",
+        "passed": true
+      },
+      {
+        "name": "difficulty selector changes engine",
+        "passed": true
+      },
+      {
+        "name": "winning score updates result and restart resets",
+        "passed": true
+      },
+      {
+        "name": "responsive canvas updates for narrow screen",
+        "passed": true
+      },
+      {
+        "name": "reset returns to ready state",
+        "passed": true
+      }
+    ]
+  },
+  "visual_browser_check": "not_run_browser_and_native_automation_unavailable",
+  "acl_repair": {
+    "scope": "pong-game only",
+    "verified": true,
+    "rollback_directory": "acl-recovery"
+  }
+}

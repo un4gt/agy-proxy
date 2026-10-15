@@ -1,0 +1,4336 @@
+{
+  "traceEvents": [
+    {
+      "ph": "M",
+      "name": "process_name",
+      "pid": 1,
+      "tid": 1,
+      "args": {
+        "name": "DSH -> proxy -> AGY"
+      }
+    },
+    {
+      "ph": "M",
+      "name": "thread_name",
+      "pid": 1,
+      "tid": 1,
+      "args": {
+        "name": "DSH whole task"
+      }
+    },
+    {
+      "ph": "M",
+      "name": "process_name",
+      "pid": 1,
+      "tid": 2,
+      "args": {
+        "name": "DSH -> proxy -> AGY"
+      }
+    },
+    {
+      "ph": "M",
+      "name": "thread_name",
+      "pid": 1,
+      "tid": 2,
+      "args": {
+        "name": "Main HTTP requests"
+      }
+    },
+    {
+      "ph": "M",
+      "name": "process_name",
+      "pid": 1,
+      "tid": 3,
+      "args": {
+        "name": "DSH -> proxy -> AGY"
+      }
+    },
+    {
+      "ph": "M",
+      "name": "thread_name",
+      "pid": 1,
+      "tid": 3,
+      "args": {
+        "name": "Auxiliary title request"
+      }
+    },
+    {
+      "ph": "M",
+      "name": "process_name",
+      "pid": 1,
+      "tid": 4,
+      "args": {
+        "name": "DSH -> proxy -> AGY"
+      }
+    },
+    {
+      "ph": "M",
+      "name": "thread_name",
+      "pid": 1,
+      "tid": 4,
+      "args": {
+        "name": "Client tools"
+      }
+    },
+    {
+      "ph": "M",
+      "name": "process_name",
+      "pid": 1,
+      "tid": 5,
+      "args": {
+        "name": "DSH -> proxy -> AGY"
+      }
+    },
+    {
+      "ph": "M",
+      "name": "thread_name",
+      "pid": 1,
+      "tid": 5,
+      "args": {
+        "name": "Server HTTP"
+      }
+    },
+    {
+      "ph": "M",
+      "name": "process_name",
+      "pid": 1,
+      "tid": 6,
+      "args": {
+        "name": "DSH -> proxy -> AGY"
+      }
+    },
+    {
+      "ph": "M",
+      "name": "thread_name",
+      "pid": 1,
+      "tid": 6,
+      "args": {
+        "name": "AGY turns"
+      }
+    },
+    {
+      "ph": "M",
+      "name": "process_name",
+      "pid": 1,
+      "tid": 7,
+      "args": {
+        "name": "DSH -> proxy -> AGY"
+      }
+    },
+    {
+      "ph": "M",
+      "name": "thread_name",
+      "pid": 1,
+      "tid": 7,
+      "args": {
+        "name": "Validation / ready"
+      }
+    },
+    {
+      "ph": "M",
+      "name": "process_name",
+      "pid": 1,
+      "tid": 8,
+      "args": {
+        "name": "DSH -> proxy -> AGY"
+      }
+    },
+    {
+      "ph": "M",
+      "name": "thread_name",
+      "pid": 1,
+      "tid": 8,
+      "args": {
+        "name": "AGY auxiliary title"
+      }
+    },
+    {
+      "ph": "M",
+      "name": "process_name",
+      "pid": 1,
+      "tid": 9,
+      "args": {
+        "name": "DSH -> proxy -> AGY"
+      }
+    },
+    {
+      "ph": "M",
+      "name": "thread_name",
+      "pid": 1,
+      "tid": 9,
+      "args": {
+        "name": "Server auxiliary title"
+      }
+    },
+    {
+      "ph": "M",
+      "name": "process_name",
+      "pid": 1,
+      "tid": 10,
+      "args": {
+        "name": "DSH -> proxy -> AGY"
+      }
+    },
+    {
+      "ph": "M",
+      "name": "thread_name",
+      "pid": 1,
+      "tid": 10,
+      "args": {
+        "name": "Auxiliary validation"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "DSH task",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 1,
+      "ts": 0.0,
+      "dur": 851714497.0,
+      "args": {}
+    },
+    {
+      "ph": "M",
+      "name": "process_name",
+      "pid": 2,
+      "tid": 1,
+      "args": {
+        "name": "Native AGY (separate run, normalized start)"
+      }
+    },
+    {
+      "ph": "M",
+      "name": "thread_name",
+      "pid": 2,
+      "tid": 1,
+      "args": {
+        "name": "Whole task"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Native AGY task",
+      "cat": "wall_time",
+      "pid": 2,
+      "tid": 1,
+      "ts": 0.0,
+      "dur": 442023827.0,
+      "args": {}
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 2",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 3,
+      "ts": 4593321.0,
+      "dur": 14623386.0,
+      "args": {
+        "request_id": "agy_eb9a21febcb6499c8e5fecb2de755ac3"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 3,
+      "ts": 4953944.0,
+      "args": {
+        "request_id": "agy_eb9a21febcb6499c8e5fecb2de755ac3"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 3,
+      "ts": 19206895.0,
+      "args": {
+        "request_id": "agy_eb9a21febcb6499c8e5fecb2de755ac3"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 2",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 9,
+      "ts": 4803802.528,
+      "dur": 14371903.57,
+      "args": {
+        "request_id": "agy_eb9a21febcb6499c8e5fecb2de755ac3"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 2",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 8,
+      "ts": 4819248.06,
+      "dur": 14351938.198,
+      "args": {
+        "request_id": "agy_eb9a21febcb6499c8e5fecb2de755ac3"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 2",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 10,
+      "ts": 19171186.259,
+      "dur": 1094.017,
+      "args": {
+        "request_id": "agy_eb9a21febcb6499c8e5fecb2de755ac3"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 1",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 4566903.0,
+      "dur": 16944790.0,
+      "args": {
+        "request_id": "agy_68d9380d49eb47a5bf3437960fed570f"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 4843982.0,
+      "args": {
+        "request_id": "agy_68d9380d49eb47a5bf3437960fed570f"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 21506896.0,
+      "args": {
+        "request_id": "agy_68d9380d49eb47a5bf3437960fed570f"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 1",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 4734741.144,
+      "dur": 16728962.698,
+      "args": {
+        "request_id": "agy_68d9380d49eb47a5bf3437960fed570f"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 1",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 4813450.662,
+      "dur": 16647250.249,
+      "args": {
+        "request_id": "agy_68d9380d49eb47a5bf3437960fed570f"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 1",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 21460700.911,
+      "dur": 984.2,
+      "args": {
+        "request_id": "agy_68d9380d49eb47a5bf3437960fed570f"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 3",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 21602168.0,
+      "dur": 6330182.0,
+      "args": {
+        "request_id": "agy_689df49d6884472f8a930f638c3df287"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 21906729.0,
+      "args": {
+        "request_id": "agy_689df49d6884472f8a930f638c3df287"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 27807175.0,
+      "args": {
+        "request_id": "agy_689df49d6884472f8a930f638c3df287"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 3",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 21802423.212,
+      "dur": 5973732.78,
+      "args": {
+        "request_id": "agy_689df49d6884472f8a930f638c3df287"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 3",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 21870686.003,
+      "dur": 5900103.775,
+      "args": {
+        "request_id": "agy_689df49d6884472f8a930f638c3df287"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 3",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 27770789.778,
+      "dur": 689.514,
+      "args": {
+        "request_id": "agy_689df49d6884472f8a930f638c3df287"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 4",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 28295580.0,
+      "dur": 2583899.0,
+      "args": {
+        "request_id": "agy_5eff47007ea643db8f33231641155548"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 28449292.0,
+      "args": {
+        "request_id": "agy_5eff47007ea643db8f33231641155548"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 30761201.0,
+      "args": {
+        "request_id": "agy_5eff47007ea643db8f33231641155548"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 4",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 28337710.604,
+      "dur": 2394222.98,
+      "args": {
+        "request_id": "agy_5eff47007ea643db8f33231641155548"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 4",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 28417475.1,
+      "dur": 2309434.134,
+      "args": {
+        "request_id": "agy_5eff47007ea643db8f33231641155548"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 4",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 30726909.234,
+      "dur": 1183.804,
+      "args": {
+        "request_id": "agy_5eff47007ea643db8f33231641155548"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 5",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 31767858.0,
+      "dur": 70608740.0,
+      "args": {
+        "request_id": "agy_6b97417aa2a74a3da5ca9381dd87a2c4"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 31938282.0,
+      "args": {
+        "request_id": "agy_6b97417aa2a74a3da5ca9381dd87a2c4"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 102256265.0,
+      "args": {
+        "request_id": "agy_6b97417aa2a74a3da5ca9381dd87a2c4"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 5",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 31812005.043,
+      "dur": 70414807.091,
+      "args": {
+        "request_id": "agy_6b97417aa2a74a3da5ca9381dd87a2c4"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 5",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 31906451.146,
+      "dur": 70315014.413,
+      "args": {
+        "request_id": "agy_6b97417aa2a74a3da5ca9381dd87a2c4"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 5",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 102221465.558,
+      "dur": 623.941,
+      "args": {
+        "request_id": "agy_6b97417aa2a74a3da5ca9381dd87a2c4"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 6",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 103340039.0,
+      "dur": 5416649.0,
+      "args": {
+        "request_id": "agy_a947bf52d5154b30808ac2dc59d6fa06"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 103481728.0,
+      "args": {
+        "request_id": "agy_a947bf52d5154b30808ac2dc59d6fa06"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 108633612.0,
+      "args": {
+        "request_id": "agy_a947bf52d5154b30808ac2dc59d6fa06"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 6",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 103374346.007,
+      "dur": 5227833.296,
+      "args": {
+        "request_id": "agy_a947bf52d5154b30808ac2dc59d6fa06"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 6",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 103449092.294,
+      "dur": 5149716.31,
+      "args": {
+        "request_id": "agy_a947bf52d5154b30808ac2dc59d6fa06"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 6",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 108598808.604,
+      "dur": 1374.106,
+      "args": {
+        "request_id": "agy_a947bf52d5154b30808ac2dc59d6fa06"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 7",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 109636066.0,
+      "dur": 6301306.0,
+      "args": {
+        "request_id": "agy_a387df12d8eb4335bafa370c6f8244d6"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 109803352.0,
+      "args": {
+        "request_id": "agy_a387df12d8eb4335bafa370c6f8244d6"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 115931833.0,
+      "args": {
+        "request_id": "agy_a387df12d8eb4335bafa370c6f8244d6"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 7",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 109669287.331,
+      "dur": 6178963.748,
+      "args": {
+        "request_id": "agy_a387df12d8eb4335bafa370c6f8244d6"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 7",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 109772161.144,
+      "dur": 6071802.005,
+      "args": {
+        "request_id": "agy_a387df12d8eb4335bafa370c6f8244d6"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 7",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 115843963.15,
+      "dur": 547.311,
+      "args": {
+        "request_id": "agy_a387df12d8eb4335bafa370c6f8244d6"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 8",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 116811007.0,
+      "dur": 9229460.0,
+      "args": {
+        "request_id": "agy_6b082c33f6a3429986809320a003eee2"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 116978725.0,
+      "args": {
+        "request_id": "agy_6b082c33f6a3429986809320a003eee2"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 126035884.0,
+      "args": {
+        "request_id": "agy_6b082c33f6a3429986809320a003eee2"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 8",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 116859309.985,
+      "dur": 9143594.107,
+      "args": {
+        "request_id": "agy_6b082c33f6a3429986809320a003eee2"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 8",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 116932791.4,
+      "dur": 9066966.258,
+      "args": {
+        "request_id": "agy_6b082c33f6a3429986809320a003eee2"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 8",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 125999757.657,
+      "dur": 1019.061,
+      "args": {
+        "request_id": "agy_6b082c33f6a3429986809320a003eee2"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 9",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 126868222.0,
+      "dur": 17118775.0,
+      "args": {
+        "request_id": "agy_ec7fd838a07d4d9c8bd21696dd390a92"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 127110804.0,
+      "args": {
+        "request_id": "agy_ec7fd838a07d4d9c8bd21696dd390a92"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 143867077.0,
+      "args": {
+        "request_id": "agy_ec7fd838a07d4d9c8bd21696dd390a92"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 9",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 126994361.927,
+      "dur": 16840706.77,
+      "args": {
+        "request_id": "agy_ec7fd838a07d4d9c8bd21696dd390a92"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 9",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 127077829.631,
+      "dur": 16754565.847,
+      "args": {
+        "request_id": "agy_ec7fd838a07d4d9c8bd21696dd390a92"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 9",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 143832395.478,
+      "dur": 629.367,
+      "args": {
+        "request_id": "agy_ec7fd838a07d4d9c8bd21696dd390a92"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 10",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 145008649.0,
+      "dur": 21944310.0,
+      "args": {
+        "request_id": "agy_83a7876bce974f44a9b6ff5c19fed774"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 145191902.0,
+      "args": {
+        "request_id": "agy_83a7876bce974f44a9b6ff5c19fed774"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 166841531.0,
+      "args": {
+        "request_id": "agy_83a7876bce974f44a9b6ff5c19fed774"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 10",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 145062163.661,
+      "dur": 21744103.9,
+      "args": {
+        "request_id": "agy_83a7876bce974f44a9b6ff5c19fed774"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 10",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 145160276.231,
+      "dur": 21641763.312,
+      "args": {
+        "request_id": "agy_83a7876bce974f44a9b6ff5c19fed774"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 10",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 166802039.543,
+      "dur": 1494.096,
+      "args": {
+        "request_id": "agy_83a7876bce974f44a9b6ff5c19fed774"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 11",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 167961903.0,
+      "dur": 46317335.0,
+      "args": {
+        "request_id": "agy_2f7e1b3697964837862933481d204e43"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 168170927.0,
+      "args": {
+        "request_id": "agy_2f7e1b3697964837862933481d204e43"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 214275355.0,
+      "args": {
+        "request_id": "agy_2f7e1b3697964837862933481d204e43"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 11",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 167999250.005,
+      "dur": 46195568.417,
+      "args": {
+        "request_id": "agy_2f7e1b3697964837862933481d204e43"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 11",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 168081357.813,
+      "dur": 46107884.273,
+      "args": {
+        "request_id": "agy_2f7e1b3697964837862933481d204e43"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 11",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 214189242.086,
+      "dur": 1884.102,
+      "args": {
+        "request_id": "agy_2f7e1b3697964837862933481d204e43"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 12",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 214341298.0,
+      "dur": 28037447.0,
+      "args": {
+        "request_id": "agy_fd2928ad820d4d8793fdd594aacd376c"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 214527186.0,
+      "args": {
+        "request_id": "agy_fd2928ad820d4d8793fdd594aacd376c"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 242376301.0,
+      "args": {
+        "request_id": "agy_fd2928ad820d4d8793fdd594aacd376c"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 12",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 214403974.963,
+      "dur": 27863149.467,
+      "args": {
+        "request_id": "agy_fd2928ad820d4d8793fdd594aacd376c"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 12",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 214491744.972,
+      "dur": 27770250.582,
+      "args": {
+        "request_id": "agy_fd2928ad820d4d8793fdd594aacd376c"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 12",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 242261995.554,
+      "dur": 1851.27,
+      "args": {
+        "request_id": "agy_fd2928ad820d4d8793fdd594aacd376c"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 13",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 242456945.0,
+      "dur": 3017542.0,
+      "args": {
+        "request_id": "agy_8d1ab5eeda62403aa7692a207ade418f"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 242631542.0,
+      "args": {
+        "request_id": "agy_8d1ab5eeda62403aa7692a207ade418f"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 245471560.0,
+      "args": {
+        "request_id": "agy_8d1ab5eeda62403aa7692a207ade418f"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 13",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 242499333.902,
+      "dur": 2941281.718,
+      "args": {
+        "request_id": "agy_8d1ab5eeda62403aa7692a207ade418f"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 13",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 242578292.32,
+      "dur": 2858469.881,
+      "args": {
+        "request_id": "agy_8d1ab5eeda62403aa7692a207ade418f"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 13",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 245436762.201,
+      "dur": 1355.294,
+      "args": {
+        "request_id": "agy_8d1ab5eeda62403aa7692a207ade418f"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 14",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 246394545.0,
+      "dur": 3885072.0,
+      "args": {
+        "request_id": "agy_5519de905c754d9eb256477e5970af94"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 246626205.0,
+      "args": {
+        "request_id": "agy_5519de905c754d9eb256477e5970af94"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 250160477.0,
+      "args": {
+        "request_id": "agy_5519de905c754d9eb256477e5970af94"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 14",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 246519721.091,
+      "dur": 3608911.754,
+      "args": {
+        "request_id": "agy_5519de905c754d9eb256477e5970af94"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 14",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 246589837.131,
+      "dur": 3535902.767,
+      "args": {
+        "request_id": "agy_5519de905c754d9eb256477e5970af94"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 14",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 250125739.897,
+      "dur": 697.708,
+      "args": {
+        "request_id": "agy_5519de905c754d9eb256477e5970af94"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 15",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 251387738.0,
+      "dur": 10988903.0,
+      "args": {
+        "request_id": "agy_34570a1e05224088904054471113ce95"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 251551637.0,
+      "args": {
+        "request_id": "agy_34570a1e05224088904054471113ce95"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 262265577.0,
+      "args": {
+        "request_id": "agy_34570a1e05224088904054471113ce95"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 15",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 251427172.318,
+      "dur": 10806139.395,
+      "args": {
+        "request_id": "agy_34570a1e05224088904054471113ce95"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 15",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 251510585.985,
+      "dur": 10720077.502,
+      "args": {
+        "request_id": "agy_34570a1e05224088904054471113ce95"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 15",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 262230663.486,
+      "dur": 581.425,
+      "args": {
+        "request_id": "agy_34570a1e05224088904054471113ce95"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 16",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 263506689.0,
+      "dur": 4644885.0,
+      "args": {
+        "request_id": "agy_32347c8e30dd4ec2ac6f438db5b95856"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 263666347.0,
+      "args": {
+        "request_id": "agy_32347c8e30dd4ec2ac6f438db5b95856"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 268032958.0,
+      "args": {
+        "request_id": "agy_32347c8e30dd4ec2ac6f438db5b95856"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 16",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 263561869.626,
+      "dur": 4440724.484,
+      "args": {
+        "request_id": "agy_32347c8e30dd4ec2ac6f438db5b95856"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 16",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 263634608.55,
+      "dur": 4363690.355,
+      "args": {
+        "request_id": "agy_32347c8e30dd4ec2ac6f438db5b95856"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 16",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 267998298.905,
+      "dur": 1119.868,
+      "args": {
+        "request_id": "agy_32347c8e30dd4ec2ac6f438db5b95856"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 17",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 269068646.0,
+      "dur": 3283759.0,
+      "args": {
+        "request_id": "agy_b26c80ad221842279f2a57773da89e38"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 269308245.0,
+      "args": {
+        "request_id": "agy_b26c80ad221842279f2a57773da89e38"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 272241659.0,
+      "args": {
+        "request_id": "agy_b26c80ad221842279f2a57773da89e38"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 17",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 269124198.82,
+      "dur": 3085558.454,
+      "args": {
+        "request_id": "agy_b26c80ad221842279f2a57773da89e38"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 17",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 269223915.929,
+      "dur": 2983317.767,
+      "args": {
+        "request_id": "agy_b26c80ad221842279f2a57773da89e38"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 17",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 272207233.696,
+      "dur": 825.897,
+      "args": {
+        "request_id": "agy_b26c80ad221842279f2a57773da89e38"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 18",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 273425367.0,
+      "dur": 3631299.0,
+      "args": {
+        "request_id": "agy_dde460350a944b2891c0078d88a467d1"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 273573860.0,
+      "args": {
+        "request_id": "agy_dde460350a944b2891c0078d88a467d1"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 276946040.0,
+      "args": {
+        "request_id": "agy_dde460350a944b2891c0078d88a467d1"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 18",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 273469703.456,
+      "dur": 3439858.883,
+      "args": {
+        "request_id": "agy_dde460350a944b2891c0078d88a467d1"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 18",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 273542383.583,
+      "dur": 3364654.391,
+      "args": {
+        "request_id": "agy_dde460350a944b2891c0078d88a467d1"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 18",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 276907037.974,
+      "dur": 821.504,
+      "args": {
+        "request_id": "agy_dde460350a944b2891c0078d88a467d1"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 19",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 277977306.0,
+      "dur": 3909407.0,
+      "args": {
+        "request_id": "agy_11bcc737b5da4d778943a7b8cf3c139f"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 278147466.0,
+      "args": {
+        "request_id": "agy_11bcc737b5da4d778943a7b8cf3c139f"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 281770456.0,
+      "args": {
+        "request_id": "agy_11bcc737b5da4d778943a7b8cf3c139f"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 19",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 278022032.094,
+      "dur": 3717148.712,
+      "args": {
+        "request_id": "agy_11bcc737b5da4d778943a7b8cf3c139f"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 19",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 278092545.574,
+      "dur": 3643300.194,
+      "args": {
+        "request_id": "agy_11bcc737b5da4d778943a7b8cf3c139f"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 19",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 281735845.769,
+      "dur": 607.468,
+      "args": {
+        "request_id": "agy_11bcc737b5da4d778943a7b8cf3c139f"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 20",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 282949601.0,
+      "dur": 3866790.0,
+      "args": {
+        "request_id": "agy_392ee18ac40941cd9772550e8a02df4a"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 283127034.0,
+      "args": {
+        "request_id": "agy_392ee18ac40941cd9772550e8a02df4a"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 286693733.0,
+      "args": {
+        "request_id": "agy_392ee18ac40941cd9772550e8a02df4a"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 20",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 283004972.754,
+      "dur": 3658075.413,
+      "args": {
+        "request_id": "agy_392ee18ac40941cd9772550e8a02df4a"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 20",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 283095266.849,
+      "dur": 3564829.678,
+      "args": {
+        "request_id": "agy_392ee18ac40941cd9772550e8a02df4a"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 20",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 286660096.527,
+      "dur": 774.608,
+      "args": {
+        "request_id": "agy_392ee18ac40941cd9772550e8a02df4a"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 21",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 287932798.0,
+      "dur": 6720871.0,
+      "args": {
+        "request_id": "agy_349c08760da84eb2bbafd1ee7b064d97"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 288108563.0,
+      "args": {
+        "request_id": "agy_349c08760da84eb2bbafd1ee7b064d97"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 294578313.0,
+      "args": {
+        "request_id": "agy_349c08760da84eb2bbafd1ee7b064d97"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 21",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 287984278.134,
+      "dur": 6563208.97,
+      "args": {
+        "request_id": "agy_349c08760da84eb2bbafd1ee7b064d97"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 21",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 288062460.126,
+      "dur": 6480451.44,
+      "args": {
+        "request_id": "agy_349c08760da84eb2bbafd1ee7b064d97"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 21",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 294542911.566,
+      "dur": 1285.851,
+      "args": {
+        "request_id": "agy_349c08760da84eb2bbafd1ee7b064d97"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 22",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 295564029.0,
+      "dur": 4876483.0,
+      "args": {
+        "request_id": "agy_80c83202f9ae41ff9a6870586fed4407"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 295734178.0,
+      "args": {
+        "request_id": "agy_80c83202f9ae41ff9a6870586fed4407"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 300437984.0,
+      "args": {
+        "request_id": "agy_80c83202f9ae41ff9a6870586fed4407"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 22",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 295624071.5,
+      "dur": 4782055.975,
+      "args": {
+        "request_id": "agy_80c83202f9ae41ff9a6870586fed4407"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 22",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 295702796.697,
+      "dur": 4700480.146,
+      "args": {
+        "request_id": "agy_80c83202f9ae41ff9a6870586fed4407"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 22",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 300403276.844,
+      "dur": 906.422,
+      "args": {
+        "request_id": "agy_80c83202f9ae41ff9a6870586fed4407"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 23",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 302418020.0,
+      "dur": 10939760.0,
+      "args": {
+        "request_id": "agy_31aa2e905204437fb35bdb685261eb15"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 302653996.0,
+      "args": {
+        "request_id": "agy_31aa2e905204437fb35bdb685261eb15"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 313354016.0,
+      "args": {
+        "request_id": "agy_31aa2e905204437fb35bdb685261eb15"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 23",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 302552195.585,
+      "dur": 10768796.388,
+      "args": {
+        "request_id": "agy_31aa2e905204437fb35bdb685261eb15"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 23",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 302622261.637,
+      "dur": 10694884.245,
+      "args": {
+        "request_id": "agy_31aa2e905204437fb35bdb685261eb15"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 23",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 313317145.882,
+      "dur": 981.949,
+      "args": {
+        "request_id": "agy_31aa2e905204437fb35bdb685261eb15"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 24",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 313420280.0,
+      "dur": 8168891.0,
+      "args": {
+        "request_id": "agy_ae481af772fc4820b434a110f4850c88"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 313715260.0,
+      "args": {
+        "request_id": "agy_ae481af772fc4820b434a110f4850c88"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 321586695.0,
+      "args": {
+        "request_id": "agy_ae481af772fc4820b434a110f4850c88"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 24",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 313619805.905,
+      "dur": 7936143.763,
+      "args": {
+        "request_id": "agy_ae481af772fc4820b434a110f4850c88"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 24",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 313681885.564,
+      "dur": 7865968.314,
+      "args": {
+        "request_id": "agy_ae481af772fc4820b434a110f4850c88"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 24",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 321547853.878,
+      "dur": 1022.215,
+      "args": {
+        "request_id": "agy_ae481af772fc4820b434a110f4850c88"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 25",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 321674867.0,
+      "dur": 50568151.0,
+      "args": {
+        "request_id": "agy_a102d0f955084ef1b2e7fb3c12021fb5"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 321997355.0,
+      "args": {
+        "request_id": "agy_a102d0f955084ef1b2e7fb3c12021fb5"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 372168741.0,
+      "args": {
+        "request_id": "agy_a102d0f955084ef1b2e7fb3c12021fb5"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 25",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 321894615.89,
+      "dur": 50235206.859,
+      "args": {
+        "request_id": "agy_a102d0f955084ef1b2e7fb3c12021fb5"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 25",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 321965493.065,
+      "dur": 50159712.074,
+      "args": {
+        "request_id": "agy_a102d0f955084ef1b2e7fb3c12021fb5"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 25",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 372125205.139,
+      "dur": 722.324,
+      "args": {
+        "request_id": "agy_a102d0f955084ef1b2e7fb3c12021fb5"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 26",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 372328882.0,
+      "dur": 4497923.0,
+      "args": {
+        "request_id": "agy_91932d3c30f944c391edbe3728122ce7"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 372531613.0,
+      "args": {
+        "request_id": "agy_91932d3c30f944c391edbe3728122ce7"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 376708485.0,
+      "args": {
+        "request_id": "agy_91932d3c30f944c391edbe3728122ce7"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 26",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 372369989.006,
+      "dur": 4307681.534,
+      "args": {
+        "request_id": "agy_91932d3c30f944c391edbe3728122ce7"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 26",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 372466271.673,
+      "dur": 4205906.039,
+      "args": {
+        "request_id": "agy_91932d3c30f944c391edbe3728122ce7"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 26",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 376672177.712,
+      "dur": 1544.396,
+      "args": {
+        "request_id": "agy_91932d3c30f944c391edbe3728122ce7"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 27",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 496934565.0,
+      "dur": 4306845.0,
+      "args": {
+        "request_id": "agy_1d0b40e477264f3daf661c3b9ffbafd0"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 497172888.0,
+      "args": {
+        "request_id": "agy_1d0b40e477264f3daf661c3b9ffbafd0"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 501124418.0,
+      "args": {
+        "request_id": "agy_1d0b40e477264f3daf661c3b9ffbafd0"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 27",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 497062004.521,
+      "dur": 4022418.582,
+      "args": {
+        "request_id": "agy_1d0b40e477264f3daf661c3b9ffbafd0"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 27",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 497139354.913,
+      "dur": 3941885.033,
+      "args": {
+        "request_id": "agy_1d0b40e477264f3daf661c3b9ffbafd0"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 27",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 501081239.946,
+      "dur": 948.885,
+      "args": {
+        "request_id": "agy_1d0b40e477264f3daf661c3b9ffbafd0"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 28",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 501315976.0,
+      "dur": 3461968.0,
+      "args": {
+        "request_id": "agy_d841e1dd6f9d49f3969ba67c2edca615"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 501591065.0,
+      "args": {
+        "request_id": "agy_d841e1dd6f9d49f3969ba67c2edca615"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 504651473.0,
+      "args": {
+        "request_id": "agy_d841e1dd6f9d49f3969ba67c2edca615"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 28",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 501462513.442,
+      "dur": 3159799.268,
+      "args": {
+        "request_id": "agy_d841e1dd6f9d49f3969ba67c2edca615"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 28",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 501557951.346,
+      "dur": 3056920.413,
+      "args": {
+        "request_id": "agy_d841e1dd6f9d49f3969ba67c2edca615"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 28",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 504614871.759,
+      "dur": 676.3,
+      "args": {
+        "request_id": "agy_d841e1dd6f9d49f3969ba67c2edca615"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 29",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 504837214.0,
+      "dur": 12215294.0,
+      "args": {
+        "request_id": "agy_a5d6771365eb4b6b8b55dd53912960e7"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 505070660.0,
+      "args": {
+        "request_id": "agy_a5d6771365eb4b6b8b55dd53912960e7"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 516946273.0,
+      "args": {
+        "request_id": "agy_a5d6771365eb4b6b8b55dd53912960e7"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 29",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 504894430.918,
+      "dur": 12020360.38,
+      "args": {
+        "request_id": "agy_a5d6771365eb4b6b8b55dd53912960e7"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 29",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 504982829.587,
+      "dur": 11928812.411,
+      "args": {
+        "request_id": "agy_a5d6771365eb4b6b8b55dd53912960e7"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 29",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 516911641.998,
+      "dur": 591.71,
+      "args": {
+        "request_id": "agy_a5d6771365eb4b6b8b55dd53912960e7"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 30",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 637123359.0,
+      "dur": 3174118.0,
+      "args": {
+        "request_id": "agy_9c1c7bf56dc74a97bc4a6cee07fa5d05"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 637368887.0,
+      "args": {
+        "request_id": "agy_9c1c7bf56dc74a97bc4a6cee07fa5d05"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 640175366.0,
+      "args": {
+        "request_id": "agy_9c1c7bf56dc74a97bc4a6cee07fa5d05"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 30",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 637258673.086,
+      "dur": 2885466.464,
+      "args": {
+        "request_id": "agy_9c1c7bf56dc74a97bc4a6cee07fa5d05"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 30",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 637337409.583,
+      "dur": 2803523.015,
+      "args": {
+        "request_id": "agy_9c1c7bf56dc74a97bc4a6cee07fa5d05"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 30",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 640140932.598,
+      "dur": 803.735,
+      "args": {
+        "request_id": "agy_9c1c7bf56dc74a97bc4a6cee07fa5d05"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 31",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 640363850.0,
+      "dur": 5054100.0,
+      "args": {
+        "request_id": "agy_ac20456118464eda8b864ea20173a972"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 640575583.0,
+      "args": {
+        "request_id": "agy_ac20456118464eda8b864ea20173a972"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 645295764.0,
+      "args": {
+        "request_id": "agy_ac20456118464eda8b864ea20173a972"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 31",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 640414239.024,
+      "dur": 4850705.359,
+      "args": {
+        "request_id": "agy_ac20456118464eda8b864ea20173a972"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 31",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 640511593.085,
+      "dur": 4748905.565,
+      "args": {
+        "request_id": "agy_ac20456118464eda8b864ea20173a972"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 31",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 645260498.649,
+      "dur": 1951.544,
+      "args": {
+        "request_id": "agy_ac20456118464eda8b864ea20173a972"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 32",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 647956235.0,
+      "dur": 4538965.0,
+      "args": {
+        "request_id": "agy_3ac6bdb4eae14f9eb3d89cb3eb17ebd9"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 648196221.0,
+      "args": {
+        "request_id": "agy_3ac6bdb4eae14f9eb3d89cb3eb17ebd9"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 652386029.0,
+      "args": {
+        "request_id": "agy_3ac6bdb4eae14f9eb3d89cb3eb17ebd9"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 32",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 647998996.783,
+      "dur": 4352095.878,
+      "args": {
+        "request_id": "agy_3ac6bdb4eae14f9eb3d89cb3eb17ebd9"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 32",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 648101088.929,
+      "dur": 4246624.566,
+      "args": {
+        "request_id": "agy_3ac6bdb4eae14f9eb3d89cb3eb17ebd9"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 32",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 652347713.494,
+      "dur": 651.421,
+      "args": {
+        "request_id": "agy_3ac6bdb4eae14f9eb3d89cb3eb17ebd9"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 33",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 652575577.0,
+      "dur": 4320519.0,
+      "args": {
+        "request_id": "agy_714c5a1835c045d983f980353aab5fc0"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 652776018.0,
+      "args": {
+        "request_id": "agy_714c5a1835c045d983f980353aab5fc0"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 656893033.0,
+      "args": {
+        "request_id": "agy_714c5a1835c045d983f980353aab5fc0"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 33",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 652623861.959,
+      "dur": 4210475.469,
+      "args": {
+        "request_id": "agy_714c5a1835c045d983f980353aab5fc0"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 33",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 652731821.455,
+      "dur": 4095473.164,
+      "args": {
+        "request_id": "agy_714c5a1835c045d983f980353aab5fc0"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 33",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 656827294.619,
+      "dur": 3081.999,
+      "args": {
+        "request_id": "agy_714c5a1835c045d983f980353aab5fc0"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 34",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 658416850.0,
+      "dur": 7820435.0,
+      "args": {
+        "request_id": "agy_f39642223993437f947461037afffd92"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 658615547.0,
+      "args": {
+        "request_id": "agy_f39642223993437f947461037afffd92"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 666115607.0,
+      "args": {
+        "request_id": "agy_f39642223993437f947461037afffd92"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 34",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 658476911.093,
+      "dur": 7607202.525,
+      "args": {
+        "request_id": "agy_f39642223993437f947461037afffd92"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 34",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 658566257.917,
+      "dur": 7514818.574,
+      "args": {
+        "request_id": "agy_f39642223993437f947461037afffd92"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 34",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 666081076.491,
+      "dur": 662.939,
+      "args": {
+        "request_id": "agy_f39642223993437f947461037afffd92"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 35",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 668146525.0,
+      "dur": 5806759.0,
+      "args": {
+        "request_id": "agy_69b381f68d34457195ce81bfcf6a39f7"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 668393080.0,
+      "args": {
+        "request_id": "agy_69b381f68d34457195ce81bfcf6a39f7"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 673825845.0,
+      "args": {
+        "request_id": "agy_69b381f68d34457195ce81bfcf6a39f7"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 35",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 668224297.844,
+      "dur": 5569139.162,
+      "args": {
+        "request_id": "agy_69b381f68d34457195ce81bfcf6a39f7"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 35",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 668350388.214,
+      "dur": 5438281.962,
+      "args": {
+        "request_id": "agy_69b381f68d34457195ce81bfcf6a39f7"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 35",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 673788670.175,
+      "dur": 653.001,
+      "args": {
+        "request_id": "agy_69b381f68d34457195ce81bfcf6a39f7"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 36",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 675607382.0,
+      "dur": 9890113.0,
+      "args": {
+        "request_id": "agy_f4a6bdc5916a42aeae4c0281b7703ffc"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 675843844.0,
+      "args": {
+        "request_id": "agy_f4a6bdc5916a42aeae4c0281b7703ffc"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 685373127.0,
+      "args": {
+        "request_id": "agy_f4a6bdc5916a42aeae4c0281b7703ffc"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 36",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 675661735.425,
+      "dur": 9680338.557,
+      "args": {
+        "request_id": "agy_f4a6bdc5916a42aeae4c0281b7703ffc"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 36",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 675771448.072,
+      "dur": 9565780.933,
+      "args": {
+        "request_id": "agy_f4a6bdc5916a42aeae4c0281b7703ffc"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 36",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 685337229.005,
+      "dur": 1503.367,
+      "args": {
+        "request_id": "agy_f4a6bdc5916a42aeae4c0281b7703ffc"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 37",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 687744358.0,
+      "dur": 5754635.0,
+      "args": {
+        "request_id": "agy_bf87dbfe4cc64921a3c2d76904a45c83"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 687936043.0,
+      "args": {
+        "request_id": "agy_bf87dbfe4cc64921a3c2d76904a45c83"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 693495516.0,
+      "args": {
+        "request_id": "agy_bf87dbfe4cc64921a3c2d76904a45c83"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 37",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 687812531.477,
+      "dur": 5651566.321,
+      "args": {
+        "request_id": "agy_bf87dbfe4cc64921a3c2d76904a45c83"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 37",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 687901833.409,
+      "dur": 5557215.567,
+      "args": {
+        "request_id": "agy_bf87dbfe4cc64921a3c2d76904a45c83"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 37",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 693459048.976,
+      "dur": 1103.641,
+      "args": {
+        "request_id": "agy_bf87dbfe4cc64921a3c2d76904a45c83"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 38",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 697129197.0,
+      "dur": 3238774.0,
+      "args": {
+        "request_id": "agy_ef39b05fb656407ea7be6bfc047b2f2d"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 697431061.0,
+      "args": {
+        "request_id": "agy_ef39b05fb656407ea7be6bfc047b2f2d"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 700263213.0,
+      "args": {
+        "request_id": "agy_ef39b05fb656407ea7be6bfc047b2f2d"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 38",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 697265134.393,
+      "dur": 2960340.766,
+      "args": {
+        "request_id": "agy_ef39b05fb656407ea7be6bfc047b2f2d"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 38",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 697398399.539,
+      "dur": 2824089.439,
+      "args": {
+        "request_id": "agy_ef39b05fb656407ea7be6bfc047b2f2d"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 38",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 700222488.978,
+      "dur": 696.907,
+      "args": {
+        "request_id": "agy_ef39b05fb656407ea7be6bfc047b2f2d"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 39",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 700883340.0,
+      "dur": 9493302.0,
+      "args": {
+        "request_id": "agy_33603b2f854a41c7985d918ca61e41b7"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 701135984.0,
+      "args": {
+        "request_id": "agy_33603b2f854a41c7985d918ca61e41b7"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 710255624.0,
+      "args": {
+        "request_id": "agy_33603b2f854a41c7985d918ca61e41b7"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 39",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 700944170.487,
+      "dur": 9281281.958,
+      "args": {
+        "request_id": "agy_33603b2f854a41c7985d918ca61e41b7"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 39",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 701062956.126,
+      "dur": 9158192.581,
+      "args": {
+        "request_id": "agy_33603b2f854a41c7985d918ca61e41b7"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 39",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 710221148.708,
+      "dur": 1085.57,
+      "args": {
+        "request_id": "agy_33603b2f854a41c7985d918ca61e41b7"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 40",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 711802698.0,
+      "dur": 6082768.0,
+      "args": {
+        "request_id": "agy_b1aa8682d4964d0eb3cd43502da0a623"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 712004024.0,
+      "args": {
+        "request_id": "agy_b1aa8682d4964d0eb3cd43502da0a623"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 717756001.0,
+      "args": {
+        "request_id": "agy_b1aa8682d4964d0eb3cd43502da0a623"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 40",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 711843726.154,
+      "dur": 5880016.206,
+      "args": {
+        "request_id": "agy_b1aa8682d4964d0eb3cd43502da0a623"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 40",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 711971053.46,
+      "dur": 5749290.99,
+      "args": {
+        "request_id": "agy_b1aa8682d4964d0eb3cd43502da0a623"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 40",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 717720344.45,
+      "dur": 741.543,
+      "args": {
+        "request_id": "agy_b1aa8682d4964d0eb3cd43502da0a623"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 41",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 719200624.0,
+      "dur": 36585440.0,
+      "args": {
+        "request_id": "agy_8743521e1a2e4875ae0671ee87a6db0b"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 719450613.0,
+      "args": {
+        "request_id": "agy_8743521e1a2e4875ae0671ee87a6db0b"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 755774868.0,
+      "args": {
+        "request_id": "agy_8743521e1a2e4875ae0671ee87a6db0b"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 41",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 719243995.873,
+      "dur": 36492071.288,
+      "args": {
+        "request_id": "agy_8743521e1a2e4875ae0671ee87a6db0b"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 41",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 719370058.761,
+      "dur": 36359401.587,
+      "args": {
+        "request_id": "agy_8743521e1a2e4875ae0671ee87a6db0b"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 41",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 755729460.348,
+      "dur": 2522.095,
+      "args": {
+        "request_id": "agy_8743521e1a2e4875ae0671ee87a6db0b"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 42",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 755885728.0,
+      "dur": 4232672.0,
+      "args": {
+        "request_id": "agy_68f64d40f2584488a24ef0a67de6bd45"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 756255630.0,
+      "args": {
+        "request_id": "agy_68f64d40f2584488a24ef0a67de6bd45"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 759994955.0,
+      "args": {
+        "request_id": "agy_68f64d40f2584488a24ef0a67de6bd45"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 42",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 756074794.691,
+      "dur": 3890785.463,
+      "args": {
+        "request_id": "agy_68f64d40f2584488a24ef0a67de6bd45"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 42",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 756180922.016,
+      "dur": 3778750.234,
+      "args": {
+        "request_id": "agy_68f64d40f2584488a24ef0a67de6bd45"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 42",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 759959672.251,
+      "dur": 2363.905,
+      "args": {
+        "request_id": "agy_68f64d40f2584488a24ef0a67de6bd45"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 43",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 769003380.0,
+      "dur": 5834143.0,
+      "args": {
+        "request_id": "agy_1fb8f6d48898409f8a6c99505daa7d39"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 769315559.0,
+      "args": {
+        "request_id": "agy_1fb8f6d48898409f8a6c99505daa7d39"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 774768635.0,
+      "args": {
+        "request_id": "agy_1fb8f6d48898409f8a6c99505daa7d39"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 43",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 769142107.744,
+      "dur": 5597899.539,
+      "args": {
+        "request_id": "agy_1fb8f6d48898409f8a6c99505daa7d39"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 43",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 769220190.965,
+      "dur": 5510934.875,
+      "args": {
+        "request_id": "agy_1fb8f6d48898409f8a6c99505daa7d39"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 43",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 774731125.841,
+      "dur": 1297.979,
+      "args": {
+        "request_id": "agy_1fb8f6d48898409f8a6c99505daa7d39"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 44",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 774922345.0,
+      "dur": 15643040.0,
+      "args": {
+        "request_id": "agy_1c73fb26a48f4f4285e59a4eb83f5041"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 775150917.0,
+      "args": {
+        "request_id": "agy_1c73fb26a48f4f4285e59a4eb83f5041"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 790561712.0,
+      "args": {
+        "request_id": "agy_1c73fb26a48f4f4285e59a4eb83f5041"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 44",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 774982277.26,
+      "dur": 15547051.375,
+      "args": {
+        "request_id": "agy_1c73fb26a48f4f4285e59a4eb83f5041"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 44",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 775083609.994,
+      "dur": 15442220.656,
+      "args": {
+        "request_id": "agy_1c73fb26a48f4f4285e59a4eb83f5041"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 44",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 790525830.65,
+      "dur": 702.836,
+      "args": {
+        "request_id": "agy_1c73fb26a48f4f4285e59a4eb83f5041"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 45",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 790646066.0,
+      "dur": 9322538.0,
+      "args": {
+        "request_id": "agy_c48305fd16634f63a13c0b18d94032cd"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 791006609.0,
+      "args": {
+        "request_id": "agy_c48305fd16634f63a13c0b18d94032cd"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 799826077.0,
+      "args": {
+        "request_id": "agy_c48305fd16634f63a13c0b18d94032cd"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 45",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 790844030.599,
+      "dur": 8943661.666,
+      "args": {
+        "request_id": "agy_c48305fd16634f63a13c0b18d94032cd"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 45",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 790923123.216,
+      "dur": 8861043.336,
+      "args": {
+        "request_id": "agy_c48305fd16634f63a13c0b18d94032cd"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 45",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 799784166.552,
+      "dur": 947.615,
+      "args": {
+        "request_id": "agy_c48305fd16634f63a13c0b18d94032cd"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 46",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 800070533.0,
+      "dur": 6614268.0,
+      "args": {
+        "request_id": "agy_5befd66ea6da45908a9d4898c6e85163"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 800285648.0,
+      "args": {
+        "request_id": "agy_5befd66ea6da45908a9d4898c6e85163"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 806681901.0,
+      "args": {
+        "request_id": "agy_5befd66ea6da45908a9d4898c6e85163"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 46",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 800128843.986,
+      "dur": 6260114.618,
+      "args": {
+        "request_id": "agy_5befd66ea6da45908a9d4898c6e85163"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 46",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 800225678.572,
+      "dur": 6160239.455,
+      "args": {
+        "request_id": "agy_5befd66ea6da45908a9d4898c6e85163"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 46",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 806385918.027,
+      "dur": 738.169,
+      "args": {
+        "request_id": "agy_5befd66ea6da45908a9d4898c6e85163"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 47",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 822164095.0,
+      "dur": 6007344.0,
+      "args": {
+        "request_id": "agy_aadd8265a1b24609bd859ca87808df0e"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 822446334.0,
+      "args": {
+        "request_id": "agy_aadd8265a1b24609bd859ca87808df0e"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 828052967.0,
+      "args": {
+        "request_id": "agy_aadd8265a1b24609bd859ca87808df0e"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 47",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 822292050.577,
+      "dur": 5733877.334,
+      "args": {
+        "request_id": "agy_aadd8265a1b24609bd859ca87808df0e"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 47",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 822373145.706,
+      "dur": 5642398.183,
+      "args": {
+        "request_id": "agy_aadd8265a1b24609bd859ca87808df0e"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 47",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 828015543.889,
+      "dur": 2878.569,
+      "args": {
+        "request_id": "agy_aadd8265a1b24609bd859ca87808df0e"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 48",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 828689273.0,
+      "dur": 4525114.0,
+      "args": {
+        "request_id": "agy_5079e836746e4662892d09b08c48520c"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 828903757.0,
+      "args": {
+        "request_id": "agy_5079e836746e4662892d09b08c48520c"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 833211429.0,
+      "args": {
+        "request_id": "agy_5079e836746e4662892d09b08c48520c"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 48",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 828733600.708,
+      "dur": 4445277.137,
+      "args": {
+        "request_id": "agy_5079e836746e4662892d09b08c48520c"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 48",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 828826173.226,
+      "dur": 4349660.184,
+      "args": {
+        "request_id": "agy_5079e836746e4662892d09b08c48520c"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 48",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 833175833.41,
+      "dur": 1217.29,
+      "args": {
+        "request_id": "agy_5079e836746e4662892d09b08c48520c"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "HTTP 49",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 2,
+      "ts": 833294248.0,
+      "dur": 18117544.0,
+      "args": {
+        "request_id": "agy_673b619e367f48b084070c43e67ec967"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "headers_received",
+      "pid": 1,
+      "tid": 2,
+      "ts": 833514056.0,
+      "args": {
+        "request_id": "agy_673b619e367f48b084070c43e67ec967"
+      }
+    },
+    {
+      "ph": "i",
+      "s": "t",
+      "name": "first_business",
+      "pid": 1,
+      "tid": 2,
+      "ts": 851346449.0,
+      "args": {
+        "request_id": "agy_673b619e367f48b084070c43e67ec967"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Server HTTP 49",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 5,
+      "ts": 833341798.41,
+      "dur": 17965364.314,
+      "args": {
+        "request_id": "agy_673b619e367f48b084070c43e67ec967"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "AGY 49",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 6,
+      "ts": 833471879.249,
+      "dur": 17831919.506,
+      "args": {
+        "request_id": "agy_673b619e367f48b084070c43e67ec967"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "Validate / ready 49",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 7,
+      "ts": 851303798.755,
+      "dur": 581.342,
+      "args": {
+        "request_id": "agy_673b619e367f48b084070c43e67ec967"
+      }
+    },
+    {
+      "ph": "X",
+      "name": "1: skill",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 21516445.0,
+      "dur": 26194.0,
+      "args": {
+        "backgrounded": false,
+        "tests_ok": false,
+        "nonzero_exit": false
+      }
+    },
+    {
+      "ph": "X",
+      "name": "2: todo_write",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 21545713.0,
+      "dur": 6536.0,
+      "args": {
+        "backgrounded": false,
+        "tests_ok": false,
+        "nonzero_exit": false
+      }
+    },
+    {
+      "ph": "X",
+      "name": "3: glob",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 27935977.0,
+      "dur": 327415.0,
+      "args": {
+        "backgrounded": false,
+        "tests_ok": false,
+        "nonzero_exit": false
+      }
+    },
+    {
+      "ph": "X",
+      "name": "4: pwsh",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 30881815.0,
+      "dur": 844089.0,
+      "args": {
+        "backgrounded": false,
+        "tests_ok": false,
+        "nonzero_exit": false
+      }
+    },
+    {
+      "ph": "X",
+      "name": "5: pwsh",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 102378973.0,
+      "dur": 924273.0,
+      "args": {
+        "backgrounded": false,
+        "tests_ok": false,
+        "nonzero_exit": false
+      }
+    },
+    {
+      "ph": "X",
+      "name": "6: pwsh",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 108759201.0,
+      "dur": 842749.0,
+      "args": {
+        "backgrounded": false,
+        "tests_ok": false,
+        "nonzero_exit": false
+      }
+    },
+    {
+      "ph": "X",
+      "name": "7: pwsh",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 115940381.0,
+      "dur": 831881.0,
+      "args": {
+        "backgrounded": false,
+        "tests_ok": false,
+        "nonzero_exit": false
+      }
+    },
+    {
+      "ph": "X",
+      "name": "8: pwsh",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 126041427.0,
+      "dur": 777927.0,
+      "args": {
+        "backgrounded": false,
+        "tests_ok": false,
+        "nonzero_exit": false
+      }
+    },
+    {
+      "ph": "X",
+      "name": "9: pwsh",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 143988854.0,
+      "dur": 976344.0,
+      "args": {
+        "backgrounded": false,
+        "tests_ok": false,
+        "nonzero_exit": false
+      }
+    },
+    {
+      "ph": "X",
+      "name": "10: pwsh",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 166957276.0,
+      "dur": 927237.0,
+      "args": {
+        "backgrounded": false,
+        "tests_ok": false,
+        "nonzero_exit": false
+      }
+    },
+    {
+      "ph": "X",
+      "name": "11: todo_write",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 214283835.0,
+      "dur": 6029.0,
+      "args": {
+        "backgrounded": false,
+        "tests_ok": false,
+        "nonzero_exit": false
+      }
+    },
+    {
+      "ph": "X",
+      "name": "12: write",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 242383498.0,
+      "dur": 20358.0,
+      "args": {
+        "backgrounded": false,
+        "tests_ok": false,
+        "nonzero_exit": false
+      }
+    },
+    {
+      "ph": "X",
+      "name": "13: pwsh",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 245475370.0,
+      "dur": 876144.0,
+      "args": {
+        "backgrounded": false,
+        "tests_ok": false,
+        "nonzero_exit": false
+      }
+    },
+    {
+      "ph": "X",
+      "name": "14: pwsh",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 250282008.0,
+      "dur": 1064378.0,
+      "args": {
+        "backgrounded": false,
+        "tests_ok": false,
+        "nonzero_exit": false
+      }
+    },
+    {
+      "ph": "X",
+      "name": "15: pwsh",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 262378643.0,
+      "dur": 1088300.0,
+      "args": {
+        "backgrounded": false,
+        "tests_ok": false,
+        "nonzero_exit": true
+      }
+    },
+    {
+      "ph": "X",
+      "name": "16: pwsh",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 268153151.0,
+      "dur": 875370.0,
+      "args": {
+        "backgrounded": false,
+        "tests_ok": false,
+        "nonzero_exit": true
+      }
+    },
+    {
+      "ph": "X",
+      "name": "17: pwsh",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 272354459.0,
+      "dur": 1033948.0,
+      "args": {
+        "backgrounded": false,
+        "tests_ok": false,
+        "nonzero_exit": true
+      }
+    },
+    {
+      "ph": "X",
+      "name": "18: pwsh",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 277058182.0,
+      "dur": 868324.0,
+      "args": {
+        "backgrounded": false,
+        "tests_ok": false,
+        "nonzero_exit": true
+      }
+    },
+    {
+      "ph": "X",
+      "name": "19: pwsh",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 281888471.0,
+      "dur": 1020594.0,
+      "args": {
+        "backgrounded": false,
+        "tests_ok": false,
+        "nonzero_exit": true
+      }
+    },
+    {
+      "ph": "X",
+      "name": "20: pwsh",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 286817999.0,
+      "dur": 1077893.0,
+      "args": {
+        "backgrounded": false,
+        "tests_ok": false,
+        "nonzero_exit": true
+      }
+    },
+    {
+      "ph": "X",
+      "name": "21: pwsh",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 294658531.0,
+      "dur": 865987.0,
+      "args": {
+        "backgrounded": false,
+        "tests_ok": false,
+        "nonzero_exit": true
+      }
+    },
+    {
+      "ph": "X",
+      "name": "22: pwsh",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 300441435.0,
+      "dur": 1930002.0,
+      "args": {
+        "backgrounded": false,
+        "tests_ok": false,
+        "nonzero_exit": false
+      }
+    },
+    {
+      "ph": "X",
+      "name": "23: edit",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 313358500.0,
+      "dur": 16086.0,
+      "args": {
+        "backgrounded": false,
+        "tests_ok": false,
+        "nonzero_exit": false
+      }
+    },
+    {
+      "ph": "X",
+      "name": "24: edit",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 321589630.0,
+      "dur": 19557.0,
+      "args": {
+        "backgrounded": false,
+        "tests_ok": false,
+        "nonzero_exit": false
+      }
+    },
+    {
+      "ph": "X",
+      "name": "25: write",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 372246962.0,
+      "dur": 16296.0,
+      "args": {
+        "backgrounded": false,
+        "tests_ok": false,
+        "nonzero_exit": false
+      }
+    },
+    {
+      "ph": "X",
+      "name": "26: pwsh",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 376829139.0,
+      "dur": 120016260.0,
+      "args": {
+        "backgrounded": true,
+        "tests_ok": false,
+        "nonzero_exit": false
+      }
+    },
+    {
+      "ph": "X",
+      "name": "27: job_output",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 501237522.0,
+      "dur": 17999.0,
+      "args": {
+        "backgrounded": false,
+        "tests_ok": false,
+        "nonzero_exit": false
+      }
+    },
+    {
+      "ph": "X",
+      "name": "28: job_kill",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 504780111.0,
+      "dur": 8006.0,
+      "args": {
+        "backgrounded": false,
+        "tests_ok": false,
+        "nonzero_exit": false
+      }
+    },
+    {
+      "ph": "X",
+      "name": "29: pwsh",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 517055785.0,
+      "dur": 120011147.0,
+      "args": {
+        "backgrounded": true,
+        "tests_ok": false,
+        "nonzero_exit": false
+      }
+    },
+    {
+      "ph": "X",
+      "name": "30: job_kill",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 640301339.0,
+      "dur": 7620.0,
+      "args": {
+        "backgrounded": false,
+        "tests_ok": false,
+        "nonzero_exit": false
+      }
+    },
+    {
+      "ph": "X",
+      "name": "31: pwsh",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 645420638.0,
+      "dur": 2471223.0,
+      "args": {
+        "backgrounded": false,
+        "tests_ok": false,
+        "nonzero_exit": true
+      }
+    },
+    {
+      "ph": "X",
+      "name": "32: skill",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 652496969.0,
+      "dur": 12121.0,
+      "args": {
+        "backgrounded": false,
+        "tests_ok": false,
+        "nonzero_exit": false
+      }
+    },
+    {
+      "ph": "X",
+      "name": "33: pwsh",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 656900677.0,
+      "dur": 1455257.0,
+      "args": {
+        "backgrounded": false,
+        "tests_ok": false,
+        "nonzero_exit": false
+      }
+    },
+    {
+      "ph": "X",
+      "name": "34: pwsh",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 666241560.0,
+      "dur": 1823628.0,
+      "args": {
+        "backgrounded": false,
+        "tests_ok": false,
+        "nonzero_exit": false
+      }
+    },
+    {
+      "ph": "X",
+      "name": "35: pwsh",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 673957477.0,
+      "dur": 1576194.0,
+      "args": {
+        "backgrounded": false,
+        "tests_ok": false,
+        "nonzero_exit": false
+      }
+    },
+    {
+      "ph": "X",
+      "name": "36: pwsh",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 685500295.0,
+      "dur": 2171686.0,
+      "args": {
+        "backgrounded": false,
+        "tests_ok": false,
+        "nonzero_exit": false
+      }
+    },
+    {
+      "ph": "X",
+      "name": "37: pwsh",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 693499777.0,
+      "dur": 3565565.0,
+      "args": {
+        "backgrounded": false,
+        "tests_ok": false,
+        "nonzero_exit": true
+      }
+    },
+    {
+      "ph": "X",
+      "name": "38: glob",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 700370846.0,
+      "dur": 449017.0,
+      "args": {
+        "backgrounded": false,
+        "tests_ok": false,
+        "nonzero_exit": false
+      }
+    },
+    {
+      "ph": "X",
+      "name": "39: pwsh",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 710379297.0,
+      "dur": 1370742.0,
+      "args": {
+        "backgrounded": false,
+        "tests_ok": false,
+        "nonzero_exit": false
+      }
+    },
+    {
+      "ph": "X",
+      "name": "40: pwsh",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 717887363.0,
+      "dur": 1247942.0,
+      "args": {
+        "backgrounded": false,
+        "tests_ok": false,
+        "nonzero_exit": false
+      }
+    },
+    {
+      "ph": "X",
+      "name": "41: write",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 755788325.0,
+      "dur": 21323.0,
+      "args": {
+        "backgrounded": false,
+        "tests_ok": false,
+        "nonzero_exit": false
+      }
+    },
+    {
+      "ph": "X",
+      "name": "42: pwsh",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 760121346.0,
+      "dur": 8824698.0,
+      "args": {
+        "backgrounded": false,
+        "tests_ok": true,
+        "nonzero_exit": false
+      }
+    },
+    {
+      "ph": "X",
+      "name": "43: todo_write",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 774839016.0,
+      "dur": 9591.0,
+      "args": {
+        "backgrounded": false,
+        "tests_ok": false,
+        "nonzero_exit": false
+      }
+    },
+    {
+      "ph": "X",
+      "name": "44: write",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 790566199.0,
+      "dur": 17924.0,
+      "args": {
+        "backgrounded": false,
+        "tests_ok": false,
+        "nonzero_exit": false
+      }
+    },
+    {
+      "ph": "X",
+      "name": "45: todo_write",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 799977977.0,
+      "dur": 13948.0,
+      "args": {
+        "backgrounded": false,
+        "tests_ok": false,
+        "nonzero_exit": false
+      }
+    },
+    {
+      "ph": "X",
+      "name": "46: pwsh",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 806692075.0,
+      "dur": 15388206.0,
+      "args": {
+        "backgrounded": false,
+        "tests_ok": true,
+        "nonzero_exit": false
+      }
+    },
+    {
+      "ph": "X",
+      "name": "47: glob",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 828174524.0,
+      "dur": 445999.0,
+      "args": {
+        "backgrounded": false,
+        "tests_ok": false,
+        "nonzero_exit": false
+      }
+    },
+    {
+      "ph": "X",
+      "name": "48: todo_write",
+      "cat": "wall_time",
+      "pid": 1,
+      "tid": 4,
+      "ts": 833217678.0,
+      "dur": 8492.0,
+      "args": {
+        "backgrounded": false,
+        "tests_ok": false,
+        "nonzero_exit": false
+      }
+    }
+  ],
+  "displayTimeUnit": "ms",
+  "metadata": {
+    "measurement": "wall-clock spans, not CPU samples",
+    "server_alignment_uncertainty_ms": 33.22133142501116,
+    "clock": "DSH monotonic time; server offset is bounded/estimated. Native run has its own zero.",
+    "task_sha256": "cb2ee43622925b2c104ad5ddff8b23803cfeb68e9ddc17ed1464edcda03576dd",
+    "sources_sha256": {
+      "analysis.json": "f599d83eb219df34d0472e64bc567ab821a70531c721aa2c816f686f6a035f2e",
+      "valid/http-timing.jsonl": "59f7c00e10261236fe088d95af0f388049b4f3d7df3413bdca29133985393394",
+      "server-timing.jsonl": "046605045ad8cfce12b000c8ec723c6b9908d350ccdf06a3b6fb9d6f44d35acc"
+    }
+  }
+}

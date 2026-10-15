@@ -1,0 +1,105 @@
+{
+  "date": "2026-10-13",
+  "change": "remove_global_200000_character_prompt_limit",
+  "runtime_files": [
+    "app/config.py",
+    "app/images.py",
+    "app/protocol_common.py",
+    "app/anthropic_api.py"
+  ],
+  "pi_context_window_changed": false,
+  "history_truncated": false,
+  "deployment": {
+    "image": "agy-proxy:no-prompt-cap-20261013",
+    "image_id": "sha256:390d95e3402910669a8833bcaf2939136f483e746510ef31075fcd44a8b93ba9",
+    "health": "healthy",
+    "compose_backup": "/home/docker_depolyments/agy-proxy/docker-compose.yml.before-prompt-cap-removal-20261013",
+    "source_sha256": {
+      "config.py": "1ce877e2ede2bde5cdbf97ef6b056cdadcf3ca1e4d2338ef32ee719c3e903e89",
+      "images.py": "6533d79297750070442813ce1a9a16c3f489e59db7e2d6433910dc6219cf5d4b",
+      "protocol_common.py": "23fbc731a0a2dd5ba68066c0a4a28329f3aafadccbf4f1b9ac6615ba4e7d8f04",
+      "anthropic_api.py": "0365c3e59c3bea2b2555b53907300197d995709da30e4f57b99b525fa38660ac"
+    }
+  },
+  "regression_tests": {
+    "new_long_input_tests_passed": 21,
+    "full_suite_passed": 503,
+    "full_suite_skipped": 2,
+    "runtime_seconds": 61.23
+  },
+  "historical_pi_offline_validation": [
+    {
+      "before_line": 98,
+      "normalized_chars": 194827,
+      "input_and_tool_history_validation": "passed"
+    },
+    {
+      "before_line": 100,
+      "normalized_chars": 211062,
+      "input_and_tool_history_validation": "passed"
+    },
+    {
+      "before_line": 102,
+      "normalized_chars": 211100,
+      "input_and_tool_history_validation": "passed"
+    }
+  ],
+  "live_tests": [
+    {
+      "model": "gemini-3.8-flash",
+      "reasoning_effort": "high",
+      "stream": true,
+      "request_chars": 216493,
+      "synthetic_input": true,
+      "historical_tools_reexecuted": false,
+      "http_status": 200,
+      "request_id": "agy_a8c48fb9b86b46e4b153ebd31304ec09",
+      "elapsed_seconds": 34.922,
+      "completed": false,
+      "expected_markers_received": false,
+      "output_chars": 0,
+      "error": {
+        "message": "agy result does not match the active turn number",
+        "type": "api_error",
+        "code": "cli_protocol_error"
+      },
+      "passed": false,
+      "transport_passed": false
+    },
+    {
+      "model": "gemini-3.8-flash",
+      "reasoning_effort": "high",
+      "stream": true,
+      "request_chars": 224698,
+      "synthetic_input": true,
+      "historical_tools_reexecuted": false,
+      "scenario": "plain_text",
+      "http_status": 200,
+      "request_id": "agy_1329b202e9134071a937f19db3b138dd",
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 36180,
+        "completion_tokens": 2442,
+        "total_tokens": 38622,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 2367
+        }
+      },
+      "elapsed_seconds": 26.844,
+      "completed": true,
+      "expected_markers_received": false,
+      "output_chars": 202,
+      "error": null,
+      "passed": false,
+      "transport_passed": true
+    }
+  ],
+  "scope_limitations": [
+    "existing CLI num_turns equality guard remains unchanged",
+    "neither live test met its strict expected-answer assertion; plain-text transport completed successfully"
+  ],
+  "private_session_or_credentials_included": false
+}
