@@ -1,0 +1,310 @@
+{
+  "source_commit": "90f01e3",
+  "linux_regression_passed": 581,
+  "frontend_build": true,
+  "browser_smoke": true,
+  "local_pi_runs": [
+    {
+      "scenario": "mcp",
+      "pi_version": "1.1.0",
+      "exit_code": 0,
+      "seconds": 36.70300000000134,
+      "tool_names": [
+        "mcp__filesystem__read_text_file",
+        "mcp__filesystem__write_file",
+        "mcp__filesystem__read_text_file"
+      ],
+      "tool_errors": [],
+      "assistant_errors": 0,
+      "session_id": "a0e8e0a6d1494a15ba625092d3c4f6b4",
+      "output_matches": true,
+      "mcp_read_write": true,
+      "passed": true
+    },
+    {
+      "scenario": "skills",
+      "pi_version": "1.1.0",
+      "exit_code": 0,
+      "seconds": 33.23500000000058,
+      "tool_names": [
+        "read",
+        "read",
+        "read",
+        "write",
+        "bash"
+      ],
+      "tool_errors": [],
+      "assistant_errors": 0,
+      "session_id": "924262baa7d64e998f5e711114fdb600",
+      "check_passed": true,
+      "skill_unchanged": true,
+      "skill_read": true,
+      "reference_read": true,
+      "client_ran_checker": true,
+      "passed": true
+    },
+    {
+      "scenario": "tools",
+      "pi_version": "1.1.0",
+      "exit_code": 0,
+      "seconds": 24.01600000000326,
+      "tool_names": [
+        "read"
+      ],
+      "tool_errors": [],
+      "assistant_errors": 0,
+      "session_id": "fb4cc87fb33b4fa1b5fca26c3c192500",
+      "output_matches": false,
+      "builtin_read_write_shell": false,
+      "passed": false
+    },
+    {
+      "scenario": "tools",
+      "pi_version": "1.1.0",
+      "exit_code": 0,
+      "seconds": 89.35899999999674,
+      "tool_names": [
+        "read",
+        "write",
+        "edit",
+        "bash"
+      ],
+      "tool_errors": [],
+      "assistant_errors": 0,
+      "session_id": "037486e895c441b38412b19a6435f85c",
+      "output_matches": true,
+      "builtin_read_write_shell": true,
+      "passed": true
+    }
+  ],
+  "local_native_http": {
+    "backend": "native",
+    "checks": [
+      {
+        "protocol": "chat",
+        "stream": false,
+        "passed": true,
+        "request_id": "agy_d100676613ff4613baeced357b973439",
+        "seconds": 47.906
+      },
+      {
+        "protocol": "chat",
+        "stream": true,
+        "passed": true,
+        "request_id": "agy_98f22a6a997949b7be9daa4f0bb9db6d",
+        "seconds": 58.219
+      }
+    ]
+  },
+  "server_pi_runs": [
+    {
+      "scenario": "mcp",
+      "pi_version": "1.1.0",
+      "exit_code": 0,
+      "seconds": 31.937000000005355,
+      "tool_names": [
+        "mcp__filesystem__read_text_file",
+        "mcp__filesystem__write_file",
+        "mcp__filesystem__read_text_file"
+      ],
+      "tool_errors": [],
+      "assistant_errors": 0,
+      "session_id": "7960205778764d9fa0e6a2d18c1cb74c",
+      "output_matches": true,
+      "mcp_read_write": true,
+      "passed": true
+    },
+    {
+      "scenario": "skills",
+      "pi_version": "1.1.0",
+      "exit_code": 0,
+      "seconds": 32.95300000000134,
+      "tool_names": [
+        "read",
+        "read",
+        "read",
+        "write",
+        "bash"
+      ],
+      "tool_errors": [],
+      "assistant_errors": 0,
+      "session_id": "ca20385426c84ca0a54d2b918c0d0f3f",
+      "check_passed": true,
+      "skill_unchanged": true,
+      "skill_read": true,
+      "reference_read": true,
+      "client_ran_checker": true,
+      "passed": true
+    },
+    {
+      "scenario": "tools",
+      "pi_version": "1.1.0",
+      "exit_code": 0,
+      "seconds": 31.76600000000326,
+      "tool_names": [
+        "read",
+        "write",
+        "edit",
+        "bash"
+      ],
+      "tool_errors": [],
+      "assistant_errors": 0,
+      "session_id": "c12bcf0aa0eb4b0e9b99828e30cb6a66",
+      "output_matches": true,
+      "builtin_read_write_shell": true,
+      "passed": true
+    },
+    {
+      "scenario": "tools",
+      "pi_version": "1.1.0",
+      "exit_code": 0,
+      "seconds": 23.70300000000134,
+      "tool_names": [
+        "read"
+      ],
+      "tool_errors": [],
+      "assistant_errors": 0,
+      "session_id": "7ca328ee89fd46a0931b79d98205ea4d",
+      "output_matches": false,
+      "builtin_read_write_shell": false,
+      "passed": false
+    }
+  ],
+  "server_http": {
+    "server-candidate-http": {
+      "backend": "headless",
+      "checks": [
+        {
+          "protocol": "chat",
+          "stream": false,
+          "passed": true,
+          "request_id": "agy_a20dcce7b0104370b9f5de2df714f641",
+          "seconds": 11.359
+        },
+        {
+          "protocol": "chat",
+          "stream": true,
+          "passed": true,
+          "request_id": "agy_4f8f6dd6e36749ef9b7b1567751dd5fd",
+          "seconds": 12.516
+        },
+        {
+          "protocol": "responses",
+          "stream": false,
+          "passed": true,
+          "request_id": "agy_7149b618907b48039d3b62896e030600",
+          "seconds": 10.391
+        },
+        {
+          "protocol": "responses",
+          "stream": true,
+          "passed": true,
+          "request_id": "agy_058efb5041be44da868efcce557b7bb3",
+          "seconds": 12.125
+        },
+        {
+          "protocol": "messages",
+          "stream": false,
+          "passed": true,
+          "request_id": "agy_56179d1f3333455eb4b3f872399ec201",
+          "seconds": 9.375
+        },
+        {
+          "protocol": "messages",
+          "stream": true,
+          "passed": true,
+          "request_id": "agy_61d01b4f5f7b4e6183defd482b062097",
+          "seconds": 8.968
+        },
+        {
+          "protocol": "gemini",
+          "stream": false,
+          "passed": true,
+          "request_id": "agy_b857eeaa809d41878efd4b4a293f5fb8",
+          "seconds": 9.578
+        },
+        {
+          "protocol": "gemini",
+          "stream": true,
+          "passed": true,
+          "request_id": "agy_b891e81d016d496fa97eb02e0300254c",
+          "seconds": 9.516
+        }
+      ]
+    },
+    "server-native-http": {
+      "backend": "native",
+      "checks": [
+        {
+          "protocol": "chat",
+          "stream": false,
+          "passed": true,
+          "request_id": "agy_3a3a393279744d1ba988081f29087a21",
+          "seconds": 14.781
+        },
+        {
+          "protocol": "chat",
+          "stream": true,
+          "passed": true,
+          "request_id": "agy_721337326b534a31939f1b6b48cfbdac",
+          "seconds": 18.344
+        }
+      ]
+    },
+    "production-http": {
+      "backend": "headless",
+      "checks": [
+        {
+          "protocol": "chat",
+          "stream": false,
+          "passed": true,
+          "request_id": "agy_5540c6e88a474e9c8859b30b21a10d3a",
+          "seconds": 9.859
+        },
+        {
+          "protocol": "chat",
+          "stream": true,
+          "passed": true,
+          "request_id": "agy_26459c836f954d14a61d51628dfb4eda",
+          "seconds": 10.015
+        }
+      ]
+    }
+  },
+  "deployment": {
+    "api_keys_preserved": true,
+    "usage_preserved": true,
+    "installation_ids_preserved": 2,
+    "backup": "/home/docker_depolyments/agy-proxy/backups/v0.0.17-20261019",
+    "services": [
+      {
+        "name": "agy-proxy",
+        "image": "tumuer/agy-proxy:v0.0.17",
+        "image_id": "sha256:e33a9b772be29af2409b380d3ba8460fa823eb2d08f71e6b97b12c799568963a",
+        "health": "healthy",
+        "volumes": [
+          "agy-proxy_agy-gemini",
+          "agy-proxy_agy-data"
+        ]
+      },
+      {
+        "name": "agy-native",
+        "image": "tumuer/agy-proxy:v0.0.17-native",
+        "image_id": "sha256:b925dad70470c0fa67ea25b113c16b0a80c4472fb09b22c66772282e61655f34",
+        "health": "healthy",
+        "volumes": [
+          "agy-native_native-gemini",
+          "agy-native_native-data"
+        ]
+      }
+    ]
+  },
+  "assets": {
+    "/app.css": true,
+    "/assets/ui.js": true
+  },
+  "published_images": {
+    "tumuer/agy-proxy:v0.0.17": "sha256:e33a9b772be29af2409b380d3ba8460fa823eb2d08f71e6b97b12c799568963a",
+    "tumuer/agy-proxy:v0.0.17-native": "sha256:b925dad70470c0fa67ea25b113c16b0a80c4472fb09b22c66772282e61655f34"
+  }
+}

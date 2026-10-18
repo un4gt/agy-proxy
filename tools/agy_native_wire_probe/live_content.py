@@ -1,6 +1,7 @@
 """Compare live text and external-tool finish payloads in the same CLI call."""
 import asyncio
 import json
+import os
 from pathlib import Path
 import sys
 import tempfile
@@ -36,7 +37,8 @@ def configure(root, bridge):
 async def main():
     report = {'passed': False}
     try:
-        async with NativeSession() as session:
+        binary = os.environ.get('AGY_WIRE_BINARY', '/root/.local/bin/agy')
+        async with NativeSession(binary=binary) as session:
             result = await collect(session, 'Write exactly 60 numbered lines about trees, one full sentence of at least 12 words per line. Do not use tools.')
             assert result['text'].strip() == result['cli']['response'].strip()
             assert result['text_chunks'] > 1
@@ -51,7 +53,7 @@ async def main():
         bridge = ExternalTools.from_body(body)
         with tempfile.TemporaryDirectory(prefix='agy-native-tools-') as directory:
             extra = configure(Path(directory), bridge)
-            async with NativeSession(cwd=directory, extra=extra) as session:
+            async with NativeSession(binary=binary, cwd=directory, extra=extra) as session:
                 first = await collect(session, bridge.prompt(bridge.messages, fresh=True))
                 checked = bridge.result(first['cli'])
                 assert len(checked.calls) == 1

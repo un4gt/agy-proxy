@@ -9,7 +9,7 @@ from pathlib import Path
 
 os.chdir('/workspace-empty')
 assert ctypes.CDLL(None).prctl(36,1,0,0,0)==0  # Reap CLI after debugger detaches at exit_group.
-args=['/root/.local/bin/agy','--model','gemini-3.8-flash-low','--effort','low',
+args=[os.environ.get('AGY_WIRE_BINARY','/root/.local/bin/agy'),'--model','gemini-3.8-flash-low','--effort','low',
       '--output-format','stream-json','--print-timeout','90s',
       '-p','Reply with exactly NATIVE_WIRE_OK_20261018. Do not use tools.']
 results=[]

@@ -49,4 +49,6 @@ docker build -f Dockerfile.native --build-context native-cli=/path/to/verified-c
 
 已验证 Pi 1.1.0 的内置工具、filesystem MCP、Skills，以及跨 owner 的相同 session ID 隔离和单边取消。输入清理只支持已验证的请求形态和固定 CLI。暂不支持图片；其他模型、远程 MCP OAuth、长时间负载、所有 HTTP 边界与升级兼容尚未完整覆盖。GDB 会影响时序。
 
+v0.0.17 的本地和服务器验收都曾出现模型读完文件后提前结束、未完成后续工具任务，原样复测成功。此问题尚未修复，使用时仍需核实实际文件及检查结果；不能把进程退出码 0 当作任务完成。详见[发布验收记录](releases/v0.0.17.md)。
+
 复验命令、原始实验限制见 [Pi 验收归档](archive/native-chat-pi-20261018.md)与[输入清理归档](archive/native-input-clean-20261018.md)。一般使用不要设置 `AGY_WIRE_INPUT_AUDIT`；它只用于会保存正文的受控审计。

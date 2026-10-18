@@ -1,6 +1,8 @@
 """Local-only native transport session checks; sends real upstream requests."""
 import asyncio
 import json
+import os
+from functools import partial
 from pathlib import Path
 import secrets
 import sys
@@ -8,6 +10,7 @@ from contextlib import aclosing
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from tools.agy_native_wire_probe.sessions import NativeSessions
+from tools.agy_native_wire_probe.runtime import NativeSession
 
 
 async def collect(session, prompt):
@@ -19,7 +22,8 @@ async def collect(session, prompt):
 
 async def main():
     report = {'passed': False}
-    sessions = NativeSessions()
+    sessions = NativeSessions(factory=partial(
+        NativeSession, binary=os.environ.get('AGY_WIRE_BINARY', '/root/.local/bin/agy')))
     markers = {owner: 'SESSION_' + secrets.token_hex(8) for owner in ('owner-a', 'owner-b')}
     pids = {}
     conversations = {}

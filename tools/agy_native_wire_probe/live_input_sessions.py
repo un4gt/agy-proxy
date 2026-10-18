@@ -1,6 +1,7 @@
 """Real local Chat route: cleaned input, same ID/different owners, cancellation."""
 import asyncio
 import json
+import os
 from pathlib import Path
 import secrets
 import tempfile
@@ -20,6 +21,7 @@ async def main():
     pids = []
     with tempfile.TemporaryDirectory() as directory:
         cfg = Config(agy_bin='/root/.local/bin/agy', data_dir=directory,
+                     native_bin=os.environ.get('AGY_WIRE_BINARY', '/root/.local/bin/agy'),
                      native_chat=True, native_input_clean=True, api_keys=tuple(keys),
                      password='local-fixture', turn_timeout=120)
         app = create_app(cfg)
