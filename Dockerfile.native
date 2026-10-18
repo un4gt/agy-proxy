@@ -1,0 +1,16 @@
+# Build with --build-context native-cli=<directory containing the verified agy>.
+ARG BASE_IMAGE=tumuer/agy-proxy:v0.0.17
+FROM ${BASE_IMAGE}
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends gdb \
+    && rm -rf /var/lib/apt/lists/* \
+    && python -m pip install --no-cache-dir --target /opt/probe-deps hpack==4.1.0
+COPY --from=native-cli --chmod=0555 agy /opt/agy-native/agy
+RUN echo '60e72242f07c131f75afcd9a9e425d6ee097a1a1b3190ea98ae78fa4180bbfa8  /opt/agy-native/agy' | sha256sum -c - \
+    && test "$(/opt/agy-native/agy --version)" = '1.4.0' \
+    && AGY_WIRE_BINARY=/opt/agy-native/agy AGY_WIRE_SYMBOLS=/opt/agy-native/symbols.json python tools/agy_native_wire_probe/symbols.py
+ENV AGY_PROXY_NATIVE_CHAT=true \
+    AGY_PROXY_NATIVE_INPUT_CLEAN=true \
+    AGY_PROXY_NATIVE_BIN=/opt/agy-native/agy \
+    AGY_PROXY_NATIVE_SYMBOLS=/opt/agy-native/symbols.json
+LABEL org.opencontainers.image.description="Experimental native Chat backend; pinned AGY 1.4.0 observer with input cleanup"

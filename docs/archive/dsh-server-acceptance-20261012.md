@@ -61,4 +61,4 @@ jsdom 中 Canvas 为替身，不能作为视觉渲染或音效通过的证据。
 node .preview/dsh-acceptance-20261012/ui-smoke.mjs
 ```
 
-现有 Web 服务已在运行，重启前应先停止原实例。原始任务、两轮 JSON 事件、安装/构建日志、DOM 检查脚本、服务器诊断及权限恢复文件保留在测试环境中。脱敏汇总见 [结构化验收报告](reference/dsh-server-acceptance-20261012.json)。
+现有 Web 服务已在运行，重启前应先停止原实例。原始任务、两轮 JSON 事件、安装/构建日志、DOM 检查脚本、服务器诊断及权限恢复文件保留在测试环境中。脱敏汇总见 [结构化验收报告](../reference/dsh-server-acceptance-20261012.json)。

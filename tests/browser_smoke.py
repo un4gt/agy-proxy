@@ -102,7 +102,10 @@ def main():
                 expect(page.get_by_text("创建你的第一把密钥")).to_be_visible()
                 account = {"id": "current", "email": "demo@example.com", "tier": "Google AI Pro", "status": "connected", "message": "已通过上游账号验证", "checked_at": time.time()}
                 page.route("**/api/accounts*", lambda r: r.fulfill(json={"accounts": [account]}))
-                usage = dict(account, usage_error=None, usage={"fetched_at": time.time(), "groups": [
+                usage = dict(account, models_error=None, models=[
+                    {"id": "gemini-3-pro-high", "name": "Gemini 3 Pro (High)", "remaining_fraction": .75, "reset_at": time.time() + 3600},
+                    {"id": "gemini-3-flash", "name": "Gemini 3 Flash", "remaining_fraction": None, "reset_at": None},
+                ], usage_error=None, usage={"fetched_at": time.time(), "groups": [
                     {"name": "Gemini Models", "models": "Gemini Flash, Gemini Pro", "buckets": [
                         {"kind": "weekly", "label": "Weekly", "remaining_fraction": .9806, "reset_at": time.time() + 3600 * 38},
                         {"kind": "5h", "label": "Five Hour", "remaining_fraction": 1, "reset_at": None}]},
@@ -127,14 +130,30 @@ def main():
                     page.set_viewport_size({"width": width, "height": 900})
                     page.get_by_role("button", name="查看 Usage").click()
                     dialog = page.get_by_role("dialog")
+                    expect(dialog.get_by_text("Gemini 3 Pro (High)", exact=True)).to_be_visible()
+                    expect(dialog.get_by_text("75.00% 剩余", exact=True)).to_be_visible()
+                    expect(dialog.get_by_text("额度未知", exact=True)).to_be_visible()
                     expect(dialog.get_by_text("98.06%", exact=False)).to_be_visible()
                     expect(dialog.get_by_text("0.00%剩余", exact=True)).to_be_visible()
-                    expect(dialog.get_by_text("未知", exact=False)).to_be_visible()
+                    expect(dialog.get_by_text("未知剩余", exact=True)).to_be_visible()
                     assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
                     assert dialog.evaluate("el => el.scrollWidth <= el.clientWidth"), "usage modal overflow"
                     page.screenshot(path=str(screenshots / f"usage-{width}.png"), full_page=True, animations="disabled")
                     page.get_by_role("button", name="关闭", exact=True).click()
                 saved_usage = copy.deepcopy(usage)
+                # A Claude-only quota summary must not hide Gemini models.
+                usage["usage"]["groups"] = usage["usage"]["groups"][1:]
+                page.get_by_role("button", name="查看 Usage").click()
+                expect(page.get_by_role("dialog").get_by_text("Gemini 3 Pro (High)", exact=True)).to_be_visible()
+                expect(page.get_by_role("dialog").get_by_text("Claude and GPT models", exact=True)).to_be_visible()
+                page.get_by_role("button", name="关闭", exact=True).click()
+                # Model availability survives a failed shared-quota request.
+                usage.update(usage=None, usage_error="暂时无法获取共享额度，请稍后刷新。")
+                page.get_by_role("button", name="查看 Usage").click()
+                expect(page.get_by_role("dialog").get_by_text("Gemini 3 Pro (High)", exact=True)).to_be_visible()
+                expect(page.get_by_role("dialog").get_by_text(usage["usage_error"], exact=True)).to_be_visible()
+                page.get_by_role("button", name="关闭", exact=True).click()
+                usage.update(copy.deepcopy(saved_usage))
                 usage.update(status="error", message="账号查询超时，请稍后重试。", usage=None)
                 page.get_by_role("button", name="查看 Usage").click()
                 expect(page.get_by_text("账号查询超时，请稍后重试。").last).to_be_visible()

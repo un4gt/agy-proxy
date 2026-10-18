@@ -83,7 +83,7 @@ DSH 实际执行：原有 21 项单测 7.835 秒通过；修改主程序后 21 �
 
 发现默认原生日志文件名只有秒精度。主请求 PID 95 和标题请求 PID 100 在同一秒启动，打开了同一个 `cli-20261014_071826.log` inode，文件描述符不是 append 模式，写入位置不同。采集过程中可解析的消息提交记录数量曾减少，符合内容被覆盖的现象。**这份原生日志不完整，不能据它断言没有上游重试。** 代理计时日志和按 conversation 分开的 transcript 不受这个文件冲突影响。
 
-测试完成后部署了 [诊断启动脚本](../tools/agy_native_diagnostics.sh)，最终 Compose 配置为：
+测试完成后部署了 [诊断启动脚本](../../tools/agy_native_diagnostics.sh)，最终 Compose 配置为：
 
 ```yaml
 AGY_PROXY_BIN: "/bin/sh /root/.agy-proxy/agy-native-diag.sh"
@@ -99,8 +99,8 @@ AGY_PROXY_BIN: "/bin/sh /root/.agy-proxy/agy-native-diag.sh"
 
 ## 证据与复现
 
-- [脱敏结构化证据](reference/dsh-taskbox-followup-evidence-20261014.json)：请求配对、耗时、usage、工具区间、修复、检查点、截断标记、测试结果和日志启动验证。
-- [Perfetto 时间线](reference/dsh-taskbox-followup-trace-20261014.json)：在 Perfetto 打开 JSON，可展开主 HTTP、标题请求、本地工具、AGY 主会话、修复和检查点。跨主机时间戳对齐仅用于展示；持续时间统计来自各侧自己的时钟。
+- [脱敏结构化证据](../reference/dsh-taskbox-followup-evidence-20261014.json)：请求配对、耗时、usage、工具区间、修复、检查点、截断标记、测试结果和日志启动验证。
+- [Perfetto 时间线](../reference/dsh-taskbox-followup-trace-20261014.json)：在 Perfetto 打开 JSON，可展开主 HTTP、标题请求、本地工具、AGY 主会话、修复和检查点。跨主机时间戳对齐仅用于展示；持续时间统计来自各侧自己的时钟。
 - 本地项目：`.preview/dsh-taskbox-followup-20261014/dsh-work/`；原始副本：同目录 `before/`；修改 diff：`taskbox-changes.patch`。
 - 复核脚本：同目录 `verify.py`、`acceptance.py`、`analyze.py`；任务原文 `task.txt`；DSH session `session-5c8a5b8e-3551-43be-98a7-b7dbf1582240`。
 - 最初 SSH 密钥选择错误导致的 9.236 秒准备失败保留在 `excluded-ssh-setup/`：未向生产发起请求、未修改项目，不混入正式样本。

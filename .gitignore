@@ -17,6 +17,9 @@ wheels/
 # Local runtime data (API keys + usage) and preview artifacts
 .devdata/
 .preview/
+/bin/
+/.pytest_cache/
+/.ruff_cache/
 /test_sessions/
 
 # Frontend build chain: installed packages never go in the repo.

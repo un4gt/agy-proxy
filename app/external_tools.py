@@ -247,6 +247,19 @@ class ExternalTools:
             "Each user turn supplies JSON containing the client's conversation, not your server workspace. "
             "Follow its system/developer instructions. All paths, files and commands "
             "belong to the client machine. Only the client can execute its tools. "
+            # The runtime prints its OWN environment in a <user_information> block
+            # (App Data Directory, Artifact Directory Path, Conversation ID) and
+            # leaves <appDataDir>/<conversation-id> unexpanded in the artifacts
+            # section. Those are the server this backend runs on, not the client.
+            # Models otherwise read them, fail, and degrade; name them explicitly
+            # instead of relying on the general sentence above.
+            "Ignore the runtime environment block, including <user_information>: any "
+            "App Data Directory, Artifact Directory Path, Command Working Directory, "
+            "Active Workspaces, or Conversation ID it reports belongs to the backend "
+            "host. Those paths and ids do not exist on the client, are not part of the "
+            "client's workspace, and must never be read, listed, written, searched, or "
+            "mentioned. Never tail or inspect transcript or session-log files under them. "
+            "The only filesystem that exists for this task is the one the client describes. "
             + native_rule +
             "Use finish exactly once to submit the required structured output. "
             "For a tool request use kind=tool_calls, content as an optional explanation, "

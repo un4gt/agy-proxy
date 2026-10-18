@@ -75,7 +75,7 @@ AGY_PROXY_BIN="agy --v=2"
 
 ## 后续生产诊断：2026-10-14
 
-随后按用户要求在生产启用上述四个模块的定向 verbosity，并完成 [DSH 修改 Taskbox 的真实链路测试](dsh-taskbox-followup-20261014.md)。本次只变更启动配置，生产镜像未更新。
+随后按用户要求在生产启用上述四个模块的定向 verbosity，并完成 [DSH 修改 Taskbox 的真实链路测试](archive/dsh-taskbox-followup-20261014.md)。本次只变更启动配置，生产镜像未更新。
 
 实测发现同一秒启动的两个 AGY 进程会打开同名默认日志，使用独立非 append 偏移，造成内容覆盖。因此当前生产改用 [诊断启动脚本](../tools/agy_native_diagnostics.sh)：通过 `--log-file` 将每个进程写入账号 HOME 下的 `cli-diag-YYYYMMDD_HHMMSS-PID.log`，并保留定向 verbosity。Compose 设置 `AGY_PROXY_BIN: "/bin/sh /root/.agy-proxy/agy-native-diag.sh"`，脚本存放于持久化数据卷。
 

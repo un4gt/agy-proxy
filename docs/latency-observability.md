@@ -14,7 +14,7 @@
 
 - [可直接查看的耗时图](reference/dsh-agy-latency-timeline-20261014.png)
 - [Chrome Trace / Perfetto 追踪文件](reference/dsh-agy-latency-trace-20261014.json)
-- [完整测试报告与限制](dsh-agy-latency-rerun-20261014.md)
+- [完整测试报告与限制](archive/dsh-agy-latency-rerun-20261014.md)
 
 在 [Perfetto](https://ui.perfetto.dev/) 中选择 **Open trace file**，打开 JSON，展开 DSH HTTP、AGY、客户端工具等轨道。点击请求查看 `request_id`；框选放大两段约 120 秒的工具等待。辅助标题请求使用独立轨道，不叠加到主请求关键路径。原生 AGY 是另一次独立运行，在图中以自身启动时间归零。
 

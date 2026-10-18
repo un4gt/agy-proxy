@@ -60,4 +60,4 @@ dsh 的 `packages/todo/tool-todo/src/index.ts` 明确按最后一条 todo/write 
 
 2026-10-11 16:38（北京时间）已部署镜像 `agy-proxy:server-sessions-20261011`，镜像 ID `sha256:543468fccb4eaf159f35378772d62d89ea6d27c1e944705c6e667737af7d7dc8`。容器 healthy，34 个部署文件哈希核对通过；登录、4 把 API Key、用量、模型禁用配置和原有数据卷保留。回退备份位于 `/home/docker_depolyments/agy-proxy/backups/server-sessions-20261011`。
 
-原始问题的脱敏协议证据：[session-continuity-evidence-20261011.json](reference/session-continuity-evidence-20261011.json)。部署、三轮复用和重放结果：[server-sessions-verification-20261011.json](reference/server-sessions-verification-20261011.json)。原客户端已结束的那一轮不会由代理回填 TODO；此修正用于后续请求。
+原始问题的脱敏协议证据：[session-continuity-evidence-20261011.json](../reference/session-continuity-evidence-20261011.json)。部署、三轮复用和重放结果：[server-sessions-verification-20261011.json](../reference/server-sessions-verification-20261011.json)。原客户端已结束的那一轮不会由代理回填 TODO；此修正用于后续请求。

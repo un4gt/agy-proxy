@@ -31,3 +31,7 @@ index.html
 .test.env
 .codex
 docs
+bin
+.ruff_cache
+test_sessions
+tools/archive

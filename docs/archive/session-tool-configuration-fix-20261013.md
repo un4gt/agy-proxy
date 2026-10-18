@@ -34,7 +34,7 @@
 | 3 | 回传结果后请求 document-C | 2.585 秒 |
 | 4 | 最终回答 CONTRACT_OK | 4.066 秒 |
 
-执行耗时合计 24.370 秒，包含首轮 CLI 初始化，不代表 DSH 编码任务耗时。完整脱敏记录（含失败试验）见[结构化证据](reference/session-tool-configuration-evidence-20261013.json)。
+执行耗时合计 24.370 秒，包含首轮 CLI 初始化，不代表 DSH 编码任务耗时。完整脱敏记录（含失败试验）见[结构化证据](../reference/session-tool-configuration-evidence-20261013.json)。
 
 ### 第一次逐轮压缩测试
 

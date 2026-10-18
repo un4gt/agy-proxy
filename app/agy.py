@@ -170,7 +170,7 @@ class AgySession:
 
     # -- lifecycle ---------------------------------------------------------
 
-    async def start(self) -> None:
+    def _launch_spec(self):
         if self.attachments and self.output_schema is None:
             raise AgyError("Image attachments require a restricted execution context")
         extra = ["--input-format", "stream-json", "--output-format", "stream-json",
@@ -232,6 +232,10 @@ class AgySession:
         if self.cfg.skip_permissions and self.output_schema is None:
             extra += ["--dangerously-skip-permissions"]
         argv = _agy_argv(self.cfg, extra)
+        return argv, cwd
+
+    async def start(self) -> None:
+        argv, cwd = self._launch_spec()
         try:
             self.proc = await asyncio.create_subprocess_exec(
                 *argv,
@@ -666,7 +670,7 @@ class SessionManager:
             except (AccountPoolError, OSError) as exc:
                 raise AgyError(str(exc), status_code=503) from None
             cfg = profile.configured(cfg)
-        session = AgySession(cfg, model=model, effort=effort, output_schema=output_schema, attachments=attachments,
+        session = getattr(self, "session_type", AgySession)(cfg, model=model, effort=effort, output_schema=output_schema, attachments=attachments,
                              session_instructions=session_instructions)
         session.leased = leased
         self._sessions[session] = None
@@ -748,20 +752,26 @@ class SessionManager:
                     killed += 1
             return killed
 
-    async def remove_account(self, account_id: str, *, login_bridges=None) -> dict:
+    async def remove_account(self, account_id: str, *, login_bridges=None, other_managers=()) -> dict:
         """Serialize account removal with session acquisition and prewarming."""
-        async with self._lock:
+        from contextlib import AsyncExitStack
+
+        managers = (self, *other_managers)
+        async with AsyncExitStack() as stack:
+            for manager in managers:
+                await stack.enter_async_context(manager._lock)
             pool = self.cfg.account_pool
             with pool.removing(account_id):
                 login_bridge = (login_bridges or {}).get(account_id)
-                sessions = [s for s in self._sessions if s.account_id == account_id]
-                if any(s.busy for s in sessions):
+                sessions = [(manager, s) for manager in managers
+                            for s in manager._sessions if s.account_id == account_id]
+                if any(s.busy for _, s in sessions):
                     raise AgyError("账号正在处理请求，请等待请求结束后再删除。", status_code=409)
                 if login_bridge is not None and login_bridge.active:
                     raise AgyError("账号正在登录，请先完成或取消登录后再删除。", status_code=409)
-                for session in sessions:
+                for manager, session in sessions:
                     await session.close()
-                    self._sessions.pop(session, None)
+                    manager._sessions.pop(session, None)
                 result = pool.remove(account_id)
                 if login_bridge is not None:
                     login_bridge.shutdown()

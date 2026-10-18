@@ -75,6 +75,51 @@ class AccountError(Exception):
         super().__init__(message)
 
 
+def _fraction(value) -> float | None:
+    if type(value) in (int, float) and math.isfinite(value) and 0 <= value <= 1:
+        return value
+    return None
+
+
+def normalize_models(raw: dict) -> list[dict]:
+    """Model availability comes from the catalog, not quota group descriptions."""
+    if not isinstance(raw, dict) or not isinstance(raw.get("models"), dict):
+        raise ValueError("Invalid models response")
+    # New catalogs include unnamed completion/search helpers. Keep named models
+    # and explicitly exposed agent/image/tiered IDs, including unnamed Gemini
+    # tier routes; the Recommended menu alone can contain only Claude/GPT.
+    exposed = set()
+    for sort in raw.get("agentModelSorts", []) or []:
+        if isinstance(sort, dict):
+            for group in sort.get("groups", []) or []:
+                if isinstance(group, dict):
+                    exposed.update(value for value in group.get("modelIds", []) if isinstance(value, str))
+    exposed.update(value for value in raw.get("imageGenerationModelIds", []) or [] if isinstance(value, str))
+    tiers = raw.get("tieredModelIds")
+    if isinstance(tiers, dict):
+        for ids in tiers.values():
+            if isinstance(ids, list):
+                exposed.update(value for value in ids if isinstance(value, str))
+    has_menu = isinstance(raw.get("agentModelSorts"), list)
+    models = []
+    for model_id, info in raw["models"].items():
+        if not isinstance(model_id, str) or not model_id or not isinstance(info, dict):
+            raise ValueError("Invalid model")
+        name = info.get("displayName")
+        named = isinstance(name, str) and bool(name.strip())
+        if has_menu and not named and model_id not in exposed:
+            continue
+        quota = info.get("quotaInfo")
+        quota = quota if isinstance(quota, dict) else {}
+        models.append({
+            "id": model_id,
+            "name": name if named else model_id,
+            "remaining_fraction": _fraction(quota.get("remainingFraction")),
+            "reset_at": _timestamp(quota.get("resetTime")),
+        })
+    return sorted(models, key=lambda model: (model["name"].casefold(), model["id"]))
+
+
 def normalize_quota(raw: dict) -> list[dict]:
     if not isinstance(raw, dict) or not isinstance(raw.get("groups"), list):
         raise ValueError("Invalid quota response")
@@ -102,13 +147,7 @@ def normalize_quota(raw: dict) -> list[dict]:
                     else window
                 )
             )
-            fraction = bucket.get("remainingFraction")
-            if (
-                type(fraction) not in (int, float)
-                or not math.isfinite(fraction)
-                or not 0 <= fraction <= 1
-            ):
-                fraction = None
+            fraction = _fraction(bucket.get("remainingFraction"))
             buckets.append(
                 {
                     "kind": kind,
@@ -168,7 +207,9 @@ class AccountService:
                 self._expires_at = 0
                 self._fingerprint = fingerprint
             # Concurrent refreshes share one request; failures have a short TTL.
-            ttl = 60 if self._cache and self._cache["status"] == "connected" else 10
+            ttl = 60 if self._cache and self._cache["status"] == "connected" and not (
+                self._cache.get("usage_error") or self._cache.get("models_error")
+            ) else 10
             age = time.monotonic() - self._cached_at
             if self._cache and (
                 (not refresh and age < ttl)
@@ -185,6 +226,8 @@ class AccountService:
                 "checked_at": time.time(),
                 "usage": None,
                 "usage_error": None,
+                "models": None,
+                "models_error": None,
             }
             try:
                 if error:
@@ -195,12 +238,12 @@ class AccountService:
                     ) as client:
                         access = await self._token(client, data)
                         try:
-                            info, quota = await self._query(client, access)
+                            info, quota, models = await self._query(client, access)
                         except AccountError as exc:
                             if exc.state != "unauthorized":
                                 raise
                             access = await self._token(client, data, force=True)
-                            info, quota = await self._query(client, access)
+                            info, quota, models = await self._query(client, access)
                 result.update(
                     status="connected",
                     message="已通过上游账号验证",
@@ -223,8 +266,12 @@ class AccountService:
                     }
                 except (ValueError, TypeError):
                     result["usage_error"] = (
-                        "额度数据格式已变化，暂时无法展示。请稍后刷新。"
+                        "暂时无法获取共享额度，请稍后刷新。"
                     )
+                try:
+                    result["models"] = normalize_models(models)
+                except (ValueError, TypeError):
+                    result["models_error"] = "暂时无法获取账号可用模型，请稍后刷新。"
             except AccountError as exc:
                 result.update(status=exc.state, message=str(exc))
             except (TimeoutError, httpx.TimeoutException):
@@ -279,7 +326,9 @@ class AccountService:
         self._access_token, self._expires_at = access, expiry or 0
         return access
 
-    async def _query(self, client: httpx.AsyncClient, access: str) -> tuple[dict, dict]:
+    async def _query(
+        self, client: httpx.AsyncClient, access: str
+    ) -> tuple[dict, dict | None, dict | None]:
         headers = {
             "Authorization": f"Bearer {access}",
             "User-Agent": "antigravity-agy-proxy/0.0.14",
@@ -296,20 +345,29 @@ class AccountService:
                 project = info.get("cloudaicompanionProject")
                 if not isinstance(project, str) or not project:
                     continue
-                quota = await self._post(
-                    client,
-                    host,
-                    "retrieveUserQuotaSummary",
-                    {"project": project},
-                    headers,
+                quota, models = await asyncio.gather(
+                    self._query_data(client, host, "retrieveUserQuotaSummary", project, headers),
+                    self._query_data(client, host, "fetchAvailableModels", project, headers),
                 )
-                return info, quota
+                return info, quota, models
             except httpx.HTTPStatusError:
                 if host == _HOSTS[-1]:
                     raise
         raise AccountError(
             "unavailable", "该账号暂未提供 Antigravity 项目信息，请检查服务权限。"
         )
+
+    async def _query_data(self, client, host, method, project, headers) -> dict | None:
+        # Each optional dataset can fail without hiding the other one.
+        for endpoint in (host, *(value for value in _HOSTS if value != host)):
+            try:
+                return await self._post(client, endpoint, method, {"project": project}, headers)
+            except AccountError as exc:
+                if exc.state == "unauthorized":
+                    raise
+            except (httpx.HTTPError, ValueError, TypeError):
+                pass
+        return None
 
     @staticmethod
     async def _post(client, host, method, body, headers) -> dict:
@@ -371,7 +429,7 @@ async def accounts(request: Request, refresh: bool = False):
             raise
     snapshots = await asyncio.gather(*[snapshot_if_present(account_id) for account_id in ids])
     snapshots = [snapshot for snapshot in snapshots if snapshot is not None]
-    summaries = [{k: v for k, v in snapshot.items() if k not in ("usage", "usage_error")} for snapshot in snapshots]
+    summaries = [{k: v for k, v in snapshot.items() if k not in ("usage", "usage_error", "models", "models_error")} for snapshot in snapshots]
     return JSONResponse({"accounts": summaries}, headers={"Cache-Control": "no-store"})
 
 
@@ -409,7 +467,9 @@ async def add_account(request: Request):
             # first managed account is added; native credential files stay put.
             pool.create("原服务账号", json.loads(source.read_bytes()),
                         machine_id=installation.read_text(encoding="utf-8").strip() if installation.is_file() else None)
-        elif not pool.enabled and request.app.state.sessions.live_count:
+        elif not pool.enabled and any(manager.live_count for manager in (
+            request.app.state.sessions, getattr(request.app.state, "native_sessions", None)
+        ) if manager is not None):
             return JSONResponse({"error": "原服务仍有会话，但未找到可迁移的文件凭据。请先结束原会话，再优先导入原账号凭据。"}, status_code=409)
         profile = pool.create(name, credentials, machine_id=machine_id)
     except (OSError, ValueError, TypeError):
@@ -458,7 +518,9 @@ async def delete_account(account_id: str, request: Request):
     if bridges is None:
         bridges = request.app.state.account_login_bridges = {}
     try:
-        result = await request.app.state.sessions.remove_account(account_id, login_bridges=bridges)
+        native = getattr(request.app.state, "native_sessions", None)
+        result = await request.app.state.sessions.remove_account(
+            account_id, login_bridges=bridges, other_managers=(native,) if native else ())
     except AgyError as exc:
         return JSONResponse({"error": str(exc)}, status_code=exc.status_code)
     except (AccountPoolError, OSError):

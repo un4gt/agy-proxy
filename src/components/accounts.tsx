@@ -50,6 +50,13 @@ type Account = {
 };
 type AccountUsage = Account & {
   usage_error: string | null;
+  models_error: string | null;
+  models: null | {
+    id: string;
+    name: string;
+    remaining_fraction: number | null;
+    reset_at: number | null;
+  }[];
   usage: null | {
     fetched_at: number;
     groups: {
@@ -136,7 +143,7 @@ function UsageDetails({
     return () => controller.abort();
   }, [accountId, refresh]);
   const failure =
-    error || (data?.status !== "connected" ? data?.message : data?.usage_error);
+    error || (data?.status !== "connected" ? data?.message : null);
   return (
     <>
       <div className="flex flex-col gap-4" aria-busy={busy}>
@@ -151,86 +158,128 @@ function UsageDetails({
           </div>
         ) : failure ? (
           <Failure text={failure} />
-        ) : data?.usage?.groups.length ? (
-          data.usage.groups.map((group, index) => (
-            <Card key={`${group.name}-${index}`}>
+        ) : (
+          <>
+            <Card>
               <CardHeader>
-                <CardTitle>{group.name}</CardTitle>
-                {group.models && (
-                  <CardDescription>{group.models}</CardDescription>
-                )}
+                <CardTitle>可用模型</CardTitle>
+                <CardDescription>此账号当前返回的模型及各自剩余额度。</CardDescription>
               </CardHeader>
-              <CardContent className="grid gap-6 sm:grid-cols-2">
-                {group.buckets.length ? (
-                  group.buckets.map((bucket, i) => {
-                    const label =
-                      bucket.kind === "weekly"
-                        ? "每周额度"
-                        : bucket.kind === "5h"
-                          ? "五小时额度"
-                          : bucket.label;
-                    const percent =
-                      bucket.remaining_fraction === null
-                        ? null
-                        : bucket.remaining_fraction * 100;
-                    return (
-                      <div key={i} className="flex flex-col gap-3">
-                        <div className="flex flex-wrap items-baseline justify-between gap-2">
-                          <span className="text-sm text-muted-foreground">
-                            {label}
-                          </span>
-                          <span className="text-lg font-semibold tabular-nums">
-                            {percent === null
-                              ? "未知"
-                              : `${percent.toFixed(2)}%`}
-                            <span className="ml-1 text-xs font-normal text-muted-foreground">
-                              剩余
-                            </span>
-                          </span>
-                        </div>
-                        {percent !== null && (
-                          <Progress
-                            value={percent}
-                            aria-label={`${group.name} ${label}剩余`}
-                          />
-                        )}
-                        <p
-                          className="text-xs text-muted-foreground"
-                          title={
-                            bucket.reset_at ? date(bucket.reset_at) : undefined
-                          }
-                        >
-                          {resetLabel(
-                            bucket.reset_at,
-                            now,
-                            bucket.remaining_fraction,
+              <CardContent>
+                {data?.models_error ? (
+                  <Failure text={data.models_error} />
+                ) : data?.models?.length ? (
+                  <div className="grid gap-6 sm:grid-cols-2">
+                    {data.models.map((model) => {
+                      const percent = model.remaining_fraction === null
+                        ? null : model.remaining_fraction * 100;
+                      return (
+                        <div key={model.id} className="flex min-w-0 flex-col gap-2">
+                          <p className="break-words text-sm font-medium">{model.name}</p>
+                          <p className="break-all text-xs text-muted-foreground">{model.id}</p>
+                          <p className="text-sm tabular-nums">
+                            {percent === null ? "额度未知" : `${percent.toFixed(2)}% 剩余`}
+                          </p>
+                          {percent !== null && (
+                            <Progress value={percent} aria-label={`${model.name}剩余额度`} />
                           )}
-                        </p>
-                      </div>
-                    );
-                  })
+                          <p className="text-xs text-muted-foreground" title={model.reset_at ? date(model.reset_at) : undefined}>
+                            {resetLabel(model.reset_at, now, model.remaining_fraction)}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">
-                    上游暂未提供该组额度。
-                  </p>
+                  <p className="text-sm text-muted-foreground">上游暂未返回可用模型，请稍后刷新。</p>
                 )}
               </CardContent>
             </Card>
-          ))
-        ) : (
-          <Alert>
-            <CircleHelp />
-            <AlertTitle>暂无额度数据</AlertTitle>
-            <AlertDescription>
-              上游暂未返回此账号的额度，请稍后刷新。
-            </AlertDescription>
-          </Alert>
+            <p className="text-sm font-medium">共享额度</p>
+            {data?.usage_error ? (
+              <Failure text={data.usage_error} />
+            ) : data?.usage?.groups.length ? (
+                data.usage.groups.map((group, index) => (
+                  <Card key={`${group.name}-${index}`}>
+                    <CardHeader>
+                      <CardTitle>{group.name}</CardTitle>
+                      {group.models && (
+                        <CardDescription>{group.models}</CardDescription>
+                      )}
+                    </CardHeader>
+                    <CardContent className="grid gap-6 sm:grid-cols-2">
+                      {group.buckets.length ? (
+                        group.buckets.map((bucket, i) => {
+                          const label =
+                            bucket.kind === "weekly"
+                              ? "每周额度"
+                              : bucket.kind === "5h"
+                                ? "五小时额度"
+                                : bucket.label;
+                          const percent =
+                            bucket.remaining_fraction === null
+                              ? null
+                              : bucket.remaining_fraction * 100;
+                          return (
+                            <div key={i} className="flex flex-col gap-3">
+                              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                                <span className="text-sm text-muted-foreground">
+                                  {label}
+                                </span>
+                                <span className="text-lg font-semibold tabular-nums">
+                                  {percent === null
+                                    ? "未知"
+                                    : `${percent.toFixed(2)}%`}
+                                  <span className="ml-1 text-xs font-normal text-muted-foreground">
+                                    剩余
+                                  </span>
+                                </span>
+                              </div>
+                              {percent !== null && (
+                                <Progress
+                                  value={percent}
+                                  aria-label={`${group.name} ${label}剩余`}
+                                />
+                              )}
+                              <p
+                                className="text-xs text-muted-foreground"
+                                title={
+                                  bucket.reset_at ? date(bucket.reset_at) : undefined
+                                }
+                              >
+                                {resetLabel(
+                                  bucket.reset_at,
+                                  now,
+                                  bucket.remaining_fraction,
+                                )}
+                              </p>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          上游暂未提供该组额度。
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                <Alert>
+                  <CircleHelp />
+                  <AlertTitle>暂无额度数据</AlertTitle>
+                  <AlertDescription>
+                    上游暂未返回此账号的额度，请稍后刷新。
+                  </AlertDescription>
+                </Alert>
+              )}
+          </>
         )}
       </div>
       <DialogFooter className="sm:items-center sm:justify-between">
         <span className="text-xs text-muted-foreground">
-          {data?.usage
-            ? `更新于 ${date(data.usage.fetched_at)}`
+          {data?.status === "connected"
+            ? `更新于 ${date(data.checked_at)}`
             : "查询账号的实时可用额度"}
         </span>
         <Button
@@ -447,7 +496,7 @@ export function Accounts({ login }: { login: (accountId: string) => ReactNode })
                       <DialogTitle>Usage · 账号额度</DialogTitle>
                       <DialogDescription className="break-all">
                         {account.email || "Antigravity 账号"} ·
-                        各模型组的剩余额度与刷新时间
+                        可用模型、共享额度与刷新时间
                       </DialogDescription>
                     </DialogHeader>
                     <UsageDetails

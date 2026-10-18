@@ -189,12 +189,15 @@ async def _prepare(request: Request, body: dict, *, session_body: dict | None, t
     require_enabled_model(request, requested, model)
     model, effort = apply_effort(model, effort, slugs)
     profile.mark("models_done")
+    manager = (request.app.state.native_sessions
+               if cfg.native_chat and request.url.path == "/v1/chat/completions"
+               else request.app.state.sessions)
     if external:
-        turn = external.run(request.app.state.sessions, model=model, effort=effort, profile=profile,
+        turn = external.run(manager, model=model, effort=effort, profile=profile,
                             images=images, session_key=session_key)
     elif response_format:
         system, history, final_user = _parse_messages(execution)
-        turn = response_format.run(request.app.state.sessions, system=system, history=history,
+        turn = response_format.run(manager, system=system, history=history,
                                    final_user=final_user, model=model, effort=effort, profile=profile,
                                    images=images, session_key=session_key)
     else:

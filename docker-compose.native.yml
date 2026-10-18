@@ -1,0 +1,35 @@
+# Independent project/data. Start with: docker compose -p agy-native -f docker-compose.native.yml up -d
+services:
+  agy-native:
+    image: tumuer/agy-proxy:v0.0.17-native
+    container_name: agy-native
+    ports:
+      - "${NATIVE_BIND:-127.0.0.1}:${NATIVE_PORT:-18317}:8317"
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - seccomp=unconfined
+    volumes:
+      - native-gemini:/root/.gemini
+      - native-data:/root/.agy-proxy
+    environment:
+      AGY_PROXY_PASSWORD: ${AGY_PROXY_PASSWORD:?Set a console password}
+      AGY_PROXY_API_KEYS: ${AGY_PROXY_API_KEYS:-}
+      AGY_PROXY_OAUTH_CLIENT_ID: ${AGY_PROXY_OAUTH_CLIENT_ID:-}
+      AGY_PROXY_OAUTH_CLIENT_SECRET: ${AGY_PROXY_OAUTH_CLIENT_SECRET:-}
+      AGY_PROXY_HTTP_PROXY: ${AGY_PROXY_HTTP_PROXY:-}
+      AGY_PROXY_MAX_SESSIONS: ${AGY_PROXY_NATIVE_MAX_SESSIONS:-2}
+      AGY_PROXY_TURN_TIMEOUT: ${AGY_PROXY_TURN_TIMEOUT:-600}
+      AGY_PROXY_SESSION_TTL: ${AGY_PROXY_SESSION_TTL:-1800}
+      AGY_PROXY_STREAM_HEARTBEAT: ${AGY_PROXY_STREAM_HEARTBEAT:-10}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+volumes:
+  native-gemini:
+  native-data:

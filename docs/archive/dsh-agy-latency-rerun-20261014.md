@@ -92,6 +92,6 @@ DSH 主流程共 48 次模型请求。模型在落盘实现前，进行了多次
 
 原始客户端请求和模型事件保留在忽略目录中。共享证据仅导出计时、计数、Schema 指纹、错误类别和合成项目验收结果，不包含 API key、OAuth 凭据或完整推理内容。
 
-原生生成的项目已下载到 `native-work/`。测试代理、DSH、原生 CLI 和本次 SSH 转发均已关闭。逐请求计时与验收数据见[结构化证据](reference/dsh-agy-latency-rerun-evidence-20261014.json)。
+原生生成的项目已下载到 `native-work/`。测试代理、DSH、原生 CLI 和本次 SSH 转发均已关闭。逐请求计时与验收数据见[结构化证据](../reference/dsh-agy-latency-rerun-evidence-20261014.json)。
 
 优先处理 DSH Windows 沙箱下 `tempfile` 目录的权限兼容和挂起时的快速失败；随后再对模型的小步骤策略做同环境、多样本对照。单纯降低网络延迟或取消 Schema 校验，无法消除本次已经定位到的分钟级等待。

@@ -184,7 +184,7 @@ Pi、Codex、Claude Code、OpenCode 在客户端发现和加载 `SKILL.md`，代
 - 历史重试/编辑/截断、模型/effort/工具/schema/附件变化、进程失败或 TTL/LRU 回收时，使用完整历史建立新进程。失败和取消的半轮状态不会交给下一次请求
 - 成功且可复用的进程保持 stdin 打开；空闲回收时先关闭 stdin，让 CLI 正常退出。外部工具仍仅在客户端执行，私有工作目录/图片路径校验持续有效
 
-`prompt_cache_key` 本身可能跨会话共享，默认不作为身份；连续历史仍可自动复用。如果客户端原本支持明确的会话标识，可以消除内容完全一致的会话或克隆之间的歧义；无需为 dsh/pi 修改 headers 或缓存配置。协议证据与接入说明见 [Headless 分析](headless-protocol-analysis-20261011.md)，自动会话关联和任务状态排查见 [本次修正记录](session-continuity-and-todos-20261011.md)。
+`prompt_cache_key` 本身可能跨会话共享，默认不作为身份；连续历史仍可自动复用。如果客户端原本支持明确的会话标识，可以消除内容完全一致的会话或克隆之间的歧义；无需为 dsh/pi 修改 headers 或缓存配置。协议证据与接入说明见 [Headless 分析](archive/headless-protocol-analysis-20261011.md)，自动会话关联和任务状态排查见 [本次修正记录](archive/session-continuity-and-todos-20261011.md)。
 
 ## 已知限制
 

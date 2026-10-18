@@ -1,0 +1,5 @@
+{
+  "quietStartup": true,
+  "retry": { "enabled": false },
+  "enableSkillCommands": true
+}

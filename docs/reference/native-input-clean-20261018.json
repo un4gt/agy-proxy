@@ -1,0 +1,117 @@
+{
+  "cli_sha256": "60e72242f07c131f75afcd9a9e425d6ee097a1a1b3190ea98ae78fa4180bbfa8",
+  "baseline_input_tokens": 2962,
+  "clean_input_tokens": 979,
+  "pi": [
+    {
+      "scenario": "mcp",
+      "pi_version": "1.1.0",
+      "exit_code": 0,
+      "seconds": 26.82799999999952,
+      "tool_names": [
+        "mcp__filesystem__read_text_file",
+        "mcp__filesystem__write_file",
+        "mcp__filesystem__read_text_file"
+      ],
+      "tool_errors": [],
+      "assistant_errors": 0,
+      "session_id": "d39e650948804147b6d7aee0d114e009",
+      "output_matches": true,
+      "mcp_read_write": true,
+      "passed": true
+    },
+    {
+      "scenario": "skills",
+      "pi_version": "1.1.0",
+      "exit_code": 0,
+      "seconds": 27.92200000000048,
+      "tool_names": [
+        "read",
+        "read",
+        "read",
+        "write",
+        "bash"
+      ],
+      "tool_errors": [],
+      "assistant_errors": 0,
+      "session_id": "b8df570d08884bcda2afd256f62981f6",
+      "check_passed": true,
+      "skill_unchanged": true,
+      "skill_read": true,
+      "reference_read": true,
+      "client_ran_checker": true,
+      "passed": true
+    },
+    {
+      "scenario": "tools",
+      "pi_version": "1.1.0",
+      "exit_code": 0,
+      "seconds": 27.01599999999962,
+      "tool_names": [
+        "read",
+        "write",
+        "edit",
+        "bash"
+      ],
+      "tool_errors": [],
+      "assistant_errors": 0,
+      "session_id": "e00885fcef214462aa2b1ab8ef03d3bd",
+      "output_matches": true,
+      "builtin_read_write_shell": true,
+      "passed": true
+    }
+  ],
+  "sessions": {
+    "passed": true,
+    "separate_pids": [
+      596,
+      619
+    ],
+    "separate_conversations": [
+      "e56b8b4e-fdd9-40af-be36-6763e660cd86",
+      "0f55fb3f-9aec-41b0-8519-0c16d36fe38e"
+    ],
+    "same_external_id": true,
+    "two_owner_recall": true,
+    "cancelled_processes_gone": true,
+    "survivor_turns": 3,
+    "all_processes_gone": true
+  },
+  "audit": {
+    "clean-audit": {
+      "requests": 15,
+      "requests_per_process": {
+        "367": 1,
+        "408": 5,
+        "441": 5,
+        "464": 4
+      },
+      "only_finish": true,
+      "cli_environment_blocks_removed": true,
+      "client_configuration_retained": true
+    },
+    "session-audit": {
+      "requests": 6,
+      "requests_per_process": {
+        "586": 3,
+        "609": 3
+      },
+      "only_finish": true,
+      "cli_environment_blocks_removed": true,
+      "client_configuration_retained": true
+    }
+  },
+  "offline_validation": {
+    "broad_regression_passed": 190,
+    "final_targeted_passed": 24,
+    "additional_tls_digest_cases": 2,
+    "py_compile": true,
+    "diff_check": true
+  },
+  "cleanup": {
+    "server_shutdown_complete": true,
+    "no_remaining_cli_or_gdb": true,
+    "test_container_removed": true,
+    "original_container_untouched": true
+  }
+}

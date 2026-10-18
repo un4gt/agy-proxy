@@ -4,9 +4,9 @@
 
 ## Docker 部署
 
-首次启动见 [README 快速开始](../README.md#docker-快速开始)。镜像发布于 `docker.io/tumuer/agy-proxy`，当前 Compose 固定为 `v0.0.16`，镜像构建会校验 agy CLI 为 `1.3.5`。运行环境无需安装 Python、Node 或 agy。
+首次启动见 [README 快速开始](../README.md#docker-快速开始)。镜像发布于 `docker.io/tumuer/agy-proxy`，当前 Compose 固定为 `v0.0.17`，镜像使用官方固定下载地址与校验和，构建时校验 agy CLI 为 `1.4.2`。运行环境无需安装 Python、Node 或 agy。
 
-升级前阅读 [v0.0.16 发布说明](releases/v0.0.16.md)，其中说明了普通 Chat/Gemini 的受限执行、流式交付变化和已知 AGY 原生兼容边界。
+升级前阅读 [v0.0.17 发布说明](releases/v0.0.17.md)。正式入口使用常规后端；原生输入清理与 Pi 体验使用[独立实验入口](native-backend.md)。此前 v0.0.16 引入的完整校验后交付正文行为继续保留。
 
 服务器上保留 `docker-compose.yml` 和由 `.env.example` 创建的 `.env` 即可部署。至少设置 `AGY_PROXY_PASSWORD`；需要代理访问 Google 时配置 `AGY_PROXY_HTTP_PROXY`。查看启动状态：
 
@@ -70,7 +70,7 @@ API 支持 `Authorization: Bearer <key>`、Basic（`curl -u :key`）、`x-api-ke
 
 「导入本机当前凭据」读取服务器的原生登录文件。首次添加新账号时，已有文件凭据先迁移为「原服务账号」，保留原安装标识；后续每个账号拥有独立凭据、状态和固定 `installation_id`。未启用隔离账号时，仍可使用原本的本机登录方式。
 
-账号卡片显示身份、套餐、连接状态与检查时间。「查看 Usage」查询 Gemini、Claude/GPT 等模型组的额度，并支持刷新。额度来自 Cloud Code 查询，正常缓存 60 秒、失败缓存 10 秒；查询失败或未知值不会显示为 0%。接口为 `GET /api/accounts`、`POST /api/accounts`、`GET /api/accounts/{id}/usage?refresh=true`；`current` 仅用于尚未启用隔离账号的旧模式。
+账号卡片显示身份、套餐、连接状态与检查时间。「查看 Usage」通过 Cloud Code 的 `fetchAvailableModels` 查询账号模型及各自额度，并通过 `retrieveUserQuotaSummary` 单独查询每周／五小时共享额度。共享额度可能只有 Claude/GPT 分组，不代表账号没有 Gemini；一个查询失败时仍保留另一部分数据。两者均支持刷新，正常缓存 60 秒、失败缓存 10 秒；查询失败或未知值不会显示为 0% 或 100%。接口为 `GET /api/accounts`、`POST /api/accounts`、`GET /api/accounts/{id}/usage?refresh=true`；`current` 仅用于尚未启用隔离账号的旧模式。
 
 账号查询模块刷新过期令牌需要配置匹配的 `AGY_PROXY_OAUTH_CLIENT_ID` 和 `AGY_PROXY_OAUTH_CLIENT_SECRET`。该模块的刷新结果仅保存在内存中，CLI 自身的凭据管理独立。配置含义见[环境变量](configuration.md)，账号绑定与耗尽后切换规则见[隔离说明](account-isolation.md)。
 

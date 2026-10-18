@@ -6,7 +6,7 @@
 
 **直接原因是模型生成的参数字段名与客户端契约不一致，并缺少必填字段；不是 JSON 引号或换行转义失败。** 失败输出的 JSON 和桥接外层 Schema 均合法。失败命令为 9,141 字符，包含 `cat … << …` heredoc，改用 heredoc 不能修复这次参数字段错误。
 
-本次为分析与只读取证，未修改运行代码、服务器配置或部署。未执行数据库中的客户端命令，也未将工作内容或原始数据库导出到仓库。脱敏证据见 [证据 JSON](reference/bash-invalid-arguments-evidence-20261012.json)。
+本次为分析与只读取证，未修改运行代码、服务器配置或部署。未执行数据库中的客户端命令，也未将工作内容或原始数据库导出到仓库。脱敏证据见 [证据 JSON](../reference/bash-invalid-arguments-evidence-20261012.json)。
 
 ## 事件对应关系
 
@@ -76,11 +76,11 @@ agy returned invalid arguments for client tool bash
 
 ## 代理为什么返回这类错误
 
-1. [ExternalTools.schema](../app/external_tools.py#L186) 给 AGY 的 finish Schema 只约束 `arguments` 是对象，并不按不同工具嵌入各自参数 Schema。客户端完整定义放在提示词中，由模型遵循。
+1. [ExternalTools.schema](../../app/external_tools.py#L186) 给 AGY 的 finish Schema 只约束 `arguments` 是对象，并不按不同工具嵌入各自参数 Schema。客户端完整定义放在提示词中，由模型遵循。
 2. AGY 的 finish 可以接受 `{"cmd":"…"}` 这个合法对象并返回 `SUCCESS`。
-3. [ExternalTools.result](../app/external_tools.py#L273) 再用客户端原始 Schema 检查 bash 参数。在第 296 行失败，经第 298 行转为通用 `AgyError`；其默认内部状态是 502。
-4. [ExternalTools.run](../app/external_tools.py#L306) 在校验前缓冲结果，校验失败不会发出客户端工具调用。失败会话被销毁，避免继续复用未交付的隐藏状态。
-5. [OpenAI SSE 错误分支](../app/openai_api.py#L343) 在 HTTP 200 已发出后发送错误事件：
+3. [ExternalTools.result](../../app/external_tools.py#L273) 再用客户端原始 Schema 检查 bash 参数。在第 296 行失败，经第 298 行转为通用 `AgyError`；其默认内部状态是 502。
+4. [ExternalTools.run](../../app/external_tools.py#L306) 在校验前缓冲结果，校验失败不会发出客户端工具调用。失败会话被销毁，避免继续复用未交付的隐藏状态。
+5. [OpenAI SSE 错误分支](../../app/openai_api.py#L343) 在 HTTP 200 已发出后发送错误事件：
 
 ```json
 {"error":{"message":"agy returned invalid arguments for client tool bash","type":"api_error"}}
@@ -88,7 +88,7 @@ agy returned invalid arguments for client tool bash
 
 随后发送 `[DONE]`。这个 SSE 对象没有数字状态或稳定的错误 `code`。**控制台的 `ERROR 502` 不等于客户端收到 HTTP 502。** 因此仅依赖 HTTP 状态的 5xx 分类无法覆盖这条流内错误路径。
 
-6. 代理 [account_failover](../app/agy.py#L56) 只处理特定配额耗尽异常，不会重试这类参数校验失败；也没有让模型修正参数的恢复流程。
+6. 代理 [account_failover](../../app/agy.py#L56) 只处理特定配额耗尽异常，不会重试这类参数校验失败；也没有让模型修正参数的恢复流程。
 
 本次未取得该用户安装版本的 DSH 适配器代码或原始客户端 session，故不能独立证明其 `classifyPiAiError()` 的全部映射与重试规则。用户提供的 `PI_AI_ERROR` 和停止行为，与服务器的 HTTP 200 + SSE `api_error` 路径相符。
 

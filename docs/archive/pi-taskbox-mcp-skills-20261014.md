@@ -103,8 +103,8 @@ Pi → 本机透明计时 relay → SSH → 容器计时 relay → 生产代理 
 
 ## 证据和复现材料
 
-- [脱敏 JSON 证据](reference/pi-taskbox-mcp-skills-evidence-20261014.json)：两端请求配对、用量、工具成功/失败、skills、原生日志元数据、测试与文件哈希。
-- [Perfetto 时间线](reference/pi-taskbox-mcp-skills-trace-20261014.json)：HTTP、本地工具和 AGY 回合；这是墙钟时间线，不是 CPU 火焰图。
+- [脱敏 JSON 证据](../reference/pi-taskbox-mcp-skills-evidence-20261014.json)：两端请求配对、用量、工具成功/失败、skills、原生日志元数据、测试与文件哈希。
+- [Perfetto 时间线](../reference/pi-taskbox-mcp-skills-trace-20261014.json)：HTTP、本地工具和 AGY 回合；这是墙钟时间线，不是 CPU 火焰图。
 - 本地 `.preview/pi-taskbox-mcp-skills-20261014/`：`run_pi.py`、`analyze.py`、`verify.py`、`acceptance.py`、`replay_schema.py`、任务原文、包锁、skills、项目和修改 diff。
 - 主样本最终服务器快照保存在该目录 `server/`，在直接探针开始前采集，不混入探针的请求和日志。
 - 准备阶段有一次本地载荷完整性断言错误，2.187 秒、没有请求到生产、没有修改项目；证据保存在 `excluded-payload-assertion/`，未混入主样本。另一次 RPC 探测仅发生输出解析错误，未发模型请求。

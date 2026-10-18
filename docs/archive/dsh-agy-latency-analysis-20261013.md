@@ -119,4 +119,4 @@ DSH 成功加载 `create-readme` 和 `diagnose-windows-sandbox-acl`。它们会�
 - DSH 产物：`valid/dsh-work/`；原生产物已下载至 `native-work/`。本轮启动的 DSH 与原生 AGY 进程均已结束。
 - 原始请求/响应保留在忽略目录 `valid/private/`；请求头和密钥未写入测量记录。共享报告只包含计时、元数据和合成项目验证结果。
 - 首次启动配置错误在 HTTP 前即退出；随后一次 Windows 命令行截断多行任务且工作区 ACL 失败的试跑在 411.04 秒停止，完整保留记录，**未混入有效对照，也未将其算作代理故障**。正式测量前只为隔离工作区修复了当前用户权限，保留恢复记录。
-- 逐请求耗时、用量、恢复反馈、脱敏 transcript 元数据和验收结果：[结构化证据](reference/dsh-agy-latency-evidence-20261013.json)。
+- 逐请求耗时、用量、恢复反馈、脱敏 transcript 元数据和验收结果：[结构化证据](../reference/dsh-agy-latency-evidence-20261013.json)。

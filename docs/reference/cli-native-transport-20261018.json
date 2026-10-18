@@ -1,0 +1,57 @@
+{
+  "binary_sha256": "60e72242f07c131f75afcd9a9e425d6ee097a1a1b3190ea98ae78fa4180bbfa8",
+  "captured_binary_version_corrected": "1.4.0",
+  "same_build_controlled_comparison": false,
+  "build_identity_caveat": "The base image starts at 1.3.5 and auto-updates to 1.4.0. Individual baseline/hooked runs did not pin the executable. Timings and handshake comparisons are observational, not a controlled same-build experiment.",
+  "runs": [
+    {
+      "mode": "baseline",
+      "exit": 0,
+      "reaped_inferior_exit": null,
+      "inferior_gone": null,
+      "seconds": 10.066
+    },
+    {
+      "mode": "hooked",
+      "exit": 0,
+      "reaped_inferior_exit": null,
+      "inferior_gone": true,
+      "seconds": 11.924
+    }
+  ],
+  "baseline_status": "SUCCESS",
+  "hooked_status": "SUCCESS",
+  "expected_text": "NATIVE_WIRE_OK_20261018",
+  "raw_stream_matches_cli": true,
+  "main_sse_events": 3,
+  "finish_reason": "STOP",
+  "raw_usage": {
+    "promptTokenCount": 11813,
+    "candidatesTokenCount": 15,
+    "totalTokenCount": 11828
+  },
+  "cli_usage": {
+    "input_tokens": 11813,
+    "output_tokens": 15,
+    "thinking_tokens": 0,
+    "cache_read_tokens": 0,
+    "total_tokens": 11828
+  },
+  "first_raw_text_before_cli_result_ms": 124.42,
+  "request_types": [
+    "checkpoint",
+    "agent"
+  ],
+  "http2_requests": 8,
+  "http1_requests": 21,
+  "hook_errors": [],
+  "tls_hello_counts": {
+    "baseline": 15,
+    "hooked": 17
+  },
+  "same_unique_client_hello_structures": true,
+  "observed_exit_codes": [
+    0
+  ],
+  "passed": true
+}

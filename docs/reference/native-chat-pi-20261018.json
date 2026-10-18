@@ -1,0 +1,103 @@
+{
+  "date": "2026-10-18",
+  "protocol": "/v1/chat/completions",
+  "native_backend_opt_in": true,
+  "cli_version": "1.4.0",
+  "binary_sha256": "60e72242f07c131f75afcd9a9e425d6ee097a1a1b3190ea98ae78fa4180bbfa8",
+  "pi_version": "1.1.0",
+  "regression_tests_passed": 182,
+  "concurrent_isolated_sessions": true,
+  "final_runs": [
+    {
+      "scenario": "tools",
+      "pi_version": "1.1.0",
+      "exit_code": 0,
+      "seconds": 26.436999999999898,
+      "tool_names": [
+        "read",
+        "write",
+        "edit",
+        "bash"
+      ],
+      "tool_errors": [],
+      "assistant_errors": 0,
+      "session_id": "6d5fd06337f845188776aa31bfc6a4d7",
+      "output_matches": true,
+      "builtin_read_write_shell": true,
+      "passed": true,
+      "native_process_ids": [
+        "732"
+      ],
+      "native_conversation_ids": [
+        "534efb68-b64e-4f25-b650-dd5b7e969759"
+      ]
+    },
+    {
+      "scenario": "mcp",
+      "pi_version": "1.1.0",
+      "exit_code": 0,
+      "seconds": 23.20299999999952,
+      "tool_names": [
+        "mcp__filesystem__list_allowed_directories",
+        "mcp__filesystem__read_text_file",
+        "mcp__filesystem__write_file",
+        "mcp__filesystem__read_text_file"
+      ],
+      "tool_errors": [],
+      "assistant_errors": 0,
+      "session_id": "2fafcba46b7d428fb9d4541b046d9917",
+      "output_matches": true,
+      "mcp_read_write": true,
+      "passed": true,
+      "native_process_ids": [
+        "779"
+      ],
+      "native_conversation_ids": [
+        "5ebbc91e-a01f-483b-b977-25b7e7eb79c7"
+      ]
+    },
+    {
+      "scenario": "skills",
+      "pi_version": "1.1.0",
+      "exit_code": 0,
+      "seconds": 30.34400000000096,
+      "tool_names": [
+        "read",
+        "read",
+        "read",
+        "read",
+        "write",
+        "bash"
+      ],
+      "tool_errors": [],
+      "assistant_errors": 0,
+      "session_id": "08a45b68691240e0bb9d98bb72ea58bf",
+      "check_passed": true,
+      "skill_unchanged": true,
+      "skill_read": true,
+      "reference_read": true,
+      "client_ran_checker": true,
+      "passed": true,
+      "native_process_ids": [
+        "756"
+      ],
+      "native_conversation_ids": [
+        "75cd5f43-8051-4777-b40b-803eedf2b52e"
+      ]
+    }
+  ],
+  "passed": true,
+  "initial_failures_retained": [
+    "401 from incorrect environment interpolation",
+    "intermittent chunk framing errors with Write-entry capture",
+    "npx startup timeout"
+  ],
+  "limitations": [
+    "Complete finish validation before delivery; no tool-mode token streaming gain claimed",
+    "MCP coverage is local official filesystem stdio server",
+    "GDB and HTTP parser remain experimental; earlier framing root cause not fully established"
+  ],
+  "online_deployment_changed": false,
+  "graceful_shutdown_no_cli_or_gdb_left": true,
+  "test_container_removed": true
+}

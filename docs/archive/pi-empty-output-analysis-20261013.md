@@ -2,7 +2,7 @@
 
 会话：`01a131b6-ec8f-74cf-82f7-84ce7e8a5b03`。本次仅进行日志分析和离线复现，没有修改生产实现、Pi 配置或部署，也没有重新执行历史浏览器操作。
 
-后续修复：用户于 2026-10-13 明确要求移除代理字符上限，当前工作树已删除这一检查；下文保留故障发生时的配置和复现结果，文末的旧复现脚本对应修复前实现。当前行为见[配置文档](configuration.md)及[发布说明](unified-client-protocols.md)。
+后续修复：用户于 2026-10-13 明确要求移除代理字符上限，当前工作树已删除这一检查；下文保留故障发生时的配置和复现结果，文末的旧复现脚本对应修复前实现。当前行为见[配置文档](../configuration.md)及[发布说明](../unified-client-protocols.md)。
 
 ## 结论
 
@@ -43,11 +43,11 @@ Pi 没有自动恢复有两个原因：配置的模型窗口是 1,048,576 token�
 
 相关源码位置（按本次诊断时工作树）：
 
-- [app/config.py](../app/config.py)：`Config.max_prompt_chars` 在第 67 行默认设为 `200_000`；`load_config()` 没有读取对应环境变量，因此只添加环境变量不能改变这个限制。
-- [app/images.py](../app/images.py)：`ImageInput.prepare()` 第 246–248 行序列化消息及工具等字段，并按字符长度返回 413。纯文本请求也经过此函数。
-- [app/agy.py](../app/agy.py)：`AgyError` 第 51–53 行的默认错误代码映射没有 413，因此本次落到 `cli_protocol_error`。
-- [app/protocol_common.py](../app/protocol_common.py)：`prepare()` 第 149 行执行输入检查，第 171 行才创建请求执行 profile，之后才构建 CLI 执行流程。
-- [app/openai_api.py](../app/openai_api.py)：第 161–165 行直接编码准备阶段的错误并返回，这一路径没有记录最终请求计量。
+- [app/config.py](../../app/config.py)：`Config.max_prompt_chars` 在第 67 行默认设为 `200_000`；`load_config()` 没有读取对应环境变量，因此只添加环境变量不能改变这个限制。
+- [app/images.py](../../app/images.py)：`ImageInput.prepare()` 第 246–248 行序列化消息及工具等字段，并按字符长度返回 413。纯文本请求也经过此函数。
+- [app/agy.py](../../app/agy.py)：`AgyError` 第 51–53 行的默认错误代码映射没有 413，因此本次落到 `cli_protocol_error`。
+- [app/protocol_common.py](../../app/protocol_common.py)：`prepare()` 第 149 行执行输入检查，第 171 行才创建请求执行 profile，之后才构建 CLI 执行流程。
+- [app/openai_api.py](../../app/openai_api.py)：第 161–165 行直接编码准备阶段的错误并返回，这一路径没有记录最终请求计量。
 
 因此，最后两个失败请求没有进入 AGY CLI 或模型推理，也未产生本轮业务流内容。已有一次恢复机制用于符合条件的执行失败，不能修复这个前置输入长度错误。24 分钟也不是某一次 CLI 推理超出了 600 秒超时。
 
@@ -120,7 +120,7 @@ Pi JSONL 明确保存了两条错误，而用户反馈界面仅显示 `Turn comp
 
 本机离线重建使用 Pi 实际 OpenAI 序列化入口的 `onPayload` 截获请求，禁止网络 fetch；结果为 **0 次网络调用**。随后使用本地 Chat 适配器和 `ImageInput.prepare()` 验证三组历史，结果依次为通过、413、413。重建输入不包含图片附件，没有启动 CLI 或重新执行浏览器工具。
 
-脱敏统计见 [证据 JSON](reference/pi-empty-output-evidence-20261013.json)。包含历史正文的重建请求和本机复现脚本仅在被 Git 忽略的 `.devdata/pi-empty-output-20261013/` 中，不纳入报告或版本提交。
+脱敏统计见 [证据 JSON](../reference/pi-empty-output-evidence-20261013.json)。包含历史正文的重建请求和本机复现脚本仅在被 Git 忽略的 `.devdata/pi-empty-output-20261013/` 中，不纳入报告或版本提交。
 
 本机复现入口（依赖本机原始会话及已安装 Pi）：
 

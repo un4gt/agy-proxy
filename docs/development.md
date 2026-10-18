@@ -57,7 +57,7 @@ agy 使用 `--input-format stream-json --output-format stream-json`。非流式�
 - 工具参数和结构化 JSON 必须等待最终结果通过完整校验后才交给客户端。
 - 会话续接核对历史后发送增量；进程重建时重放完整历史，账号绑定独立持久化。
 
-协议证据见 [Headless 分析](headless-protocol-analysis-20261011.md)，会话和任务状态排查见[修正记录](session-continuity-and-todos-20261011.md)。
+协议证据见 [Headless 分析](archive/headless-protocol-analysis-20261011.md)，会话和任务状态排查见[修正记录](archive/session-continuity-and-todos-20261011.md)。
 
 ## 延迟分析
 

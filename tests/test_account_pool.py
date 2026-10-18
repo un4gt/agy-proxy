@@ -530,6 +530,31 @@ def test_delete_refuses_busy_or_logging_in_account_then_closes_idle_process(pool
     asyncio.run(scenario())
 
 
+def test_delete_checks_both_session_pools_before_removing_credentials(pool_setup):
+    cfg, pool, account, _, _ = pool_setup
+
+    async def scenario():
+        standard, native = SessionManager(cfg), SessionManager(cfg)
+        try:
+            idle = await standard.acquire(model="auto", effort=None)
+            idle.leased = False
+            active = await native.acquire(model="auto", effort=None)
+            with pytest.raises(AgyError) as error:
+                await standard.remove_account(account.id, other_managers=(native,))
+            assert error.value.status_code == 409
+            assert idle.alive and active.alive and account.credentials.exists()
+            active.leased = False
+            await standard.remove_account(account.id, other_managers=(native,))
+            assert not idle.alive and not active.alive
+            assert standard.live_count == native.live_count == 0
+            assert not account.credentials.exists()
+        finally:
+            await standard.close_all()
+            await native.close_all()
+
+    asyncio.run(scenario())
+
+
 def test_deletion_blocks_new_login_and_discovery_until_sessions_close(pool_setup, monkeypatch):
     cfg, pool, a, _, _ = pool_setup
     async def scenario():

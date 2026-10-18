@@ -1,0 +1,119 @@
+{
+  "binary_sha256": "60e72242f07c131f75afcd9a9e425d6ee097a1a1b3190ea98ae78fa4180bbfa8",
+  "binary_version": "1.4.0",
+  "passed": true,
+  "same_external_id_different_owners_isolated": true,
+  "different_cli_pids_and_conversations": true,
+  "interleaved_turns_retained_own_context": true,
+  "cancel_one_other_continues": true,
+  "all_processes_gone": true,
+  "short_turn_metrics": [
+    {
+      "turn": 1,
+      "agent_requests": 1,
+      "first_wire_ms": 10104.124551000496,
+      "first_function_call_ms": null,
+      "first_stdout_delta_ms": 10132.557778999399,
+      "cli_result_ms": 10315.398832999563,
+      "wire_lead_over_result_ms": 211.27428199906717,
+      "finish_reasons": [
+        "STOP"
+      ]
+    },
+    {
+      "turn": 1,
+      "agent_requests": 1,
+      "first_wire_ms": 9857.754122000188,
+      "first_function_call_ms": null,
+      "first_stdout_delta_ms": 9881.433660000766,
+      "cli_result_ms": 9958.151400000133,
+      "wire_lead_over_result_ms": 100.3972779999458,
+      "finish_reasons": [
+        "STOP"
+      ]
+    },
+    {
+      "turn": 2,
+      "agent_requests": 1,
+      "first_wire_ms": 2741.4117339994846,
+      "first_function_call_ms": null,
+      "first_stdout_delta_ms": 2753.0072379995545,
+      "cli_result_ms": 2858.3940680000524,
+      "wire_lead_over_result_ms": 116.98233400056779,
+      "finish_reasons": [
+        "STOP"
+      ]
+    },
+    {
+      "turn": 2,
+      "agent_requests": 1,
+      "first_wire_ms": 3004.6676069996465,
+      "first_function_call_ms": null,
+      "first_stdout_delta_ms": 3011.1830449986883,
+      "cli_result_ms": 3114.838603998578,
+      "wire_lead_over_result_ms": 110.17099699893151,
+      "finish_reasons": [
+        "STOP"
+      ]
+    },
+    {
+      "turn": 3,
+      "agent_requests": 1,
+      "first_wire_ms": 2008.5288680002122,
+      "first_function_call_ms": null,
+      "first_stdout_delta_ms": 2041.0846209997544,
+      "cli_result_ms": 2119.4486280001,
+      "wire_lead_over_result_ms": 110.9197599998879,
+      "finish_reasons": [
+        "STOP"
+      ]
+    }
+  ],
+  "long_text_metrics": {
+    "turn": 1,
+    "agent_requests": 1,
+    "first_wire_ms": 9963.232244999745,
+    "first_function_call_ms": null,
+    "first_stdout_delta_ms": 9981.326871999045,
+    "cli_result_ms": 21773.070978999385,
+    "wire_lead_over_result_ms": 11809.83873399964,
+    "finish_reasons": [
+      "STOP"
+    ]
+  },
+  "long_text_chunks": 56,
+  "long_text_matches_cli": true,
+  "external_tool_roundtrip": true,
+  "raw_finish_matches_cli_structured_output": true,
+  "tool_request_metrics": {
+    "turn": 1,
+    "agent_requests": 1,
+    "first_wire_ms": null,
+    "first_function_call_ms": 8003.618931999881,
+    "first_stdout_delta_ms": 8084.517446999598,
+    "cli_result_ms": 8215.640984000856,
+    "wire_lead_over_result_ms": null,
+    "finish_reasons": [
+      "STOP"
+    ]
+  },
+  "tool_result_metrics": {
+    "turn": 2,
+    "agent_requests": 1,
+    "first_wire_ms": null,
+    "first_function_call_ms": 2060.1654860001872,
+    "first_stdout_delta_ms": 2135.3462830011267,
+    "cli_result_ms": 2264.6175820009375,
+    "wire_lead_over_result_ms": null,
+    "finish_reasons": [
+      "STOP"
+    ]
+  },
+  "production_enabled": false,
+  "limitations": [
+    "GDB changes scheduling",
+    "HTTP parser is experimental",
+    "finish arguments observed as complete objects, not token deltas",
+    "no HTTP backend integration or arbitrary role/history injection"
+  ]
+}

@@ -35,6 +35,14 @@ QUOTA = {
     ]
 }
 
+MODELS = {"models": {
+    "gemini-3-pro-high": {
+        "displayName": "Gemini 3 Pro (High)",
+        "quotaInfo": {"remainingFraction": 0.75, "resetTime": "2030-01-02T03:04:05Z"},
+    },
+    "gemini-3-flash": {"displayName": "Gemini 3 Flash"},
+}}
+
 
 @pytest.fixture
 def credential(tmp_path, monkeypatch):
@@ -79,6 +87,10 @@ def ok(request):
                 "currentTier": {"id": "pro-tier", "name": "Pro"},
             },
         )
+    assert json.loads(request.content) == {"project": "PRIVATE_PROJECT"}
+    if request.url.path.endswith("fetchAvailableModels"):
+        return httpx.Response(200, json=MODELS)
+    assert request.url.path.endswith("retrieveUserQuotaSummary")
     return httpx.Response(200, json=QUOTA)
 
 
@@ -102,11 +114,13 @@ def test_real_schema_and_panel_auth(credential, monkeypatch, tmp_path):
     assert record["email"] == "demo@example.com"
     assert record["status"] == "connected"
     assert "usage" not in record
+    assert "models" not in record
     detail = client.get("/api/accounts/current/usage")
     buckets = detail.json()["usage"]["groups"][0]["buckets"]
     assert buckets[0]["remaining_fraction"] == 0.9806
     assert buckets[0]["reset_at"] == 1893553445
     assert buckets[1]["kind"] == "5h"
+    assert {model["id"] for model in detail.json()["models"]} == set(MODELS["models"])
     assert "PRIVATE" not in detail.text
     assert client.get("/api/accounts/other/usage").status_code == 404
     assert client.get("/health").json()["signed_in"] is True
@@ -195,15 +209,126 @@ def test_cache_coalesces_and_invalidates_on_account_change(credential, monkeypat
             *(service.snapshot(refresh=True) for _ in range(8))
         )
         assert all(r["status"] == "connected" for r in results)
-        assert len(calls) == 2
+        assert len(calls) == 3
         assert (await service.snapshot())["status"] == "connected"
-        assert len(calls) == 2
+        assert len(calls) == 3
         credential.unlink()
         result = await service.snapshot()
         assert result["status"] == "disconnected"
         assert result["usage"] is None and result["email"] is None
+        assert result["models"] is None
 
     asyncio.run(run())
+
+
+def test_gemini_models_are_present_when_summary_only_contains_claude(credential, monkeypatch):
+    def handler(request):
+        if request.url.path.endswith("retrieveUserQuotaSummary"):
+            return httpx.Response(200, json={"groups": [{
+                "displayName": "Claude and GPT models",
+                "description": "Models within this group: Claude Opus, Claude Sonnet, GPT-OSS",
+                "buckets": [{"window": "5h", "remainingFraction": 1}],
+            }]})
+        return ok(request)
+
+    mocked(monkeypatch, handler)
+    result = asyncio.run(account.AccountService(Config()).snapshot())
+    assert result["status"] == "connected"
+    assert result["models_error"] is None
+    assert result["models"] == [
+        {"id": "gemini-3-flash", "name": "Gemini 3 Flash", "remaining_fraction": None, "reset_at": None},
+        {"id": "gemini-3-pro-high", "name": "Gemini 3 Pro (High)", "remaining_fraction": .75, "reset_at": 1893553445},
+    ]
+    assert len(result["usage"]["groups"]) == 1
+    assert result["usage"]["groups"][0]["name"] == "Claude and GPT models"
+
+
+@pytest.mark.parametrize("method,field,error_field", [
+    ("fetchAvailableModels", "models", "models_error"),
+    ("retrieveUserQuotaSummary", "usage", "usage_error"),
+])
+@pytest.mark.parametrize("failure", [403, 500, "timeout", "schema"])
+def test_partial_failure_preserves_other_dataset(credential, monkeypatch, method, field, error_field, failure):
+    def handler(request):
+        if request.url.path.endswith(method):
+            if failure == "timeout":
+                raise httpx.ReadTimeout("PRIVATE_ACCESS", request=request)
+            return httpx.Response(200 if failure == "schema" else failure, json={"error": "PRIVATE_ACCESS"})
+        return ok(request)
+
+    mocked(monkeypatch, handler)
+    result = asyncio.run(account.AccountService(Config()).snapshot())
+    assert result["status"] == "connected"
+    assert result[field] is None and result[error_field]
+    assert result["usage" if field == "models" else "models"]
+    assert "PRIVATE" not in json.dumps(result)
+
+
+def test_models_query_falls_back_without_repeating_successful_summary(credential, monkeypatch):
+    calls = []
+
+    def handler(request):
+        calls.append((request.url.host, request.url.path))
+        if request.url.host.startswith("daily-") and request.url.path.endswith("fetchAvailableModels"):
+            return httpx.Response(404)
+        return ok(request)
+
+    mocked(monkeypatch, handler)
+    result = asyncio.run(account.AccountService(Config()).snapshot())
+    assert result["models"] and result["usage"]
+    assert result["models_error"] is None
+    assert sum(path.endswith("retrieveUserQuotaSummary") for _, path in calls) == 1
+    assert ("cloudcode-pa.googleapis.com", "/v1internal:fetchAvailableModels") in calls
+
+
+def test_models_unauthorized_refreshes_token(credential, monkeypatch):
+    refreshes = []
+
+    def handler(request):
+        if request.url.host == "oauth2.googleapis.com":
+            refreshes.append(1)
+            return httpx.Response(200, json={"access_token": "REPLACEMENT", "expires_in": 3600})
+        if request.url.path.endswith("fetchAvailableModels") and request.headers["authorization"] != "Bearer REPLACEMENT":
+            return httpx.Response(401)
+        return ok(request)
+
+    mocked(monkeypatch, handler)
+    result = asyncio.run(account.AccountService(Config(oauth_client_id="TEST_CLIENT_ID", oauth_client_secret="TEST_CLIENT_SECRET")).snapshot())
+    assert result["status"] == "connected"
+    assert result["models"] and result["usage"]
+    assert refreshes == [1]
+
+
+@pytest.mark.parametrize("value", [None, "0.9", True, -1, 2, float("nan"), float("inf")])
+def test_unknown_model_quota_is_not_fabricated(value):
+    result = account.normalize_models({"models": {"gemini-test": {
+        "quotaInfo": {"remainingFraction": value, "resetTime": "invalid"},
+    }}})[0]
+    assert result == {"id": "gemini-test", "name": "gemini-test", "remaining_fraction": None, "reset_at": None}
+
+
+def test_empty_model_catalog_and_exhausted_model():
+    assert account.normalize_models({"models": {}}) == []
+    assert account.normalize_models({"models": {"gemini-test": {
+        "quotaInfo": {"remainingFraction": 0},
+    }}})[0]["remaining_fraction"] == 0
+
+
+def test_recommended_menu_does_not_hide_gemini_or_expose_internal_helpers():
+    raw = {"models": {
+        "claude-opus": {"displayName": "Claude Opus"},
+        "gemini-flash": {"displayName": "Gemini Flash"},
+        "gemini-tiered": {},
+        "image-model": {},
+        "unnamed-agent": {},
+        "tab_flash_lite_preview": {},
+        "chat_20706": {},
+    }, "agentModelSorts": [{"groups": [{"modelIds": ["claude-opus", "unnamed-agent"]}]}],
+        "imageGenerationModelIds": ["image-model"],
+        "tieredModelIds": {"flash": ["gemini-tiered"]}}
+    assert {model["id"] for model in account.normalize_models(raw)} == {
+        "claude-opus", "gemini-flash", "gemini-tiered", "image-model", "unnamed-agent",
+    }
 
 
 @pytest.mark.parametrize(

@@ -64,6 +64,10 @@ class Config:
     oauth_client_secret: str | None = field(default=None, repr=False)
     agy_cwd: str | None = None
     prewarm_models: tuple[str, ...] = ()
+    native_chat: bool = False
+    native_input_clean: bool = False
+    native_bin: str | None = None
+    native_symbols: str = "/evidence/symbols.json"
     # Internal per-child context; never change the proxy's own process home.
     account_home: str | None = field(default=None, repr=False)
     account_id: str | None = None
@@ -130,4 +134,8 @@ def load_config() -> Config:
         oauth_client_secret=_env("OAUTH_CLIENT_SECRET"),
         agy_cwd=_env("CWD"),
         prewarm_models=prewarm,
+        native_chat=_bool("NATIVE_CHAT", False),
+        native_input_clean=_bool("NATIVE_INPUT_CLEAN", False),
+        native_bin=_env("NATIVE_BIN"),
+        native_symbols=_env("NATIVE_SYMBOLS") or "/evidence/symbols.json",
     )

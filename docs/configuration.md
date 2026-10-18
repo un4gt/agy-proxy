@@ -67,6 +67,19 @@ OAuth 配置用于账号查询模块；CLI 自身的登录与令牌刷新流程�
 
 代理不设置模型上下文窗口或提示字符上限；消息历史和工具定义完整交给 AGY，由 AGY 与上游模型处理上下文容量。HTTP 请求体的 32 MiB 传输限制及图片数量、字节和像素限制独立保留。客户端的 `contextWindow` 用于客户端自身的上下文管理，不由代理修改。
 
+## 原生实验后端
+
+以下变量需使用 [原生实验镜像与独立 Compose](native-backend.md)。默认正式 Compose 不启用原生后端。
+
+| 变量 | 默认值 | 用途 |
+|---|---|---|
+| `AGY_PROXY_NATIVE_CHAT` | `false` | 仅 Chat Completions 选择原生后端 |
+| `AGY_PROXY_NATIVE_INPUT_CLEAN` | `false` | 原生后端清理已验证的 CLI 输入包装 |
+| `AGY_PROXY_NATIVE_BIN` | 空，沿用 `BIN` | 原生后端独立二进制；实验镜像固定 `/opt/agy-native/agy` |
+| `AGY_PROXY_NATIVE_SYMBOLS` | `/evidence/symbols.json` | 实验镜像固定 `/opt/agy-native/symbols.json` |
+| `NATIVE_BIND` / `NATIVE_PORT` | `127.0.0.1` / `18317` | 独立实验 Compose 的宿主机监听地址 |
+| `AGY_PROXY_NATIVE_MAX_SESSIONS` | `2` | 独立实验 Compose 映射到该服务的 `MAX_SESSIONS` |
+
 ## 链路计时与日志
 
 推理请求完成时默认输出脱敏的 `request_latency` JSON 日志，用 `X-Agy-Request-Id` 关联模型查询、会话锁等待、进程启动、各次生成、校验、恢复和 HTTP 发送。每请求一条、阶段数量有上限；不记录提示词、工具参数或模型正文。Compose 日志轮转默认每文件 20 MB、保留 5 份，无额外环境变量。

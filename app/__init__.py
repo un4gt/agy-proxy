@@ -40,6 +40,8 @@ def create_app(cfg: Config | None = None) -> FastAPI:
                 await asyncio.sleep(interval)
                 try:
                     await app.state.sessions.sweep()
+                    if cfg.native_chat:
+                        await app.state.native_sessions.sweep()
                     await app.state.sessions.ensure_prewarm()
                 except Exception:  # pragma: no cover - keep the sweeper alive
                     log.exception("session sweep failed")
@@ -77,11 +79,13 @@ def create_app(cfg: Config | None = None) -> FastAPI:
                 await updater.shutdown()
             await app.state.store.flush()
             await app.state.sessions.close_all()
+            if cfg.native_chat:
+                await app.state.native_sessions.close_all()
 
     app = FastAPI(
         title="agy-proxy",
         default_response_class=JSONResponse,
-        version="0.0.16",
+        version="0.0.17",
         lifespan=lifespan,
         docs_url=None,
         redoc_url=None,
@@ -93,6 +97,9 @@ def create_app(cfg: Config | None = None) -> FastAPI:
     cfg.account_pool = AccountPool(cfg)
     app.state.account_pool = cfg.account_pool
     app.state.sessions = SessionManager(cfg)
+    if cfg.native_chat:
+        from .native_chat import NativeSessionManager
+        app.state.native_sessions = NativeSessionManager(cfg)
     app.state.store = Store(cfg)
     app.state.store.load()
 
@@ -179,7 +186,7 @@ def create_app(cfg: Config | None = None) -> FastAPI:
         return JSONResponse(
             {
                 "service": "agy-proxy",
-                "version": "0.0.16",
+                "version": "0.0.17",
                 "endpoints": [
                     "/ (dashboard)",
                     "/login (agy OAuth)",
@@ -200,8 +207,10 @@ def create_app(cfg: Config | None = None) -> FastAPI:
         return JSONResponse(
             {
                 "status": "ok",
-                "version": "0.0.16",
+                "version": "0.0.17",
                 "auth_required": cfg.auth_enabled,
+                "chat_backend": "native" if cfg.native_chat else "headless",
+                "native_input_clean": cfg.native_chat and cfg.native_input_clean,
                 "signed_in": (any(p.credentials.is_file() for p in cfg.account_pool.profiles())
                               if cfg.account_pool.enabled else account.credentials_present()),
             }

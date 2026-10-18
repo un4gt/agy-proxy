@@ -1,20 +1,20 @@
 # AGY Headless 协议分析与通用 agent 会话接入
 
-日期：2026-10-11，北京时间。官方文档已下载至 [HTML 原件](reference/antigravity-cli-headless.html) 和 [可读文本](reference/antigravity-cli-headless.md)；[下载来源与 SHA-256](reference/sources.json)。orjson 的 [README](reference/orjson-readme.md) 同样已归档。
+日期：2026-10-11，北京时间。官方文档已下载至 [HTML 原件](../reference/antigravity-cli-headless.html) 和 [可读文本](../reference/antigravity-cli-headless.md)；[下载来源与 SHA-256](../reference/sources.json)。orjson 的 [README](../reference/orjson-readme.md) 同样已归档。
 
 后续修正：初版只对显式会话 ID 保留 PID，未覆盖默认 dsh 请求。现已补上服务端按完整历史自动关联的路径；不要求客户端新增请求头。最新排查与验证见 [会话连续性和任务状态](session-continuity-and-todos-20261011.md)。本文文末的镜像与 349 项测试是初版部署记录。
 
 ## 结论与证据边界
 
-本次修改已部署到服务器，镜像 `agy-proxy:headless-protocol-20261011`。此前失败输入在新实现中重放成功：163.82 秒返回通过校验的客户端工具调用，超过旧 120 秒窗口。真实多轮测试确认同一 PID/conversation 复用，生产 HTTP 首个 SSE 事件约 0.102 秒到达。详细记录见文末与 [运行验证数据](reference/headless-runtime-verification-20261011.json)。
+本次修改已部署到服务器，镜像 `agy-proxy:headless-protocol-20261011`。此前失败输入在新实现中重放成功：163.82 秒返回通过校验的客户端工具调用，超过旧 120 秒窗口。真实多轮测试确认同一 PID/conversation 复用，生产 HTTP 首个 SSE 事件约 0.102 秒到达。详细记录见文末与 [运行验证数据](../reference/headless-runtime-verification-20261011.json)。
 
 目标适用于所有 coding agent / agent 客户端，不限 dsh：同一凭据下同一个 agent session，多轮请求复用独立 AGY PID 和 conversation；不同会话隔离。客户端 HTTP 请求、AGY turn、CLI process、AGY conversation 是不同层级。
 
 官方 `--input-format stream-json --output-format stream-json` 正好提供持续 stdin 会话：启动一次，每个 user 输入执行一轮，每轮以 result 结束。不能每轮等进程退出，也不能每个 HTTP 请求都销毁成功会话。
 
-在服务器 CLI 1.3.3 上已实际验证两个 stdin 回合，记录见 [探针结果](reference/headless-live-probe-20261011.json)：PID 2378，conversation `f5fb2250-cd0e-4e63-9c23-838d8f01697a`，两轮相同；init 一次，result 两次；关闭 stdin 后退出码 0。第一轮墙钟约 7.85 秒，第二轮约 2.72 秒。这证明协议与多轮复用可行，不代表复杂任务都能在该时间内完成。
+在服务器 CLI 1.3.3 上已实际验证两个 stdin 回合，记录见 [探针结果](../reference/headless-live-probe-20261011.json)：PID 2378，conversation `f5fb2250-cd0e-4e63-9c23-838d8f01697a`，两轮相同；init 一次，result 两次；关闭 stdin 后退出码 0。第一轮墙钟约 7.85 秒，第二轮约 2.72 秒。这证明协议与多轮复用可行，不代表复杂任务都能在该时间内完成。
 
-此前六次 dsh 504 的服务端证据见 [CLI 排查报告](../test_sessions/agy-cli-investigation-20261011.md)。上游曾产生推理 token，代理因 stdout 静默 120 秒发送 SIGTERM，CLI 随后记录 CLIENT_CANCELED/context canceled。stdout 不是上游完整活动探针。不能据此把所有静默判为卡死，也不能保证任意延长超时后都会成功。
+此前六次 dsh 504 的服务端证据见 [CLI 排查报告](../../test_sessions/agy-cli-investigation-20261011.md)。上游曾产生推理 token，代理因 stdout 静默 120 秒发送 SIGTERM，CLI 随后记录 CLIENT_CANCELED/context canceled。stdout 不是上游完整活动探针。不能据此把所有静默判为卡死，也不能保证任意延长超时后都会成功。
 
 ## Streaming JSON 的正确消费方式
 

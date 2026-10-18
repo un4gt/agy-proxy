@@ -1,0 +1,20 @@
+{
+  "providers": {
+    "agy-native": {
+      "baseUrl": "http://127.0.0.1:18317/v1",
+      "api": "openai-completions",
+      "apiKey": "${AGY_NATIVE_API_KEY}",
+      "authHeader": true,
+      "models": [
+        {
+          "id": "gemini-3.8-flash-low",
+          "name": "AGY Native Gemini Flash Low",
+          "reasoning": false,
+          "input": ["text"],
+          "contextWindow": 200000,
+          "maxTokens": 8192
+        }
+      ]
+    }
+  }
+}

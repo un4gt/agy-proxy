@@ -38,4 +38,4 @@
 
 该会话的 AGY transcript 显示：模型先直接回答，CLI 随后追加“如果任务已完成请调用 finish”的内部 USER_INPUT 提醒，模型再调用 finish。代理目前要求 `result.num_turns` 严格等于自己写入 stdin 的请求次数；这种内部提醒带来的计数差异需要单独核对协议兼容性。本次没有改动回合编号校验或自动恢复行为。
 
-首个测试未正常完成，第二个测试正常完成但未命中固定应答。两个结果均保留在[脱敏证据](reference/prompt-cap-removal-20261013.json)，没有通过反复重试隐藏失败。关于最初 Pi 无输出问题，见[故障分析](pi-empty-output-analysis-20261013.md)。
+首个测试未正常完成，第二个测试正常完成但未命中固定应答。两个结果均保留在[脱敏证据](../reference/prompt-cap-removal-20261013.json)，没有通过反复重试隐藏失败。关于最初 Pi 无输出问题，见[故障分析](pi-empty-output-analysis-20261013.md)。
