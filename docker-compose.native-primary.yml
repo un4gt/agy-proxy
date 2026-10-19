@@ -1,0 +1,13 @@
+# Promote native Chat on the existing service/port and keep its original volumes.
+# docker compose -f docker-compose.yml -f docker-compose.native-primary.yml up -d
+services:
+  agy-proxy:
+    image: tumuer/agy-proxy:v0.0.17-native.1
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - seccomp=unconfined
+    environment:
+      AGY_PROXY_NATIVE_CHAT: "true"
+      AGY_PROXY_NATIVE_INPUT_CLEAN: "true"
+      AGY_PROXY_MAX_SESSIONS: ${AGY_PROXY_NATIVE_MAX_SESSIONS:-2}

@@ -1,0 +1,106 @@
+{
+  "date": "2026-10-19",
+  "deployment": {
+    "health": {
+      "status": "ok",
+      "version": "0.0.17",
+      "auth_required": true,
+      "chat_backend": "native",
+      "native_input_clean": true,
+      "signed_in": true
+    },
+    "image": "tumuer/agy-proxy:v0.0.17-native.1",
+    "api_keys_preserved": true,
+    "usage_preserved": true,
+    "installation_ids_preserved": 2,
+    "volumes_preserved": true,
+    "backup": "/home/docker_depolyments/agy-proxy/backups/native-primary-20261019"
+  },
+  "public_health": {
+    "status": "ok",
+    "version": "0.0.17",
+    "auth_required": true,
+    "chat_backend": "native",
+    "native_input_clean": true,
+    "signed_in": true
+  },
+  "http_checks": [
+    {
+      "protocol": "chat",
+      "stream": false,
+      "passed": true,
+      "request_id": "agy_590f5e6f65ab449794f886ec17f68f38",
+      "seconds": 16.344
+    },
+    {
+      "protocol": "chat",
+      "stream": true,
+      "passed": true,
+      "request_id": "agy_a603ee775c244b33bb7ff935a90a6e90",
+      "seconds": 15.641
+    },
+    {
+      "protocol": "responses",
+      "stream": false,
+      "passed": true,
+      "request_id": "agy_f0399d26e46f4474a364087e0446237b",
+      "seconds": 11.828
+    },
+    {
+      "protocol": "responses",
+      "stream": true,
+      "passed": true,
+      "request_id": "agy_09daf4eb503d4431aef70cb0f7e2650b",
+      "seconds": 12.343
+    },
+    {
+      "protocol": "messages",
+      "stream": false,
+      "passed": true,
+      "request_id": "agy_50b5bc5e76184b3ab2d11dfce15b1e44",
+      "seconds": 11.765
+    },
+    {
+      "protocol": "messages",
+      "stream": true,
+      "passed": true,
+      "request_id": "agy_b8aabd42767a4882b92a379e2c63540f",
+      "seconds": 12.063
+    },
+    {
+      "protocol": "gemini",
+      "stream": false,
+      "passed": true,
+      "request_id": "agy_6be3984141b746fcbc704edf38469027",
+      "seconds": 10.813
+    },
+    {
+      "protocol": "gemini",
+      "stream": true,
+      "passed": true,
+      "request_id": "agy_a2781af540c14b43a143eb2d725cd95a",
+      "seconds": 10.687
+    }
+  ],
+  "pi": {
+    "scenario": "tools",
+    "pi_version": "1.1.0",
+    "exit_code": 0,
+    "seconds": 32.937000000005355,
+    "tool_names": [
+      "read",
+      "write",
+      "edit",
+      "bash"
+    ],
+    "tool_errors": [],
+    "assistant_errors": 0,
+    "session_id": "2e9998daa8f44da0b7754ee93944fdb2",
+    "output_matches": true,
+    "builtin_read_write_shell": true,
+    "passed": true
+  },
+  "independent_experiment_stopped": true,
+  "pi_base_url": "http://43.153.189.26:8317/v1",
+  "pi_api_key_preserved": true
+}

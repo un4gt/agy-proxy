@@ -2,11 +2,26 @@
 
 此后端仅接管 `/v1/chat/completions`。CLI 继续负责认证和上游 HTTP/TLS；GDB 读取响应并清理已验证的 CLI 输入包装，客户端负责执行工具、MCP 与 Skills。仍需等待完整 `finish` 参数与 CLI 终结结果一致后交付，尚未提供参数内逐 token 输出。
 
-## 独立部署
+## 镜像与版本
 
-使用 `tumuer/agy-proxy:v0.0.17-native.1` 和仓库的 [docker-compose.native.yml](../docker-compose.native.yml)，与正式服务使用独立的 Compose 项目和数据卷。镜像内常规 CLI 为 1.4.2，原生后端单独固定到已验证的 Linux amd64 CLI 1.4.0；更新页面只更新常规 CLI，不替换原生二进制。
+使用 `tumuer/agy-proxy:v0.0.17-native.1`，可切换原公网入口，也可通过 [docker-compose.native.yml](../docker-compose.native.yml) 使用独立的 Compose 项目和数据卷。镜像内常规 CLI 为 1.4.2，原生后端单独固定到已验证的 Linux amd64 CLI 1.4.0；更新页面只更新常规 CLI，不替换原生二进制。
 
 `native.1` 要求上游通过 `finish` 提交每个客户端回复，修复模型直接输出普通文本导致 `Native capture requires exactly one finish submission` 的问题。普通回答、工具请求均使用同一内部封装，客户端 `tool_choice=none` 仍然禁止客户端工具调用；用户无需发送“继续”补救。详见[修复记录](releases/v0.0.17-native.1.md)。
+
+## 使用原公网入口
+
+在现有 Compose 项目中叠加 [docker-compose.native-primary.yml](../docker-compose.native-primary.yml)，可将原生 Chat 切到原服务端口并复用原账号、密钥和用量卷：
+
+```sh
+docker compose -f docker-compose.yml -f docker-compose.native-primary.yml pull
+docker compose -f docker-compose.yml -f docker-compose.native-primary.yml up -d
+```
+
+升级前备份原 Compose、环境配置和两个数据卷。后续操作使用同样的两个 `-f` 参数；已有显式外部卷声明的部署继续沿用原 Compose。此覆盖配置提供原生后端所需的 GDB 权限，默认会话池容量为 2，可通过 `AGY_PROXY_NATIVE_MAX_SESSIONS` 调整。
+
+Pi 的 Base URL 设为 `http://服务器IP:8317/v1`，API Key 使用原正式服务密钥，无需 SSH 隧道。Chat Completions 使用原生后端；Responses、Messages 和 Gemini 协议继续使用常规 CLI。完成验证后可停止原独立实验实例并保留其卷。日本节点已按此方式完成[公网入口切换](releases/native-primary-20261019.md)。
+
+## 独立实验实例与 SSH 转发
 
 ```sh
 # 在独立目录放置 docker-compose.native.yml 与 .env，设置控制台密码。
@@ -32,7 +47,7 @@ $env:AGY_NATIVE_API_KEY = '<实验入口的客户端密钥>'
 pi --provider agy-native --model gemini-3.8-flash-low --thinking off
 ```
 
-Base URL 为 `http://127.0.0.1:18317/v1`，协议为 OpenAI Chat Completions。MCP 与 Skills 放在 Pi 客户端；不要为不同聊天设置同一个全局 `X-Agy-Session-Id`。
+公网部署将示例中的 Base URL 改为 `http://服务器IP:8317/v1`；独立实例的本地地址为 `http://127.0.0.1:18317/v1`。协议为 OpenAI Chat Completions。MCP 与 Skills 放在 Pi 客户端；不要为不同聊天设置同一个全局 `X-Agy-Session-Id`。
 
 ## 构建与版本固定
 

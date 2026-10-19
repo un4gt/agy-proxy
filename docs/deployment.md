@@ -6,7 +6,7 @@
 
 首次启动见 [README 快速开始](../README.md#docker-快速开始)。镜像发布于 `docker.io/tumuer/agy-proxy`，当前 Compose 固定为 `v0.0.17`，镜像使用官方固定下载地址与校验和，构建时校验 agy CLI 为 `1.4.2`。运行环境无需安装 Python、Node 或 agy。
 
-升级前阅读 [v0.0.17 发布说明](releases/v0.0.17.md)。正式入口使用常规后端；原生输入清理与 Pi 体验使用[独立实验入口](native-backend.md)。此前 v0.0.16 引入的完整校验后交付正文行为继续保留。
+升级前阅读 [v0.0.17 发布说明](releases/v0.0.17.md)。默认 Compose 使用常规后端；需要原生 Chat 时，按[原生部署指南](native-backend.md#使用原公网入口)叠加 `docker-compose.native-primary.yml`，直接使用原公网端口和数据卷，也可部署独立实验入口。此前 v0.0.16 引入的完整校验后交付正文行为继续保留。
 
 服务器上保留 `docker-compose.yml` 和由 `.env.example` 创建的 `.env` 即可部署。至少设置 `AGY_PROXY_PASSWORD`；需要代理访问 Google 时配置 `AGY_PROXY_HTTP_PROXY`。查看启动状态：
 
@@ -27,7 +27,7 @@ docker run -d --name agy-proxy -p 8317:8317 \
   -v agy-data:/root/.agy-proxy \
   --add-host=host.docker.internal:host-gateway \
   --restart unless-stopped \
-  tumuer/agy-proxy:v0.0.16
+  tumuer/agy-proxy:v0.0.17
 ```
 
 Compose 默认给卷名加项目名前缀，如 `agy-proxy_agy-data`；上例的 `agy-data` 是另一个卷。从 Compose 切换部署方式时，应显式复用原卷。
