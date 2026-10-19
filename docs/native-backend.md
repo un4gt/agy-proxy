@@ -4,7 +4,9 @@
 
 ## 独立部署
 
-使用 `tumuer/agy-proxy:v0.0.17-native` 和仓库的 [docker-compose.native.yml](../docker-compose.native.yml)，与正式服务使用独立的 Compose 项目和数据卷。镜像内常规 CLI 为 1.4.2，原生后端单独固定到已验证的 Linux amd64 CLI 1.4.0；更新页面只更新常规 CLI，不替换原生二进制。
+使用 `tumuer/agy-proxy:v0.0.17-native.1` 和仓库的 [docker-compose.native.yml](../docker-compose.native.yml)，与正式服务使用独立的 Compose 项目和数据卷。镜像内常规 CLI 为 1.4.2，原生后端单独固定到已验证的 Linux amd64 CLI 1.4.0；更新页面只更新常规 CLI，不替换原生二进制。
+
+`native.1` 要求上游通过 `finish` 提交每个客户端回复，修复模型直接输出普通文本导致 `Native capture requires exactly one finish submission` 的问题。普通回答、工具请求均使用同一内部封装，客户端 `tool_choice=none` 仍然禁止客户端工具调用；用户无需发送“继续”补救。详见[修复记录](releases/v0.0.17-native.1.md)。
 
 ```sh
 # 在独立目录放置 docker-compose.native.yml 与 .env，设置控制台密码。
@@ -38,7 +40,7 @@ Base URL 为 `http://127.0.0.1:18317/v1`，协议为 OpenAI Chat Completions。M
 
 ```sh
 docker build -t tumuer/agy-proxy:v0.0.17 .
-docker build -f Dockerfile.native --build-context native-cli=/path/to/verified-cli -t tumuer/agy-proxy:v0.0.17-native .
+docker build -f Dockerfile.native --build-context native-cli=/path/to/verified-cli -t tumuer/agy-proxy:v0.0.17-native.1 .
 ```
 
 原生二进制必须是 SHA-256 `60e72242f07c131f75afcd9a9e425d6ee097a1a1b3190ea98ae78fa4180bbfa8` 的 CLI 1.4.0。构建时校验哈希与版本并生成符号；本次发布使用此前验收容器保存的同哈希二进制。二进制不入 Git；没有此构建时可直接拉取发布镜像，不能用新版 CLI 替换后跳过校验。

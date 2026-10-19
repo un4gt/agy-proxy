@@ -48,6 +48,13 @@ def clean_request(doc):
     for key in ('toolAction', 'toolSummary'):
         properties[key]['description'] = 'Short label for this client response.'
     request['tools'] = [{'functionDeclarations': [finish]}]
+    # finish is the transport envelope for *every* client assistant response,
+    # including plain answers and tool_choice=none. Advertising it under AUTO
+    # lets the model bypass the envelope with text, which cannot be delivered.
+    # Constrain the upstream decoder, not the client's choice of external tools.
+    calling = request.setdefault('toolConfig', {}).setdefault('functionCallingConfig', {})
+    calling['mode'] = 'ANY'
+    calling['allowedFunctionNames'] = ['finish']
     for content in request['contents']:
         if content.get('role') != 'user':
             continue

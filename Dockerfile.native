@@ -5,6 +5,9 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends gdb \
     && rm -rf /var/lib/apt/lists/* \
     && python -m pip install --no-cache-dir --target /opt/probe-deps hpack==4.1.0
+# Native fixes must come from this checkout, not an older base image layer.
+COPY app/native_chat.py app/native_chat.py
+COPY tools/agy_native_wire_probe tools/agy_native_wire_probe
 COPY --from=native-cli --chmod=0555 agy /opt/agy-native/agy
 RUN echo '60e72242f07c131f75afcd9a9e425d6ee097a1a1b3190ea98ae78fa4180bbfa8  /opt/agy-native/agy' | sha256sum -c - \
     && test "$(/opt/agy-native/agy --version)" = '1.4.0' \

@@ -33,7 +33,7 @@ def test_only_known_cli_wrapping_changes(payload):
     result = clean_request(payload)
     assert payload == original
     assert result['project'] == original['project'] and result['requestId'] == original['requestId']
-    for key in ('safetySettings', 'generationConfig', 'toolConfig'):
+    for key in ('safetySettings', 'generationConfig'):
         assert result['request'][key] == original['request'][key]
     text = result['request']['systemInstruction']['parts'][0]['text']
     assert 'Client tool schema and safety instructions remain intact.' in text
@@ -41,6 +41,29 @@ def test_only_known_cli_wrapping_changes(payload):
     assert '<artifacts>' not in text and '<user_information>' not in text
     assert 'client policy <user_information>keep me</user_information>' in result['request']['contents'][0]['parts'][0]['text']
     assert [f['name'] for t in result['request']['tools'] for f in t['functionDeclarations']] == ['finish']
+
+
+@pytest.mark.parametrize('mode', [None, 'AUTO', 'NONE', 'ANY'])
+def test_every_client_response_requires_finish_envelope(payload, mode):
+    if mode is None:
+        payload['request'].pop('toolConfig')
+    else:
+        payload['request']['toolConfig']['functionCallingConfig'] = {
+            'mode': mode, 'allowedFunctionNames': ['manage_task']}
+    original = copy.deepcopy(payload)
+    result = json.loads(rewrite_buffer(json.dumps(payload).encode()))
+    assert result['request']['toolConfig']['functionCallingConfig'] == {
+        'mode': 'ANY', 'allowedFunctionNames': ['finish']}
+    assert payload == original
+    # Auxiliary generations (titles/checkpoints) are not client turns.
+    payload['requestType'] = 'checkpoint'
+    assert clean_request(payload) == payload
+
+
+def test_finish_constraint_preserves_other_tool_configuration(payload):
+    payload['request']['toolConfig']['retrievalConfig'] = {'latLng': {'latitude': 1}}
+    result = clean_request(payload)
+    assert result['request']['toolConfig']['retrievalConfig'] == {'latLng': {'latitude': 1}}
 
 
 def test_same_buffer_size_valid_json_and_auxiliary_untouched(payload):

@@ -1,0 +1,197 @@
+{
+  "date": "2026-10-19",
+  "image": "tumuer/agy-proxy:v0.0.17-native.1",
+  "digest": "sha256:1d7adeed561f6cbf3582a4aa0b742562de33966de51e6356424e9c66f47c2fad",
+  "windows": {
+    "passed": 584,
+    "skipped": 2
+  },
+  "linux": {
+    "passed": 586,
+    "skipped": 0
+  },
+  "targeted": {
+    "passed": 77
+  },
+  "canary": [
+    {
+      "stream": false,
+      "passed": true,
+      "checks": [
+        {
+          "case": "no_tools",
+          "passed": true
+        },
+        {
+          "case": "tool_choice_none",
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 1,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 2,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 3,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 4,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 5,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 6,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 7,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 8,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 9,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 10,
+          "passed": true
+        },
+        {
+          "case": "final_answer_after_ten_tools",
+          "passed": true
+        }
+      ],
+      "seconds": 79.969
+    },
+    {
+      "stream": true,
+      "passed": true,
+      "checks": [
+        {
+          "case": "no_tools",
+          "passed": true
+        },
+        {
+          "case": "tool_choice_none",
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 1,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 2,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 3,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 4,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 5,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 6,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 7,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 8,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 9,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 10,
+          "passed": true
+        },
+        {
+          "case": "final_answer_after_ten_tools",
+          "passed": true
+        }
+      ],
+      "seconds": 66.875
+    }
+  ],
+  "pi": {
+    "scenario": "tools",
+    "pi_version": "1.1.0",
+    "exit_code": 0,
+    "seconds": 30.406000000002678,
+    "tool_names": [
+      "read",
+      "write",
+      "edit",
+      "bash"
+    ],
+    "tool_errors": [],
+    "assistant_errors": 0,
+    "session_id": "8fd11a84beb74fd0bc52a0def0850287",
+    "output_matches": true,
+    "builtin_read_write_shell": true,
+    "passed": true
+  },
+  "deployed": {
+    "backend": "native",
+    "checks": [
+      {
+        "protocol": "chat",
+        "stream": false,
+        "passed": true,
+        "request_id": "agy_642216acd1224a2e9c2939083ac9abc1",
+        "seconds": 16.891
+      },
+      {
+        "protocol": "chat",
+        "stream": true,
+        "passed": true,
+        "request_id": "agy_1642be45b1f5493080b3521e12f7cd58",
+        "seconds": 15.391
+      }
+    ]
+  },
+  "changed_source_sha256": "7f74d2445dfdb2aa9a4ba3243e7313e27bb72fde38ab9ea943dd33af9359f63c",
+  "limitations": [
+    "Targets missing finish submission; does not establish that all premature task completion behavior is fixed."
+  ]
+}
