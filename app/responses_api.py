@@ -18,6 +18,7 @@ from .protocol_adapters import ADAPTERS
 from .images import normalize_content
 from .auth import extract_key, is_authorized
 from .openai_api import _err_type, _read_json
+from .token_usage import inclusive_counts
 from .protocol_common import array, boolean, encode, invalid, obj, optional_obj, prepare, string, text_content
 
 router = APIRouter()
@@ -259,11 +260,11 @@ async def responses(request: Request):
 
     def finish(result):
         usage = result.usage
-        inp, out = usage.get("input_tokens", 0), usage.get("output_tokens", 0)
+        inp, out, total = inclusive_counts(usage)
         thinking = usage.get("thinking_tokens", 0) or 0
         final = dict(response, status="completed", completed_at=int(time.time()), output=ADAPTERS["responses"].encode(result, specs),
                      usage={"input_tokens": inp, "output_tokens": out,
-                            "total_tokens": usage.get("total_tokens") or inp + out,
+                            "total_tokens": total,
                             "input_tokens_details": {"cached_tokens": usage.get("cache_read_tokens", 0)},
                             "output_tokens_details": {"reasoning_tokens": thinking}})
         if store:

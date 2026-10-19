@@ -10,6 +10,16 @@
 export AGY_API_KEY="控制台创建的API密钥"
 ```
 
+## Token 统计口径
+
+AGY CLI 的 `input_tokens` 和 `total_tokens` 不含 `cache_read_tokens`，
+`output_tokens` 已含 `thinking_tokens`。代理内部及持久化记录保留这套原始口径。
+OpenAI Chat / Responses 和 Gemini 的输入量、总量会加上缓存输入；缓存详情是输入量的子集。
+Anthropic Messages 的 `input_tokens` 则继续表示未缓存输入，缓存量单独返回。
+例如 CLI 返回输入 3,152、缓存 14,126、输出 99 时，OpenAI 应返回
+`prompt_tokens=17278`、`cached_tokens=14126`、`total_tokens=17377`。
+旧版本客户端已保存的统计不会因服务器升级自动重算。
+
 ## Gemini 格式
 
 ```bash

@@ -4,7 +4,9 @@
 
 ## 镜像与版本
 
-使用 `tumuer/agy-proxy:v0.0.17-native.2`，可切换原公网入口，也可通过 [docker-compose.native.yml](../docker-compose.native.yml) 使用独立的 Compose 项目和数据卷。镜像内常规 CLI 为 1.4.2，原生后端单独固定到已验证的 Linux amd64 CLI 1.4.0；更新页面只更新常规 CLI，不替换原生二进制。
+使用 `tumuer/agy-proxy:v0.0.17-native.3`，可切换原公网入口，也可通过 [docker-compose.native.yml](../docker-compose.native.yml) 使用独立的 Compose 项目和数据卷。镜像内常规 CLI 为 1.4.2，原生后端单独固定到已验证的 Linux amd64 CLI 1.4.0；更新页面只更新常规 CLI，不替换原生二进制。
+
+`native.3` 修正 OpenAI / Responses / Gemini 对缓存输入的计数转换，详见[用量口径与验证](releases/v0.0.17-native.3.md)。这项修复不改变上游缓存策略。
 
 `native.1` 要求上游通过 `finish` 提交每个客户端回复，但真实长会话仍出现过裸文本输出。`native.2` 补充交付前的自动恢复：缺失 `finish` 时，最多在新的原生会话中按完整客户端历史重新生成一次，并沿用总超时、累计用量、校验后只交付一次。普通回答和工具请求均使用内部封装，客户端 `tool_choice=none` 仍然禁止客户端工具调用。详见[恢复机制与验证](releases/v0.0.17-native.2.md)。
 
@@ -55,7 +57,7 @@ pi --provider agy-native --model gemini-3.8-flash-low --thinking off
 
 ```sh
 docker build -t tumuer/agy-proxy:v0.0.17 .
-docker build -f Dockerfile.native --build-context native-cli=/path/to/verified-cli -t tumuer/agy-proxy:v0.0.17-native.2 .
+docker build -f Dockerfile.native --build-context native-cli=/path/to/verified-cli -t tumuer/agy-proxy:v0.0.17-native.3 .
 ```
 
 原生二进制必须是 SHA-256 `60e72242f07c131f75afcd9a9e425d6ee097a1a1b3190ea98ae78fa4180bbfa8` 的 CLI 1.4.0。构建时校验哈希与版本并生成符号；本次发布使用此前验收容器保存的同哈希二进制。二进制不入 Git；没有此构建时可直接拉取发布镜像，不能用新版 CLI 替换后跳过校验。

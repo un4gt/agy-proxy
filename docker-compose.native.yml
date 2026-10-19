@@ -1,7 +1,7 @@
 # Independent project/data. Start with: docker compose -p agy-native -f docker-compose.native.yml up -d
 services:
   agy-native:
-    image: tumuer/agy-proxy:v0.0.17-native.2
+    image: tumuer/agy-proxy:v0.0.17-native.3
     container_name: agy-native
     ports:
       - "${NATIVE_BIND:-127.0.0.1}:${NATIVE_PORT:-18317}:8317"

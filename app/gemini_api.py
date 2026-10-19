@@ -19,6 +19,7 @@ from .auth import is_authorized
 from .protocol_adapters import ADAPTERS
 from .runner import chain_events, record_dashboard_usage
 from .openai_api import _read_json
+from .token_usage import inclusive_counts
 from .session_context import client_session_key
 from .streaming import TurnStreamingResponse, heartbeat_events
 
@@ -73,10 +74,8 @@ def _parts_text(parts) -> str:
 
 
 def _usage_meta(usage: dict) -> dict:
-    inp = usage.get("input_tokens") or 0
-    out = usage.get("output_tokens") or 0
+    inp, out, total = inclusive_counts(usage)
     think = usage.get("thinking_tokens") or 0
-    total = usage.get("total_tokens") or (inp + out)
     meta = {
         "promptTokenCount": inp,
         "candidatesTokenCount": max(0, out - think),

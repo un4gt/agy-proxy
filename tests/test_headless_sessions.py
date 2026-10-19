@@ -446,7 +446,7 @@ def test_reasoning_tokens_are_part_of_output_not_added_twice():
     usage = {"input_tokens": 100, "output_tokens": 27, "thinking_tokens": 26,
              "cache_read_tokens": 50, "total_tokens": 127}
     assert _usage(usage)["completion_tokens_details"]["reasoning_tokens"] == 26
-    assert _usage(usage)["total_tokens"] == 127
+    assert _usage(usage)["total_tokens"] == 177
     assert _usage_meta(usage)["candidatesTokenCount"] == 1
     anthropic = message_result(TurnResult(text="apple", usage=usage), "auto", "msg", [])
     assert anthropic["usage"]["output_tokens"] == 27

@@ -25,6 +25,7 @@ from .images import MAX_REQUEST_BYTES
 from .runner import chain_events, record_dashboard_usage
 from .session_context import client_session_key
 from .streaming import TurnStreamingResponse, heartbeat_events
+from .token_usage import inclusive_counts
 
 log = logging.getLogger("agy_proxy.openai")
 
@@ -99,9 +100,7 @@ def _parse_messages(body: dict) -> tuple[str, list[tuple[str, str]], str | None]
 
 
 def _usage(usage: dict) -> dict:
-    inp = usage.get("input_tokens") or 0
-    out = usage.get("output_tokens") or 0
-    total = usage.get("total_tokens") or (inp + out)
+    inp, out, total = inclusive_counts(usage)
     return {"prompt_tokens": inp, "completion_tokens": out, "total_tokens": total,
             "prompt_tokens_details": {"cached_tokens": usage.get("cache_read_tokens", 0)},
             "completion_tokens_details": {"reasoning_tokens": usage.get("thinking_tokens", 0)}}

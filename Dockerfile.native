@@ -8,6 +8,7 @@ RUN apt-get update \
 # Native fixes must come from this checkout, not an older base image layer.
 COPY app/native_chat.py app/native_chat.py
 COPY app/agy.py app/agy.py
+COPY app/token_usage.py app/openai_api.py app/responses_api.py app/gemini_api.py app/
 COPY tools/agy_native_wire_probe tools/agy_native_wire_probe
 COPY --from=native-cli --chmod=0555 agy /opt/agy-native/agy
 RUN echo '60e72242f07c131f75afcd9a9e425d6ee097a1a1b3190ea98ae78fa4180bbfa8  /opt/agy-native/agy' | sha256sum -c - \

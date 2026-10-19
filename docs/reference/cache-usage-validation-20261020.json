@@ -1,0 +1,411 @@
+{
+  "rows": [
+    {
+      "ts": 1792435108.0904176,
+      "status": "SUCCESS",
+      "usage": {
+        "input_tokens": 3868,
+        "output_tokens": 207,
+        "thinking_tokens": 129,
+        "cache_read_tokens": 0,
+        "total_tokens": 4075
+      }
+    },
+    {
+      "ts": 1792435116.6138473,
+      "status": "SUCCESS",
+      "usage": {
+        "input_tokens": 4805,
+        "output_tokens": 669,
+        "thinking_tokens": 427,
+        "cache_read_tokens": 0,
+        "total_tokens": 5474
+      }
+    },
+    {
+      "ts": 1792435221.7076674,
+      "status": "SUCCESS",
+      "usage": {
+        "input_tokens": 5804,
+        "output_tokens": 207,
+        "thinking_tokens": 114,
+        "cache_read_tokens": 0,
+        "total_tokens": 6011
+      }
+    },
+    {
+      "ts": 1792435225.9849432,
+      "status": "SUCCESS",
+      "usage": {
+        "input_tokens": 6226,
+        "output_tokens": 188,
+        "thinking_tokens": 84,
+        "cache_read_tokens": 0,
+        "total_tokens": 6414
+      }
+    },
+    {
+      "ts": 1792435231.9207847,
+      "status": "SUCCESS",
+      "usage": {
+        "input_tokens": 7571,
+        "output_tokens": 171,
+        "thinking_tokens": 48,
+        "cache_read_tokens": 0,
+        "total_tokens": 7742
+      }
+    },
+    {
+      "ts": 1792435236.589533,
+      "status": "SUCCESS",
+      "usage": {
+        "input_tokens": 9497,
+        "output_tokens": 135,
+        "thinking_tokens": 23,
+        "cache_read_tokens": 0,
+        "total_tokens": 9632
+      }
+    },
+    {
+      "ts": 1792435240.882884,
+      "status": "SUCCESS",
+      "usage": {
+        "input_tokens": 10498,
+        "output_tokens": 156,
+        "thinking_tokens": 43,
+        "cache_read_tokens": 0,
+        "total_tokens": 10654
+      }
+    },
+    {
+      "ts": 1792435245.9453168,
+      "status": "SUCCESS",
+      "usage": {
+        "input_tokens": 11568,
+        "output_tokens": 138,
+        "thinking_tokens": 47,
+        "cache_read_tokens": 0,
+        "total_tokens": 11706
+      }
+    },
+    {
+      "ts": 1792435251.0539317,
+      "status": "SUCCESS",
+      "usage": {
+        "input_tokens": 12139,
+        "output_tokens": 144,
+        "thinking_tokens": 43,
+        "cache_read_tokens": 0,
+        "total_tokens": 12283
+      }
+    },
+    {
+      "ts": 1792435263.310698,
+      "status": "SUCCESS",
+      "usage": {
+        "input_tokens": 13006,
+        "output_tokens": 1438,
+        "thinking_tokens": 1350,
+        "cache_read_tokens": 0,
+        "total_tokens": 14444
+      }
+    },
+    {
+      "ts": 1792435268.3201437,
+      "status": "SUCCESS",
+      "usage": {
+        "input_tokens": 15223,
+        "output_tokens": 125,
+        "thinking_tokens": 22,
+        "cache_read_tokens": 0,
+        "total_tokens": 15348
+      }
+    },
+    {
+      "ts": 1792435275.3584425,
+      "status": "SUCCESS",
+      "usage": {
+        "input_tokens": 16147,
+        "output_tokens": 635,
+        "thinking_tokens": 564,
+        "cache_read_tokens": 0,
+        "total_tokens": 16782
+      }
+    },
+    {
+      "ts": 1792435282.3886912,
+      "status": "SUCCESS",
+      "usage": {
+        "input_tokens": 3152,
+        "output_tokens": 99,
+        "thinking_tokens": 15,
+        "cache_read_tokens": 14126,
+        "total_tokens": 3251
+      }
+    },
+    {
+      "ts": 1792435290.3952062,
+      "status": "SUCCESS",
+      "usage": {
+        "input_tokens": 2428,
+        "output_tokens": 770,
+        "thinking_tokens": 678,
+        "cache_read_tokens": 15248,
+        "total_tokens": 3198
+      }
+    },
+    {
+      "ts": 1792435294.772602,
+      "status": "SUCCESS",
+      "usage": {
+        "input_tokens": 3021,
+        "output_tokens": 133,
+        "thinking_tokens": 31,
+        "cache_read_tokens": 15656,
+        "total_tokens": 3154
+      }
+    },
+    {
+      "ts": 1792435318.0267437,
+      "status": "SUCCESS",
+      "usage": {
+        "input_tokens": 2796,
+        "output_tokens": 2451,
+        "thinking_tokens": 2361,
+        "cache_read_tokens": 16654,
+        "total_tokens": 5247
+      }
+    },
+    {
+      "ts": 1792435322.567124,
+      "status": "SUCCESS",
+      "usage": {
+        "input_tokens": 2928,
+        "output_tokens": 110,
+        "thinking_tokens": 27,
+        "cache_read_tokens": 19475,
+        "total_tokens": 3038
+      }
+    },
+    {
+      "ts": 1792435338.3699512,
+      "status": "SUCCESS",
+      "usage": {
+        "input_tokens": 3429,
+        "output_tokens": 1729,
+        "thinking_tokens": 1654,
+        "cache_read_tokens": 20386,
+        "total_tokens": 5158
+      }
+    },
+    {
+      "ts": 1792435368.709174,
+      "status": "ERROR 502",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "thinking_tokens": 0,
+        "cache_read_tokens": 0,
+        "total_tokens": 0
+      }
+    }
+  ],
+  "cli_usage": {
+    "input_tokens": 134106,
+    "output_tokens": 9505,
+    "thinking_tokens": 7660,
+    "cache_read_tokens": 101545,
+    "total_tokens": 143611
+  },
+  "session_id": "01a15574-9dd3-71a3-8f91-5ed0c13c07c1",
+  "source": "Server pre-native.2 backup data.json; matched against Pi per-turn usage",
+  "successful_requests": 18,
+  "failed_request_usage_unavailable": true,
+  "pi_reported": {
+    "input_including_cache": 217897,
+    "uncached_input": 116352,
+    "cache_read": 101545,
+    "output": 9505,
+    "total": 227402
+  },
+  "corrected_successful_requests": {
+    "input_including_cache": 235651,
+    "uncached_input": 134106,
+    "cache_read": 101545,
+    "output": 9505,
+    "total": 245156,
+    "cache_ratio": 0.430912663218064
+  },
+  "cache_pattern": {
+    "first_12_turns_cache_read": 0,
+    "last_6_successful_turns_cache_ratio": 0.851180646945909,
+    "first_cache_hit_inclusive_input": 17278,
+    "cause_of_initial_misses": "unconfirmed; original upstream request bodies not retained"
+  },
+  "tests": {
+    "windows_passed": 606,
+    "windows_skipped": 2,
+    "linux_image_targeted_passed": 121,
+    "public_protocol_checks": [
+      {
+        "protocol": "chat",
+        "stream": false,
+        "passed": true,
+        "request_id": "agy_38521f6cc1434756a79c4f1429434d1c",
+        "seconds": 15.422
+      },
+      {
+        "protocol": "chat",
+        "stream": true,
+        "passed": true,
+        "request_id": "agy_56a42b5c627e429da3337a7013f1affb",
+        "seconds": 14.094
+      },
+      {
+        "protocol": "responses",
+        "stream": false,
+        "passed": true,
+        "request_id": "agy_7bcac52e4c3043af895e7524d2a35d9c",
+        "seconds": 10.938
+      },
+      {
+        "protocol": "responses",
+        "stream": true,
+        "passed": true,
+        "request_id": "agy_511c1be0b1094fec9c04e6f4769cd503",
+        "seconds": 9.75
+      },
+      {
+        "protocol": "messages",
+        "stream": false,
+        "passed": true,
+        "request_id": "agy_e384b9dd2c6648a0b5354f6b96610e8e",
+        "seconds": 8.859
+      },
+      {
+        "protocol": "messages",
+        "stream": true,
+        "passed": true,
+        "request_id": "agy_c596ab6dd59e4f6ea8ad7790f8233b3e",
+        "seconds": 9.438
+      },
+      {
+        "protocol": "gemini",
+        "stream": false,
+        "passed": true,
+        "request_id": "agy_6a0a09bc07e640f8ad518ef683bacf45",
+        "seconds": 9.391
+      },
+      {
+        "protocol": "gemini",
+        "stream": true,
+        "passed": true,
+        "request_id": "agy_3526dd7198b945afb417665f61ea1309",
+        "seconds": 9.265
+      }
+    ]
+  },
+  "public_cache_probe": [
+    {
+      "turn": 1,
+      "stream": false,
+      "request_id": "agy_5d2d4c89762d407089423bbf5e552df6",
+      "usage": {
+        "prompt_tokens": 40091,
+        "completion_tokens": 53,
+        "total_tokens": 40144,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        }
+      },
+      "server_record": {
+        "request_id": "agy_5d2d4c89762d407089423bbf5e552df6",
+        "status": "SUCCESS",
+        "usage": {
+          "input_tokens": 40091,
+          "output_tokens": 53,
+          "thinking_tokens": 0,
+          "cache_read_tokens": 0,
+          "total_tokens": 40144
+        },
+        "attempts": 1,
+        "repair_attempts": 0,
+        "usage_complete": true
+      }
+    },
+    {
+      "turn": 2,
+      "stream": true,
+      "request_id": "agy_0eb5b3d349f94f58bff3f32cd7e140ca",
+      "usage": {
+        "prompt_tokens": 40256,
+        "completion_tokens": 53,
+        "total_tokens": 40309,
+        "prompt_tokens_details": {
+          "cached_tokens": 38025
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        }
+      },
+      "server_record": {
+        "request_id": "agy_0eb5b3d349f94f58bff3f32cd7e140ca",
+        "status": "SUCCESS",
+        "usage": {
+          "input_tokens": 2231,
+          "output_tokens": 53,
+          "thinking_tokens": 0,
+          "cache_read_tokens": 38025,
+          "total_tokens": 2284
+        },
+        "attempts": 1,
+        "repair_attempts": 0,
+        "usage_complete": true
+      }
+    },
+    {
+      "turn": 3,
+      "stream": false,
+      "request_id": "agy_55fa3108ea3448dcb76392b147335ca9",
+      "usage": {
+        "prompt_tokens": 40421,
+        "completion_tokens": 53,
+        "total_tokens": 40474,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        }
+      },
+      "server_record": {
+        "request_id": "agy_55fa3108ea3448dcb76392b147335ca9",
+        "status": "SUCCESS",
+        "usage": {
+          "input_tokens": 40421,
+          "output_tokens": 53,
+          "thinking_tokens": 0,
+          "cache_read_tokens": 0,
+          "total_tokens": 40474
+        },
+        "attempts": 1,
+        "repair_attempts": 0,
+        "usage_complete": true
+      }
+    }
+  ],
+  "deployment": {
+    "image": "tumuer/agy-proxy:v0.0.17-native.3",
+    "digest": "sha256:56dfed4f242edc2c34bbeaa521d92564d6390ce9039a75ce0b96ad6f558218a9",
+    "backup": "/home/docker_depolyments/agy-proxy/backups/native.3-20261020",
+    "source_hashes": {
+      "app/token_usage.py": "fa02bc00567fd8f64e11923fe5fea54cb32fed89bad13a138b51e85ae0ccce19",
+      "app/openai_api.py": "78e9ad746df4587fa368aecc33a66aa498c5e5a3606914e11441399aa7d59d38",
+      "app/responses_api.py": "de0fd45f42468ffb474034662895c19d596647580049af33c4d3612d2f48332d",
+      "app/gemini_api.py": "63b4b3f55cb2cd376f139e313c7d67ad7ccf311f6abe43db82eb741d01659899"
+    }
+  }
+}
