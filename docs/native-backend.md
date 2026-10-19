@@ -4,9 +4,9 @@
 
 ## 镜像与版本
 
-使用 `tumuer/agy-proxy:v0.0.17-native.1`，可切换原公网入口，也可通过 [docker-compose.native.yml](../docker-compose.native.yml) 使用独立的 Compose 项目和数据卷。镜像内常规 CLI 为 1.4.2，原生后端单独固定到已验证的 Linux amd64 CLI 1.4.0；更新页面只更新常规 CLI，不替换原生二进制。
+使用 `tumuer/agy-proxy:v0.0.17-native.2`，可切换原公网入口，也可通过 [docker-compose.native.yml](../docker-compose.native.yml) 使用独立的 Compose 项目和数据卷。镜像内常规 CLI 为 1.4.2，原生后端单独固定到已验证的 Linux amd64 CLI 1.4.0；更新页面只更新常规 CLI，不替换原生二进制。
 
-`native.1` 要求上游通过 `finish` 提交每个客户端回复，修复模型直接输出普通文本导致 `Native capture requires exactly one finish submission` 的问题。普通回答、工具请求均使用同一内部封装，客户端 `tool_choice=none` 仍然禁止客户端工具调用；用户无需发送“继续”补救。详见[修复记录](releases/v0.0.17-native.1.md)。
+`native.1` 要求上游通过 `finish` 提交每个客户端回复，但真实长会话仍出现过裸文本输出。`native.2` 补充交付前的自动恢复：缺失 `finish` 时，最多在新的原生会话中按完整客户端历史重新生成一次，并沿用总超时、累计用量、校验后只交付一次。普通回答和工具请求均使用内部封装，客户端 `tool_choice=none` 仍然禁止客户端工具调用。详见[恢复机制与验证](releases/v0.0.17-native.2.md)。
 
 ## 使用原公网入口
 
@@ -55,12 +55,12 @@ pi --provider agy-native --model gemini-3.8-flash-low --thinking off
 
 ```sh
 docker build -t tumuer/agy-proxy:v0.0.17 .
-docker build -f Dockerfile.native --build-context native-cli=/path/to/verified-cli -t tumuer/agy-proxy:v0.0.17-native.1 .
+docker build -f Dockerfile.native --build-context native-cli=/path/to/verified-cli -t tumuer/agy-proxy:v0.0.17-native.2 .
 ```
 
 原生二进制必须是 SHA-256 `60e72242f07c131f75afcd9a9e425d6ee097a1a1b3190ea98ae78fa4180bbfa8` 的 CLI 1.4.0。构建时校验哈希与版本并生成符号；本次发布使用此前验收容器保存的同哈希二进制。二进制不入 Git；没有此构建时可直接拉取发布镜像，不能用新版 CLI 替换后跳过校验。
 
-实验镜像需要 `SYS_PTRACE` 和 `seccomp=unconfined`。每个会话有独立 CLI/GDB、二进制快照、管道和工作目录；原生池默认上限 2，其他协议仍使用常规池，两池容量分别计算。自动恢复关闭，失败或取消销毁相应会话。实验模式的账号删除会同时检查两个池。
+实验镜像需要 `SYS_PTRACE` 和 `seccomp=unconfined`。每个会话有独立 CLI/GDB、二进制快照、管道和工作目录；原生池默认上限 2，其他协议仍使用常规池，两池容量分别计算。交付前候选结果错误共享一次自动恢复预算；采集不完整、结果不一致、非法原生工具调用仍直接失败。恢复、失败或取消后销毁相应会话。实验模式的账号删除会同时检查两个池。
 
 ## 验证范围
 

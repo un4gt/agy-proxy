@@ -1,7 +1,7 @@
 """Live native finish regression; synthetic tool results, no client execution.
 
 NATIVE_PI_API_KEY=... python tests/native_finish_smoke.py --base-url URL --output FILE
-Checks plain answers and ten sequential tool roundtrips in both delivery modes.
+Checks plain answers and configurable sequential tool roundtrips in both modes.
 """
 import argparse
 import json
@@ -45,7 +45,7 @@ def completion(client, body):
     return message
 
 
-def check(base_url, key, stream):
+def check(base_url, key, stream, rounds=10):
     records = []
     tools = [{'type': 'function', 'function': {'name': 'read_fixture',
         'description': 'Read one numbered synthetic fixture.',
@@ -67,12 +67,12 @@ def check(base_url, key, stream):
         body = {'model': 'gemini-3.8-flash-low', 'stream': stream,
                 'tools': tools, 'tool_choice': 'auto', 'parallel_tool_calls': False,
                 'messages': [{'role': 'user', 'content':
-                    'Read fixtures numbered 1 through 10 using read_fixture, one call per response, in order. '
-                    'Wait for each real tool result before reading the next. After all ten results, '
-                    'reply with all ten marker values in order as plain text, with no more tool calls. '
+                    f'Read fixtures numbered 1 through {rounds} using read_fixture, one call per response, in order. '
+                    f'Wait for each real tool result before reading the next. After all {rounds} results, '
+                    'reply with all marker values in order as plain text, with no more tool calls. '
                     'Do not finish early and do not invent results.'}]}
         markers = []
-        for index in range(1, 11):
+        for index in range(1, rounds + 1):
             message = completion(client, body)
             calls = message.get('tool_calls', [])
             assert len(calls) == 1, f'Expected one client call at step {index}'
@@ -90,7 +90,7 @@ def check(base_url, key, stream):
         assert not message.get('tool_calls')
         positions = [message['content'].find(marker) for marker in markers]
         assert all(p >= 0 for p in positions) and positions == sorted(positions)
-        records.append({'case': 'final_answer_after_ten_tools', 'passed': True})
+        records.append({'case': 'final_answer_after_tools', 'rounds': rounds, 'passed': True})
     return records
 
 
@@ -98,12 +98,13 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--base-url', required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--rounds', type=int, default=10)
     args = parser.parse_args()
     results = []
     for stream in (False, True):
         started = time.monotonic()
         try:
-            records = check(args.base_url, os.environ['NATIVE_PI_API_KEY'], stream)
+            records = check(args.base_url, os.environ['NATIVE_PI_API_KEY'], stream, args.rounds)
             result = {'stream': stream, 'passed': True, 'checks': records}
         except Exception as exc:
             result = {'stream': stream, 'passed': False,

@@ -556,7 +556,7 @@ class SessionManager:
                         cfg = profile.configured(self.cfg)
                 except AccountPoolError as exc:
                     raise AgyError(str(exc), status_code=503) from None
-            fresh = AgySession(cfg, model=session.model, effort=session.effort,
+            fresh = getattr(self, "session_type", AgySession)(cfg, model=session.model, effort=session.effort,
                                output_schema=session.output_schema, attachments=session.attachments,
                                session_instructions=session.session_instructions)
             fresh.leased = True

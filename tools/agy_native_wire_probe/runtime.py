@@ -273,6 +273,7 @@ class NativeSession:
                     "cli_result_ms":(cli_finished-started)*1000,
                     "wire_lead_over_result_ms":None if first_wire is None else (cli_finished-first_wire)*1000,
                     "finish_reasons":finish_reasons,
+                    "function_calling_modes":[e.get('function_calling_mode') for e in selected.values()],
                 }
                 if not finish_reasons:
                     raise WireError("Native response has no finish reason")

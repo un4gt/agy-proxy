@@ -1,0 +1,475 @@
+{
+  "date": "2026-10-20",
+  "incident": {
+    "session_id": "01a15574-9dd3-71a3-8f91-5ed0c13c07c1",
+    "conversation_id": "65de725d-490d-4261-a3ed-6bf1171cd60f",
+    "request_id": "agy_001f98b89e934a32ba70b6ab97a95b80",
+    "failed_at": "2026-10-20T02:42:48+08:00",
+    "successful_requests_before_failure": 18,
+    "failed_request": 19,
+    "persisted_function_calls": 0,
+    "persisted_public_text_bytes": 3909,
+    "deployed_image": "tumuer/agy-proxy:v0.0.17-native.1",
+    "input_clean_sha256": "7f74d2445dfdb2aa9a4ba3243e7313e27bb72fde38ab9ea943dd33af9359f63c",
+    "upstream_request_body_retained": false
+  },
+  "tests": {
+    "targeted_passed": 134,
+    "windows_passed": 594,
+    "windows_skipped": 2,
+    "linux_passed": 596
+  },
+  "fault_injection": [
+    {
+      "stream": false,
+      "tool": false,
+      "passed": true,
+      "case": "captured_finish_removed_once",
+      "diagnostics": {
+        "request_id": "agy_cee051eb583d41d599a6964fc79ec315",
+        "attempts": 2,
+        "repair_attempts": 1,
+        "usage_complete": true,
+        "status": "SUCCESS"
+      }
+    },
+    {
+      "stream": true,
+      "tool": false,
+      "passed": true,
+      "case": "captured_finish_removed_once",
+      "diagnostics": {
+        "request_id": "agy_41d9370d287f4cbf958e1df743ec2040",
+        "attempts": 2,
+        "repair_attempts": 1,
+        "usage_complete": true,
+        "status": "SUCCESS"
+      }
+    },
+    {
+      "stream": false,
+      "tool": true,
+      "passed": true,
+      "case": "captured_finish_removed_once",
+      "diagnostics": {
+        "request_id": "agy_aa5a457967bb4651aa3a1a4c26a2b04c",
+        "attempts": 2,
+        "repair_attempts": 1,
+        "usage_complete": true,
+        "status": "SUCCESS"
+      }
+    },
+    {
+      "stream": true,
+      "tool": true,
+      "passed": true,
+      "case": "captured_finish_removed_once",
+      "diagnostics": {
+        "request_id": "agy_2b5d3200bb134798bee05e0eea22f563",
+        "attempts": 2,
+        "repair_attempts": 1,
+        "usage_complete": true,
+        "status": "SUCCESS"
+      }
+    }
+  ],
+  "fault_method": "Canary-only adapter patch removes captured finish once before validation; real native CLI generation on both attempts. Patch is not in published image.",
+  "untriggered_injection": "Earlier attempt to force text through function calling mode did not trigger rejection and is excluded from recovery acceptance.",
+  "long_sessions": [
+    {
+      "stream": false,
+      "passed": true,
+      "checks": [
+        {
+          "case": "no_tools",
+          "passed": true
+        },
+        {
+          "case": "tool_choice_none",
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 1,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 2,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 3,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 4,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 5,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 6,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 7,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 8,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 9,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 10,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 11,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 12,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 13,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 14,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 15,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 16,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 17,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 18,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 19,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 20,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 21,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 22,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 23,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 24,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 25,
+          "passed": true
+        },
+        {
+          "case": "final_answer_after_tools",
+          "rounds": 25,
+          "passed": true
+        }
+      ],
+      "seconds": 146.047
+    },
+    {
+      "stream": true,
+      "passed": true,
+      "checks": [
+        {
+          "case": "no_tools",
+          "passed": true
+        },
+        {
+          "case": "tool_choice_none",
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 1,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 2,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 3,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 4,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 5,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 6,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 7,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 8,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 9,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 10,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 11,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 12,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 13,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 14,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 15,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 16,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 17,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 18,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 19,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 20,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 21,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 22,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 23,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 24,
+          "passed": true
+        },
+        {
+          "case": "sequential_tool",
+          "step": 25,
+          "passed": true
+        },
+        {
+          "case": "final_answer_after_tools",
+          "rounds": 25,
+          "passed": true
+        }
+      ],
+      "seconds": 132.344
+    }
+  ],
+  "public_http": {
+    "backend": "native",
+    "checks": [
+      {
+        "protocol": "chat",
+        "stream": false,
+        "passed": true,
+        "request_id": "agy_0eec7eaf6b334cce9249f3759c2aa7c9",
+        "seconds": 13.703
+      },
+      {
+        "protocol": "chat",
+        "stream": true,
+        "passed": true,
+        "request_id": "agy_51c3283a1f6c4d7e892a108384e484ff",
+        "seconds": 15.735
+      },
+      {
+        "protocol": "responses",
+        "stream": false,
+        "passed": true,
+        "request_id": "agy_0b6be61f4c9e49239331aca0fe5d660b",
+        "seconds": 9.86
+      },
+      {
+        "protocol": "responses",
+        "stream": true,
+        "passed": true,
+        "request_id": "agy_b9f50d11c7904aeab7b4a10f1ff9f46c",
+        "seconds": 9.109
+      },
+      {
+        "protocol": "messages",
+        "stream": false,
+        "passed": true,
+        "request_id": "agy_0056a4ad6b824175a84bac91a229adc8",
+        "seconds": 8.718
+      },
+      {
+        "protocol": "messages",
+        "stream": true,
+        "passed": true,
+        "request_id": "agy_d65b0a2a81224b038e40c3b546aa2eb8",
+        "seconds": 9.734
+      },
+      {
+        "protocol": "gemini",
+        "stream": false,
+        "passed": true,
+        "request_id": "agy_22ef7e6f81164d25b1cad5c0feee7b65",
+        "seconds": 8.704
+      },
+      {
+        "protocol": "gemini",
+        "stream": true,
+        "passed": true,
+        "request_id": "agy_de38ae9f26264a4f8a11623f7afa2888",
+        "seconds": 11.5
+      }
+    ]
+  },
+  "pi": {
+    "scenario": "tools",
+    "pi_version": "1.1.0",
+    "exit_code": 0,
+    "seconds": 30.202999999994063,
+    "tool_names": [
+      "read",
+      "write",
+      "edit",
+      "bash"
+    ],
+    "tool_errors": [],
+    "assistant_errors": 0,
+    "session_id": "f2816a82020c4c9aa527ee67eaa529cf",
+    "output_matches": true,
+    "builtin_read_write_shell": true,
+    "passed": true
+  },
+  "deployment": {
+    "image": "tumuer/agy-proxy:v0.0.17-native.2",
+    "digest": "sha256:8c409b01bdb5d749d8e9471edf0e9533f88d39a23412713a4c2c2923e0802c4f",
+    "health": {
+      "status": "ok",
+      "version": "0.0.17",
+      "auth_required": true,
+      "chat_backend": "native",
+      "native_input_clean": true,
+      "signed_in": true
+    },
+    "api_keys_preserved": true,
+    "usage_preserved": true,
+    "volumes_preserved": true,
+    "installation_ids_preserved": 2,
+    "backup": "/home/docker_depolyments/agy-proxy/backups/native.2-20261020"
+  },
+  "source_hashes": {
+    "app/native_chat.py": "e5e71680926c921a780cbdde2efd2a6805496a6cbbfc533fcd8836152bebedd6",
+    "app/agy.py": "2b01f9c768110057daf91aa8ba499a6baccf0831254eb2c80059025d7ac1a773",
+    "tools/agy_native_wire_probe/input_clean.py": "7f74d2445dfdb2aa9a4ba3243e7313e27bb72fde38ab9ea943dd33af9359f63c"
+  },
+  "limits": [
+    "Recovery is bounded to one attempt within total request deadline.",
+    "Historical upstream request was not retained; reason for upstream ignoring the finish contract remains undetermined."
+  ]
+}

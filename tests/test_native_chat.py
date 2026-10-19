@@ -1,4 +1,5 @@
 import asyncio
+import json
 from contextlib import aclosing
 from pathlib import Path
 import sys
@@ -106,7 +107,7 @@ def test_chat_route_uses_native_manager_and_preserves_owner_isolation(tmp_path, 
         assert created[0].conversation_id != created[1].conversation_id
         assert client.app.state.native_sessions.live_count == 2
         assert client.app.state.sessions.live_count == 0
-        assert client.app.state.native_sessions.cfg.recovery_attempts == 0
+        assert client.app.state.native_sessions.cfg.recovery_attempts == 1
         body['messages'] += [{'role': 'assistant', 'content': 'native-marker'}, {'role': 'user', 'content': 'next'}]
         body['stream'] = True
         response = client.post('/v1/chat/completions', json=body,
@@ -135,3 +136,76 @@ def test_closing_native_turn_closes_observer_generator():
             await anext(events)
         assert closed and not session.lock.locked()
     asyncio.run(check())
+
+
+@pytest.mark.parametrize('stream', [False, True])
+@pytest.mark.parametrize('failure', ['missing', 'persistent_missing', 'mismatch', 'multiple', 'wire'])
+def test_native_repair_is_bounded_verified_and_never_delivers_rejected_output(tmp_path, monkeypatch, stream, failure):
+    from tools.agy_native_wire_probe.runtime import WireError
+    sessions, prompts = [], []
+
+    class Observer:
+        def __init__(self, index):
+            self.index, self.turns, self.closed = index, 0, False
+            self.conversation_id = 'native-' + str(index)
+
+        async def turn(self, prompt):
+            self.turns += 1
+            prompts.append(prompt)
+            yield {'kind': 'cli_init', 'init': {'agent': 'proxy-external'}, 'conversation_id': self.conversation_id}
+            result = captured()
+            if self.index == 0 or failure == 'persistent_missing':
+                if failure in ('missing', 'persistent_missing'):
+                    result['calls'] = []
+                    result['text'] = 'REJECTED_PRIVATE_TEXT'
+                    result['cli']['structured_output'] = None
+                elif failure == 'mismatch':
+                    result['cli']['structured_output'] = dict(OUTPUT, content='other')
+                elif failure == 'multiple':
+                    result['calls'] *= 2
+                else:
+                    raise WireError('synthetic capture failure')
+            result['cli'].update(conversation_id=self.conversation_id, num_turns=1)
+            yield result
+
+        async def close(self):
+            self.closed = True
+
+    async def start(session):
+        index = len(sessions)
+        sessions.append(session)
+        session.observer = Observer(index)
+        session.proc = SimpleNamespace(pid=1000+index, returncode=None)
+
+    monkeypatch.setattr(NativeAgySession, 'start', start)
+    fake = Path(__file__).with_name('fake_tools_agy.py').as_posix()
+    cfg = Config(agy_bin=f'{sys.executable} {fake}', data_dir=str(tmp_path), native_chat=True,
+                 api_keys=('alice',), stream_heartbeat=.01)
+    history = [{'role': 'user', 'content': 'ORIGINAL_CLIENT_HISTORY'},
+               {'role': 'assistant', 'content': 'PRIOR_CONFIRMED_ANSWER'},
+               {'role': 'user', 'content': 'CURRENT_REQUEST'}]
+    with TestClient(create_app(cfg)) as client:
+        response = client.post('/v1/chat/completions', json={'model': 'auto', 'messages': history, 'stream': stream},
+                               headers={'Authorization': 'Bearer alice'})
+        assert 'REJECTED_PRIVATE_TEXT' not in response.text
+        expected_attempts = 2 if failure in ('missing', 'persistent_missing') else 1
+        assert len(sessions) == expected_attempts
+        assert all(isinstance(s, NativeAgySession) and s.observer.closed for s in sessions)
+        assert client.app.state.native_sessions.live_count == 0
+        record = list(client.app.state.store.requests)[-1].public()
+        assert record['attempts'] == expected_attempts
+        if failure == 'missing':
+            assert response.status_code == 200
+            assert response.text.count('native-marker') == 1
+            assert record['repair_attempts'] == 1
+            assert record['usage']['input_tokens'] == 40
+            assert record['usage_complete'] is True
+            assert all(marker in prompts[1] for marker in ('ORIGINAL_CLIENT_HISTORY', 'PRIOR_CONFIRMED_ANSWER', 'CURRENT_REQUEST'))
+            assert 'required_submission' in prompts[1]
+        elif stream:
+            events = [json.loads(line[6:]) for line in response.text.splitlines()
+                      if line.startswith('data: ') and line != 'data: [DONE]']
+            assert any(e.get('error') for e in events)
+            assert 'native-marker' not in response.text
+        else:
+            assert response.status_code == 502

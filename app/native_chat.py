@@ -11,12 +11,20 @@ from pathlib import Path
 import shutil
 
 from .agy import AgyError, AgySession, SessionManager, _child_env
+from .contracts import CandidateError
 
 log = logging.getLogger("agy_proxy.native_chat")
 
 
 def captured_output(result):
     calls = result.get("calls") or []
+    if not calls:
+        # A confirmed text-only turn is a rejected candidate, not an observer
+        # failure. Nothing has been delivered/executed on the client yet.
+        raise CandidateError("Native response omitted its finish submission",
+                             code="native_finish_missing", feedback={
+                                 "required_submission": "finish",
+                                 "instruction": "Invoke finish exactly once with the complete structured client response; plain text is not a submission."})
     if len(calls) != 1 or calls[0].get("name") != "finish":
         raise AgyError("Native capture requires exactly one finish submission", code="native_capture_invalid")
     args = calls[0].get("args")
@@ -68,7 +76,15 @@ class NativeAgySession(AgySession):
                         elif event["kind"] == "result":
                             if self.init_payload is None:
                                 raise AgyError("Native CLI did not confirm initialization", code="native_agent_invalid")
-                            output = captured_output(event)
+                            try:
+                                output = captured_output(event)
+                            except AgyError as exc:
+                                exc.usage = event["usage"]
+                                log.warning("native capture rejected conversation=%s turn=%d code=%s calls=%d agent_requests=%s finish_reasons=%s calling_modes=%s",
+                                            self.observer.conversation_id, self.observer.turns, exc.code,
+                                            len(event.get("calls") or []), event["metrics"].get("agent_requests"),
+                                            event["metrics"].get("finish_reasons"), event["metrics"].get("function_calling_modes"))
+                                raise
                             self.turns = self.observer.turns
                             self.conversation_id = self.observer.conversation_id
                             envelope = dict(event["cli"], structured_output=output, usage=event["usage"])
@@ -94,6 +110,7 @@ class NativeSessionManager(SessionManager):
     session_type = NativeAgySession
 
     def __init__(self, cfg):
-        # No automatic regeneration/retry while validating captured native data.
+        # One bounded, pre-delivery repair uses the shared execution deadline,
+        # full client history and usage accounting. Capture mismatches stay fatal.
         super().__init__(replace(cfg, agy_bin=cfg.native_bin or cfg.agy_bin,
-                                 recovery_attempts=0, prewarm_models=()))
+                                 recovery_attempts=1, prewarm_models=()))

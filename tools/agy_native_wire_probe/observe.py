@@ -139,7 +139,9 @@ class Stream:
                     if digest(doc) not in cleaned_requests:
                         raise ValueError('Agent input was not cleaned before transport')
                 audit_request(doc, self.request_id)
+                calling = (request.get('toolConfig') or {}).get('functionCallingConfig') or {}
                 emit('generation_request',conn=self.conn,request_id=self.request_id,path=self.path,request_type=doc.get('requestType'),
+                     function_calling_mode=calling.get('mode'),allowed_function_names=calling.get('allowedFunctionNames'),
                      model=doc.get('model'),outer_keys=sorted(doc),request_keys=sorted(request),
                      roles=[x.get('role') for x in request.get('contents',[])],
                      tool_names=[f.get('name') for t in request.get('tools',[]) for f in t.get('functionDeclarations',[])])
