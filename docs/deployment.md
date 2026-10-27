@@ -72,6 +72,10 @@ API 支持 `Authorization: Bearer <key>`、Basic（`curl -u :key`）、`x-api-ke
 
 账号卡片显示身份、套餐、连接状态与检查时间。「查看 Usage」通过 Cloud Code 的 `fetchAvailableModels` 查询账号模型及各自额度，并通过 `retrieveUserQuotaSummary` 单独查询每周／五小时共享额度。共享额度可能只有 Claude/GPT 分组，不代表账号没有 Gemini；一个查询失败时仍保留另一部分数据。两者均支持刷新，正常缓存 60 秒、失败缓存 10 秒；查询失败或未知值不会显示为 0% 或 100%。接口为 `GET /api/accounts`、`POST /api/accounts`、`GET /api/accounts/{id}/usage?refresh=true`；`current` 仅用于尚未启用隔离账号的旧模式。
 
+账号目录查询使用带版本号的 CLI 客户端标识，并保留 `agy-proxy` 标识。上游对通用客户端也可能返回 HTTP 200，
+但隐藏当前 CLI 才提供的模型档位；更新默认 CLI 版本时应同步验证账号目录。概览按 `agy models` 展示 CLI 可调用模型，
+账号 Usage 展示上游账号目录及额度，两者数量不必相同。详见[模型目录修复](releases/v0.0.17-native.5.md)。
+
 账号查询模块刷新过期令牌需要配置匹配的 `AGY_PROXY_OAUTH_CLIENT_ID` 和 `AGY_PROXY_OAUTH_CLIENT_SECRET`。该模块的刷新结果仅保存在内存中，CLI 自身的凭据管理独立。配置含义见[环境变量](configuration.md)，账号绑定与耗尽后切换规则见[隔离说明](account-isolation.md)。
 
 隔离账号卡片右上角提供编辑名称和删除操作。重命名保留原凭据、安装标识与绑定；删除需确认，会移除该账号的本地数据并解除其客户端绑定，后续请求重新选择可用账号。正在处理请求或登录的账号会拒绝删除，需等待请求结束或完成/取消登录。删除最后一个账号后保持无账号状态，不回退到旧的本机凭据。管理接口为 `PATCH /api/accounts/{id}`（`{"name":"新名称"}`）和 `DELETE /api/accounts/{id}`，均要求面板鉴权。
