@@ -7,7 +7,10 @@ RUN apt-get update \
     && python -m pip install --no-cache-dir --target /opt/probe-deps hpack==4.1.0
 # Native fixes must come from this checkout, not an older base image layer.
 COPY app/native_chat.py app/native_chat.py
-COPY app/agy.py app/agy.py
+COPY app/agy.py app/account.py app/tool_guard.py app/
+COPY app/execution.py app/execution.py
+COPY app/static app/static
+COPY tools/agy_cli_protocol.py tools/agy_cli_protocol.py
 COPY app/token_usage.py app/openai_api.py app/responses_api.py app/gemini_api.py app/
 COPY tools/agy_native_wire_probe tools/agy_native_wire_probe
 COPY --from=native-cli --chmod=0555 agy /opt/agy-native/agy

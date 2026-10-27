@@ -11,7 +11,7 @@ import sys
 from pathlib import Path
 
 
-def allowed_image(tool, manifest):
+def allowed_image_call(tool, paths):
     args = tool.get("args")
     if tool.get("name") != "view_file" or not isinstance(args, dict):
         return False
@@ -20,10 +20,14 @@ def allowed_image(tool, manifest):
     value = args.get("AbsolutePath")
     if not isinstance(value, str):
         return False
-    paths = orjson.loads(Path(manifest).read_text(encoding="utf-8"))
     path = Path(value)
-    return (isinstance(paths, list) and value in paths and not path.is_symlink()
+    return (value in paths and not path.is_symlink()
             and path.is_file() and str(path.resolve(strict=True)) == value)
+
+
+def allowed_image(tool, manifest):
+    paths = orjson.loads(Path(manifest).read_text(encoding="utf-8"))
+    return isinstance(paths, list) and allowed_image_call(tool, paths)
 
 
 def read_marker(manifest, path):

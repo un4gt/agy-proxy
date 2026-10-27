@@ -4,6 +4,7 @@ import hashlib
 import json
 import itertools
 import os
+import re
 import time
 from collections import defaultdict, deque
 from hpack import Decoder
@@ -38,6 +39,7 @@ class Stream:
         self.reset()
     def reset(self):
         self.header = None
+        self.status = None
         self.body = bytearray()
         self.chunk = None
         self.remaining = None
@@ -66,6 +68,7 @@ class Stream:
                          content_type=self.header.get('content-type'),authorization_present='authorization' in self.header)
                 else:
                     self.path,self.request_id=requests[self.conn][0] if requests[self.conn] else ('unknown',None)
+                    self.status=int(first.split(' ',2)[1])
                     emit('response',conn=self.conn,request_id=self.request_id,path=self.path,status_line=first,content_type=self.header.get('content-type'))
                 self.chunked='chunked' in self.header.get('transfer-encoding','')
                 self.remaining=int(self.header.get('content-length','0')) if not self.chunked else None
@@ -102,7 +105,8 @@ class Stream:
                 if self.remaining==0:self.done()
     def data(self, data):
         self.body.extend(data)
-        if self.direction=='recv' and 'text/event-stream' in self.header.get('content-type',''):
+        if (self.direction=='recv' and (self.status or 200)<400
+                and 'text/event-stream' in self.header.get('content-type','')):
             self.sse.extend(data)
             while b'\n' in self.sse:
                 line,_,rest=self.sse.partition(b'\n')
@@ -117,6 +121,9 @@ class Stream:
         if not isinstance(doc,dict):return
         response=doc.get('response',doc)
         if not isinstance(response,dict):return
+        if isinstance(response.get('error'),dict):
+            self.upstream_error(response)
+            return
         candidates=response.get('candidates',[])
         values=[]
         for candidate in candidates:
@@ -128,6 +135,28 @@ class Stream:
                                      'functionCall':part.get('functionCall')}
                                     for part in content.get('parts',[])]})
         emit(kind,conn=self.conn,request_id=self.request_id,path=self.path,keys=sorted(doc),candidates=values,usage=response.get('usageMetadata'))
+    def upstream_error(self, doc):
+        """Keep error classification, never upstream headers or echoed request text."""
+        error=doc.get('error') if isinstance(doc,dict) else None
+        error=error if isinstance(error,dict) else {}
+        status=self.status
+        if not status or status<400:
+            status=error.get('code')
+        if type(status) is not int or not 400<=status<=599:
+            status=502
+        quota=False
+        reset_at=None
+        details=error.get('details')
+        for detail in details if isinstance(details,list) else []:
+            if not isinstance(detail,dict):continue
+            if detail.get('reason') not in ('QUOTA_EXHAUSTED','QUOTA_EXCEEDED'):continue
+            quota=status==429
+            metadata=detail.get('metadata')
+            value=metadata.get('quotaResetTimeStamp') if isinstance(metadata,dict) else None
+            if isinstance(value,str) and re.fullmatch(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z',value):
+                reset_at=value
+        emit('upstream_error',conn=self.conn,request_id=self.request_id,path=self.path,
+             status=status,quota_exhausted=quota,quota_reset_at=reset_at)
     def done(self):
         body=bytes(self.body)
         if self.direction=='send' and self.path.endswith(('generateContent','streamGenerateContent')):
@@ -147,7 +176,13 @@ class Stream:
                      tool_names=[f.get('name') for t in request.get('tools',[]) for f in t.get('functionDeclarations',[])])
             except (ValueError,TypeError):emit('request_parse_error',conn=self.conn)
         elif self.direction=='recv':
-            if 'text/event-stream' not in self.header.get('content-type','') and self.path.endswith(('generateContent','streamGenerateContent')):
+            if (self.status or 200)>=400 and self.path.endswith(('generateContent','streamGenerateContent')):
+                # The upstream serves HTTP errors as plain JSON even when its
+                # Content-Type says text/event-stream. They are not SSE data lines.
+                try:doc=json.loads(gzip.decompress(body) if self.header.get('content-encoding')=='gzip' else body)
+                except (ValueError,OSError):doc={}
+                self.upstream_error(doc)
+            elif 'text/event-stream' not in self.header.get('content-type','') and self.path.endswith(('generateContent','streamGenerateContent')):
                 try:self.summarize(json.loads(gzip.decompress(body) if self.header.get('content-encoding')=='gzip' else body),'json_response')
                 except (ValueError,OSError):emit('response_parse_error',conn=self.conn)
             if requests.get(self.conn):
@@ -207,6 +242,7 @@ class H2Stream:
                              authorization_present='authorization' in headers)
                     else:
                         item.path,item.request_id=http2_paths.get(key,('unknown',None))
+                        item.status=int(headers.get(':status','0'))
                         emit('response',conn=self.conn,stream=stream,request_id=item.request_id,path=item.path,status=headers.get(':status'),
                              protocol='h2',content_type=headers.get('content-type'))
                     self.messages[stream]=item
@@ -219,6 +255,36 @@ class H2Stream:
                 if self.direction=='recv':http2_paths.pop((self.conn,stream),None)
 
 streams={}
+H2_PREFACE = b'PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n'
+pending_prefaces = {}
+pending_receives = {}
+
+
+def forget_connection(conn):
+    """TLS object addresses can be reused; no parser state survives Close."""
+    for direction in ('send', 'recv'):
+        streams.pop((conn, direction), None)
+    http2_connections.discard(conn)
+    for key in list(http2_paths):
+        if key[0] == conn:
+            del http2_paths[key]
+    for key in list(requests):
+        if key == conn or key.startswith(conn + '/'):
+            del requests[key]
+    pending_prefaces.pop(conn, None)
+    pending_receives.pop(conn, None)
+
+
+def connection_closed(conn):
+    forget_connection(conn)
+    emit('connection_closed', conn=conn)
+
+
+def feed_connection(conn, direction, data):
+    key = (conn, direction)
+    if key not in streams:
+        streams[key] = H2Stream(conn, direction) if conn in http2_connections else Stream(conn, direction)
+    streams[key].feed(data)
 
 def capture_write(conn,data,written):
     if not 0 <= written <= len(data):
@@ -229,8 +295,30 @@ def capture_write(conn,data,written):
         emit('short_write',conn=conn,requested=len(data),written=written)
 
 def capture(conn,direction,data):
-    key=(conn,direction)
-    if direction=='send' and data.startswith(b'PRI * HTTP/2.0'):http2_connections.add(conn)
-    if key not in streams:streams[key]=H2Stream(conn,direction) if conn in http2_connections else Stream(conn,direction)
     emit('tls_io',conn=conn,direction=direction,bytes=len(data))
-    streams[key].feed(data)
+    if direction == 'recv' and (conn in pending_prefaces or (conn, 'send') not in streams):
+        pending = pending_receives.setdefault(conn, bytearray())
+        pending.extend(data)
+        if len(pending) > 16 * 1024 * 1024:
+            raise ValueError('unassociated response exceeds capture bound')
+        return
+    if direction == 'send':
+        parser = streams.get((conn, 'send'))
+        boundary = parser is None or (isinstance(parser, H2Stream) and not parser.buffer)
+        if conn in pending_prefaces or (boundary and data.startswith(b'P')):
+            prefix = pending_prefaces.setdefault(conn, bytearray())
+            prefix.extend(data)
+            if len(prefix) < len(H2_PREFACE) and H2_PREFACE.startswith(prefix):
+                return
+            data = bytes(pending_prefaces.pop(conn))
+            if data.startswith(H2_PREFACE):
+                received = pending_receives.pop(conn, b'')
+                reused = parser is not None
+                forget_connection(conn)
+                http2_connections.add(conn)
+                if received:
+                    pending_receives[conn] = received
+                emit('connection_protocol', conn=conn, protocol='h2', reused_address=reused)
+    feed_connection(conn, direction, data)
+    if direction == 'send' and conn in pending_receives:
+        feed_connection(conn, 'recv', pending_receives.pop(conn))

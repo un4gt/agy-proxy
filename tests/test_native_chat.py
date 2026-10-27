@@ -28,7 +28,8 @@ def captured(output=None):
     output = OUTPUT if output is None else output
     return {'calls': [{'name': 'finish', 'args': dict(output, toolAction='internal', toolSummary='hidden')}],
             'cli': {'structured_output': output, 'status': 'SUCCESS', 'usage': {'input_tokens': 100}},
-            'usage': {'input_tokens': 20}, 'metrics': {'agent_requests': 1}, 'kind': 'result'}
+            'usage': {'input_tokens': 20}, 'usage_complete': True,
+            'metrics': {'agent_requests': 1}, 'kind': 'result'}
 
 
 def test_capture_uses_only_native_content_and_strips_display_fields():
@@ -138,8 +139,54 @@ def test_closing_native_turn_closes_observer_generator():
     asyncio.run(check())
 
 
+@pytest.mark.parametrize('quota', [False, True])
+def test_native_quota_failover_uses_other_account_only_for_explicit_quota(tmp_path, monkeypatch, quota):
+    from app.account_pool import AccountPool
+    from tools.agy_native_wire_probe.runtime import WireUpstreamError
+    fake = Path(__file__).with_name('fake_tools_agy.py').as_posix()
+    cfg = Config(agy_bin=f'{sys.executable} {fake}', data_dir=str(tmp_path), native_chat=True, api_keys=('test',))
+    cfg.account_pool = AccountPool(cfg)
+    accounts = [cfg.account_pool.create(name, {'token': {'access_token': 'test-' + name,
+        'refresh_token': 'refresh-' + name, 'expiry': '2099-01-01T00:00:00Z'},
+        'auth_method': 'consumer'}) for name in ('A', 'B')]
+    used = []
+
+    class Observer:
+        def __init__(self, account_id):
+            self.account_id = account_id
+            self.conversation_id = 'quota-' + account_id
+            self.turns = 1
+
+        async def turn(self, prompt):
+            used.append(self.account_id)
+            yield {'kind': 'cli_init', 'init': {'agent': 'proxy-external'}, 'conversation_id': self.conversation_id}
+            if self.account_id == accounts[0].id:
+                raise WireUpstreamError({'status': 429, 'quota_exhausted': quota,
+                                         'quota_reset_at': '2026-10-29T12:16:20Z'})
+            yield captured()
+
+        async def close(self):
+            pass
+
+    async def start(session):
+        session.observer = Observer(session.account_id)
+        session.proc = SimpleNamespace(pid=1000, returncode=None)
+
+    monkeypatch.setattr(NativeAgySession, 'start', start)
+    with TestClient(create_app(cfg)) as client:
+        response = client.post('/v1/chat/completions', headers={'Authorization': 'Bearer test'},
+            json={'model': 'auto', 'messages': [{'role': 'user', 'content': 'test quota'}]})
+        assert response.status_code == (200 if quota else 429), response.text
+        assert used == [a.id for a in accounts[:2 if quota else 1]]
+        assert client.app.state.store.requests[-1].public()['repair_attempts'] == 0
+        if quota:
+            assert response.json()['choices'][0]['message']['content'] == OUTPUT['content']
+        else:
+            assert not cfg.account_pool.public(accounts[0].id)['exhausted_scopes']
+
+
 @pytest.mark.parametrize('stream', [False, True])
-@pytest.mark.parametrize('failure', ['missing', 'persistent_missing', 'mismatch', 'multiple', 'wire'])
+@pytest.mark.parametrize('failure', ['missing', 'persistent_missing', 'mismatch', 'multiple', 'wire', 'exhausted'])
 def test_native_repair_is_bounded_verified_and_never_delivers_rejected_output(tmp_path, monkeypatch, stream, failure):
     from tools.agy_native_wire_probe.runtime import WireError
     sessions, prompts = [], []
@@ -159,6 +206,9 @@ def test_native_repair_is_bounded_verified_and_never_delivers_rejected_output(tm
                     result['calls'] = []
                     result['text'] = 'REJECTED_PRIVATE_TEXT'
                     result['cli']['structured_output'] = None
+                elif failure == 'exhausted':
+                    result['calls'] = []
+                    result['metrics']['finish_exhausted'] = True
                 elif failure == 'mismatch':
                     result['cli']['structured_output'] = dict(OUTPUT, content='other')
                 elif failure == 'multiple':
@@ -194,6 +244,10 @@ def test_native_repair_is_bounded_verified_and_never_delivers_rejected_output(tm
         assert client.app.state.native_sessions.live_count == 0
         record = list(client.app.state.store.requests)[-1].public()
         assert record['attempts'] == expected_attempts
+        if failure == 'exhausted':
+            assert record['repair_attempts'] == 0
+            assert record['usage']['input_tokens'] == 20
+            assert 'native_finish_exhausted' in response.text
         if failure == 'missing':
             assert response.status_code == 200
             assert response.text.count('native-marker') == 1

@@ -14,7 +14,13 @@ FINISH_DESCRIPTION = ('Submit the next client assistant turn, including requests
                       'Submitting a tool request does not mean the overall task is complete.')
 
 
-def clean_request(doc):
+class InputCleanError(ValueError):
+    def __init__(self, message, *, code):
+        super().__init__(message)
+        self.code = code
+
+
+def clean_request(doc, *, image_paths=()):
     if doc.get('requestType') != 'agent':
         return deepcopy(doc)
     result = deepcopy(doc)
@@ -39,7 +45,11 @@ def clean_request(doc):
         raise ValueError('Unknown CLI system suffix')
     parts[0]['text'] = custom + '\n' + blocks['guidelines']
     declarations = [f for group in request['tools'] for f in group['functionDeclarations']]
-    if sorted(f['name'] for f in declarations) != ['finish', 'manage_task']:
+    if (not isinstance(image_paths, (list, tuple)) or len(image_paths) > 8
+            or any(not isinstance(path, str) or not path.startswith('/') for path in image_paths)):
+        raise ValueError('Invalid image attachment allowlist')
+    expected = ['finish', 'manage_task', 'view_file'] if image_paths else ['finish', 'manage_task']
+    if sorted(f['name'] for f in declarations) != expected:
         raise ValueError('Unexpected native tool declarations')
     finish = next(f for f in declarations if f['name'] == 'finish')
     finish['description'] = FINISH_DESCRIPTION
@@ -47,14 +57,30 @@ def clean_request(doc):
     # Retain required CLI metadata fields, but remove misleading local-tool examples.
     for key in ('toolAction', 'toolSummary'):
         properties[key]['description'] = 'Short label for this client response.'
-    request['tools'] = [{'functionDeclarations': [finish]}]
+    permitted = [finish]
+    if image_paths:
+        view = next(f for f in declarations if f['name'] == 'view_file')
+        original = view['parameters']['properties']
+        fields = ('AbsolutePath', 'toolAction', 'toolSummary')
+        if any(key not in original for key in fields):
+            raise ValueError('Unknown native image reader schema')
+        view['description'] = 'Read the supplied image attachment. Only the listed paths are permitted.'
+        view['parameters'] = {'type': 'OBJECT', 'properties': {key: original[key] for key in fields},
+                              'required': list(fields)}
+        view['parameters']['properties']['AbsolutePath'] = {
+            'type': 'STRING', 'description': 'Exact supplied image attachment path.', 'enum': list(image_paths)}
+        for key in ('toolAction', 'toolSummary'):
+            view['parameters']['properties'][key]['description'] = 'Short label for this attachment read.'
+        permitted.append(view)
+    request['tools'] = [{'functionDeclarations': permitted}]
     # finish is the transport envelope for *every* client assistant response,
-    # including plain answers and tool_choice=none. Advertising it under AUTO
-    # lets the model bypass the envelope with text, which cannot be delivered.
-    # Constrain the upstream decoder, not the client's choice of external tools.
+    # including plain answers and tool_choice=none. Request this envelope without
+    # changing the client's choice of external tools. The Cloud Code route can
+    # return text even under ANY; the response still needs independent validation.
+    # See docs/native-backend.md for the upstream constraint limitations.
     calling = request.setdefault('toolConfig', {}).setdefault('functionCallingConfig', {})
     calling['mode'] = 'ANY'
-    calling['allowedFunctionNames'] = ['finish']
+    calling['allowedFunctionNames'] = [f['name'] for f in permitted]
     for content in request['contents']:
         if content.get('role') != 'user':
             continue
@@ -66,17 +92,17 @@ def clean_request(doc):
             if not end or re.fullmatch(
                 r'(?:\n<(ADDITIONAL_METADATA|USER_SETTINGS_CHANGE)>\n.*?\n</\1>)*',
                 metadata, re.DOTALL) is None:
-                raise ValueError('Unknown CLI user metadata')
+                raise InputCleanError('Unknown CLI user metadata', code='native_input_user_metadata_invalid')
             part['text'] = user.removeprefix('<USER_REQUEST>\n')
     return result
 
 
-def rewrite_buffer(data):
+def rewrite_buffer(data, *, image_paths=()):
     """Shrink JSON in-place and pad with legal whitespace; preserve Go slice ABI."""
     doc = json.loads(data)
     if not isinstance(doc, dict) or doc.get('requestType') != 'agent':
         return None
-    encoded = json.dumps(clean_request(doc), ensure_ascii=False, separators=(',', ':')).encode()
+    encoded = json.dumps(clean_request(doc, image_paths=image_paths), ensure_ascii=False, separators=(',', ':')).encode()
     if len(encoded) > len(data):
         raise ValueError('Clean input exceeds original buffer')
     return encoded + b' ' * (len(data) - len(encoded))

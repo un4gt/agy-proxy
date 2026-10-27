@@ -25,6 +25,41 @@ class FakeSession:
         self.closed = True
 
 
+def test_image_read_is_not_terminal_when_cli_success_overtakes_upstream_error():
+    from tools.agy_native_wire_probe.runtime import WireUpstreamError
+
+    async def check():
+        session = NativeSession()
+        session.proc = SimpleNamespace(returncode=None)
+        session.conversation_id = 'image-quota'
+
+        async def close():
+            session.closed = True
+
+        async def write(_):
+            await session.queue.put(('stdout', {'event': 'result', 'observed_at': time.monotonic(),
+                'result': {'status': 'SUCCESS', 'conversation_id': 'image-quota',
+                           'num_turns': 1, 'structured_output': None}}))
+            events = [
+                {'kind': 'generation_request', 'request_id': 'read', 'request_type': 'agent'},
+                {'kind': 'sse', 'request_id': 'read', 'candidates': [{'index': 0, 'finishReason': 'STOP',
+                 'parts': [{'functionCall': {'name': 'view_file', 'args': {'AbsolutePath': '/fixture.png'}}}]}]},
+                {'kind': 'message_complete', 'request_id': 'read', 'direction': 'recv'},
+                {'kind': 'generation_request', 'request_id': 'answer', 'request_type': 'agent'},
+                {'kind': 'upstream_error', 'request_id': 'answer', 'status': 429, 'quota_exhausted': True},
+            ]
+            for event in events:
+                await session.queue.put(('events', dict(event, monotonic=time.monotonic())))
+
+        session.close, session._write = close, write
+        with pytest.raises(WireUpstreamError) as exc:
+            async for event in session.turn('inspect image'):
+                assert event['kind'] != 'result'
+        assert exc.value.status_code == 429 and exc.value.quota_exhausted
+        assert session.closed
+    asyncio.run(check())
+
+
 def test_owner_and_session_namespaces_and_configuration():
     async def check():
         pool = NativeSessions(factory=FakeSession)
@@ -122,11 +157,11 @@ def test_request_correlation_ignores_other_requests_and_waits_for_both_channels(
                 ('events', {'kind': 'generation_request', 'request_id': 'old', 'request_type': 'agent', 'monotonic': now-10}),
                 event('generation_request', 'side', request_type='checkpoint'),
                 event('generation_request', 'own', request_type='agent'),
-                event('sse', 'side', **content('DO_NOT_LEAK')),
+                event('sse', 'side', usage={'promptTokenCount': 999, 'totalTokenCount': 999}, **content('DO_NOT_LEAK')),
                 event('sse', 'old', **content('STALE')),
-                event('sse', 'own', **content('EXPECTED')),
+                event('sse', 'own', usage={'promptTokenCount': 10, 'totalTokenCount': 10}, **content('EXPECTED')),
                 ('stdout', {'event': 'result', 'observed_at': time.monotonic(), 'result': {
-                    'status': 'SUCCESS', 'conversation_id': 'local-conversation', 'num_turns': 1, 'usage': {'input_tokens': 10}}}),
+                    'status': 'SUCCESS', 'conversation_id': 'local-conversation', 'num_turns': 1, 'usage': {'input_tokens': 9999}}}),
                 event('message_complete', 'own', direction='recv'),
             ]
             for row in rows:
@@ -137,11 +172,15 @@ def test_request_correlation_ignores_other_requests_and_waits_for_both_channels(
             # HTTP heartbeat adapters can pull successive items in different
             # tasks; a timeout scope must not remain open across a yield.
             first = await asyncio.create_task(anext(events))
+            assert first['kind'] == 'usage' and first['usage']['input_tokens'] == 10
+            first = await asyncio.create_task(anext(events))
             assert first['kind'] == 'text' and first['text'] == 'EXPECTED'
             # Text is already observable before the terminal CLI event is consumed.
             assert session.queue.qsize() == 2
             result = await asyncio.create_task(anext(events))
             assert result['kind'] == 'result' and result['text'] == 'EXPECTED'
-            assert result['usage'] == {'input_tokens': 10}
+            assert result['usage'] == {'input_tokens': 10, 'output_tokens': 0, 'thinking_tokens': 0,
+                                       'cache_read_tokens': 0, 'total_tokens': 10}
+            assert result['usage_complete']
         assert session.queue.empty()
     asyncio.run(check())

@@ -38,8 +38,12 @@ if not text:
             if text:
                 break
 assert text
-targets = {'crypto/tls.(*Conn).Write', 'crypto/tls.(*Conn).Read', 'net/http.(*Transport).roundTrip'}
+targets = {'crypto/tls.(*Conn).Write', 'crypto/tls.(*Conn).Read', 'crypto/tls.(*Conn).Close',
+           'net/http.(*Transport).roundTrip'}
 targets.update({'encoding/json/v2.Marshal', 'google3/third_party/golang/protobuf/v2/encoding/protojson/protojson.MarshalOptions.marshal'})
+targets.add('google3/third_party/oneharness/internal/core/serializers/truncation/truncation.Truncate')
+from finish_guard import FUNCTIONS as FINISH_FUNCTIONS
+targets.update(FINISH_FUNCTIONS)
 found = {}
 for i in range(nfunc):
     entry, offset = struct.unpack_from('<II',blob,pcln+i*8)
@@ -49,5 +53,6 @@ for i in range(nfunc):
         end = struct.unpack_from('<I',blob,pcln+(i+1)*8)[0]
         found[name] = {'start':text+entry,'end':text+end}
 result = {'binary_sha256':hashlib.sha256(binary).hexdigest(),'elf_type':struct.unpack_from('<H',binary,16)[0],'functions':found}
+assert targets <= found.keys(), 'Required native hook symbols are missing'
 Path(os.environ.get('AGY_WIRE_SYMBOLS','/evidence/symbols.json')).write_text(json.dumps(result,indent=2))
 print(json.dumps(result,indent=2))

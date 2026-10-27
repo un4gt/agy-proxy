@@ -98,3 +98,53 @@ def test_client_sessions_do_not_share_or_modify_input(payload):
     assert 'owner B' not in json.dumps(a)
     assert 'owner B' in json.dumps(b)
     assert a['requestId'] != b['requestId']
+
+
+def test_image_reader_requires_explicit_allowlist_and_preserves_media(payload):
+    view = {'name': 'view_file', 'description': 'Native reader ' * 80,
+            'parameters': {'properties': {key: {'type': 'STRING'} for key in
+                                         ('AbsolutePath', 'toolAction', 'toolSummary', 'StartLine')}}}
+    payload['request']['tools'][0]['functionDeclarations'].append(view)
+    parts = [{'inlineData': {'mimeType': 'image/png', 'data': 'fixture-pixels'}},
+             {'functionResponse': {'name': 'view_file', 'response': {'output': 'image'}}}]
+    payload['request']['contents'].append({'role': 'user', 'parts': parts})
+    original = copy.deepcopy(payload)
+    with pytest.raises(ValueError, match='tool declarations'):
+        clean_request(payload)
+    paths = ['/private/request/image-1.png', '/private/request/image-2.png']
+    raw = json.dumps(payload).encode()
+    rewritten = rewrite_buffer(raw, image_paths=paths)
+    cleaned = json.loads(rewritten)['request']
+    assert len(rewritten) == len(raw) and payload == original
+    assert cleaned['contents'][-1]['parts'] == parts
+    assert cleaned['toolConfig']['functionCallingConfig'] == {
+        'mode': 'ANY', 'allowedFunctionNames': ['finish', 'view_file']}
+    functions = cleaned['tools'][0]['functionDeclarations']
+    assert [f['name'] for f in functions] == ['finish', 'view_file']
+    schema = functions[1]['parameters']
+    assert schema['properties']['AbsolutePath']['enum'] == paths
+    assert set(schema['properties']) == {'AbsolutePath', 'toolAction', 'toolSummary'}
+    with pytest.raises(ValueError, match='allowlist'):
+        clean_request(payload, image_paths=['relative.png'])
+    payload['request']['tools'][0]['functionDeclarations'].pop()
+    with pytest.raises(ValueError, match='tool declarations'):
+        clean_request(payload, image_paths=paths)
+
+
+@pytest.mark.parametrize('mode', ['Complete client conversation', 'New client messages'])
+def test_long_input_keeps_multibyte_content_and_recovery_tail(payload, mode):
+    text = '[' + mode + ']\n' + json.dumps([{'role': 'tool', 'content': '中文🙂x' * 40000}], ensure_ascii=False)
+    text += '\n[Validation feedback]\n{"required_submission":"finish"}'
+    wrapped = '<USER_REQUEST>\n' + text + '\n</USER_REQUEST>\n<ADDITIONAL_METADATA>\nclock\n</ADDITIONAL_METADATA>'
+    assert len(wrapped.encode()) > 192000
+    payload['request']['contents'][0]['parts'][0]['text'] = wrapped
+    data = json.dumps(payload, ensure_ascii=False).encode()
+    cleaned = json.loads(rewrite_buffer(data))
+    assert cleaned['request']['contents'][0]['parts'][0]['text'] == text
+    assert len(rewrite_buffer(data)) == len(data)
+    # The pre-fix CLI slice destroys both closing wrapper and history; never
+    # accept this just because the leading envelope is recognized.
+    payload['request']['contents'][0]['parts'][0]['text'] = wrapped.encode()[:192000].decode(errors='ignore') + '\n<truncated 22358 bytes>'
+    with pytest.raises(ValueError) as caught:
+        clean_request(payload)
+    assert caught.value.code == 'native_input_user_metadata_invalid'

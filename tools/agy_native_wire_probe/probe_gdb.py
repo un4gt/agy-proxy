@@ -8,7 +8,7 @@ from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parent))
 sys.path.insert(0,'/tmp/probe-deps')
 sys.path.insert(0,'/opt/probe-deps')
-from observe import capture, capture_write, emit, cleaned_requests
+from observe import capture, capture_write, connection_closed, emit, cleaned_requests
 
 gdb.execute('set pagination off')
 gdb.execute('set confirm off')
@@ -31,12 +31,60 @@ base=int(row.split('-')[0],16)
 symbols=json.loads(Path(os.environ.get('AGY_WIRE_SYMBOLS','/evidence/symbols.json')).read_text())
 pending={}
 pending_writes={}
+
+finish_breakpoints = []
+if os.environ.get('AGY_WIRE_FINISH_GUARD') == '1':
+    from finish_guard import install
+    try:
+        finish_breakpoints = install(gdb, base=base, symbols=symbols, emit=emit, kill=os.kill)
+    except Exception as exc:
+        emit('hook_error', stage='finish_guard', code='native_finish_guard_failed',
+             error=type(exc).__name__)
+        import signal
+        os.kill(pid, signal.SIGKILL)
+        raise
 def reg(name):return int(gdb.parse_and_eval('$'+name))
+
+def after_stack_guard(symbol):
+    start = base + symbol['start']
+    instructions = gdb.selected_inferior().architecture().disassemble(start, start + 32)
+    guard = next(i for i, ins in enumerate(instructions) if ins['asm'].startswith('jbe'))
+    return instructions[guard + 1]['addr']
+
+
+class InputLimitProbe(gdb.Breakpoint):
+    def stop(self):
+        try:
+            from input_guard import CLI_INPUT_LIMIT, PREFIX_BYTES, preserved_limit
+            pointer, length, limit = reg('rax'), reg('rbx'), reg('rcx')
+            if limit == CLI_INPUT_LIMIT and length > limit:
+                prefix = bytes(gdb.selected_inferior().read_memory(pointer, PREFIX_BYTES))
+                replacement = preserved_limit(prefix, length, limit)
+                if replacement is not None:
+                    # Go ABIInternal: string in AX/BX, byte limit in CX.
+                    # Change only the bound; the CLI retains its own allocation,
+                    # serialization, context management and network transport.
+                    gdb.execute('set $rcx = ' + str(replacement))
+                    emit('input_preserved', bytes=length, previous_limit=limit)
+        except Exception as exc:
+            emit('hook_error', stage='input_limit', error=type(exc).__name__,
+                 code=getattr(exc, 'code', 'native_input_guard_failed'),
+                 frames=[f'{f.name}:{f.lineno}' for f in traceback.extract_tb(exc.__traceback__)])
+            import signal
+            os.kill(pid, signal.SIGKILL)
+        return False
+
+
 class InputProbe(gdb.Breakpoint):
     def stop(self):
         try:
+            from input_guard import MAX_INPUT_BYTES, InputLimitError
             p,n=reg('rax'),reg('rbx')
-            if 0<n<=16*1024*1024:
+            # Escaping and other request fields can push serialized input over
+            # the bound even when each preserved user part fits on its own.
+            if n > MAX_INPUT_BYTES:
+                raise InputLimitError('Serialized native input exceeds the 16 MiB capture bound')
+            if n > 0:
                 data=bytes(gdb.selected_inferior().read_memory(p,n))
                 try: doc=json.loads(data)
                 except (ValueError,UnicodeError): return False
@@ -44,12 +92,15 @@ class InputProbe(gdb.Breakpoint):
                     if os.environ.get('AGY_WIRE_INPUT_CLEAN') == '1':
                         from input_clean import rewrite_buffer, digest
                         if digest(doc) not in cleaned_requests:
-                            replacement = rewrite_buffer(data)
+                            replacement = rewrite_buffer(data, image_paths=json.loads(
+                                os.environ.get('AGY_WIRE_IMAGE_PATHS', '[]')))
                             gdb.selected_inferior().write_memory(p,replacement)
                             cleaned_requests.add(digest(json.loads(replacement)))
                             emit('input_cleaned',bytes=n)
         except Exception as exc:
-            emit('hook_error',stage='input_probe',error=type(exc).__name__)
+            emit('hook_error',stage='input_probe',error=type(exc).__name__,
+                 code=getattr(exc, 'code', 'native_input_cleanup_failed'),
+                 frames=[f'{f.name}:{f.lineno}' for f in traceback.extract_tb(exc.__traceback__)])
             # Stop the child before a malformed/unknown input can be sent.
             import signal
             os.kill(pid,signal.SIGKILL)
@@ -57,8 +108,10 @@ class InputProbe(gdb.Breakpoint):
 
 if os.environ.get('AGY_WIRE_INPUT_CLEAN') == '1':
     from input_clean import SUPPORTED_SHA256
+    from input_guard import TRUNCATION_FUNCTION
     if symbols['binary_sha256'] != SUPPORTED_SHA256:
         raise RuntimeError('Input cleanup requires the validated CLI binary')
+    InputLimitProbe('*'+hex(after_stack_guard(symbols['functions'][TRUNCATION_FUNCTION])), internal=True)
     for name in ('encoding/json/v2.Marshal','google3/third_party/golang/protobuf/v2/encoding/protojson/protojson.MarshalOptions.marshal'):
         symbol=symbols['functions'][name]
         instructions=gdb.selected_inferior().architecture().disassemble(base+symbol['start'],base+symbol['end'])
@@ -68,12 +121,9 @@ if os.environ.get('AGY_WIRE_INPUT_CLEAN') == '1':
 class Entry(gdb.Breakpoint):
     def __init__(self,name):
         self.name=name
-        start=base+symbols['functions'][name]['start']
-        instructions=gdb.selected_inferior().architecture().disassemble(start,start+32)
-        guard=next(i for i,ins in enumerate(instructions) if ins['asm'].startswith('jbe'))
         # Stop AFTER the Go stack-growth branch, otherwise morestack re-entry
         # observes the same write twice and corrupts HTTP/2 stream accounting.
-        super().__init__('*'+hex(instructions[guard+1]['addr']),internal=True)
+        super().__init__('*'+hex(after_stack_guard(symbols['functions'][name])),internal=True)
     def stop(self):
         try:
             conn,p,n=reg('rax'),reg('rbx'),reg('rcx')
@@ -106,6 +156,21 @@ class WriteReturn(gdb.Breakpoint):
         except Exception as exc:emit('hook_error',stage='write_return',error=type(exc).__name__,frames=[f'{f.name}:{f.lineno}' for f in traceback.extract_tb(exc.__traceback__)])
         return False
 
+class Close(gdb.Breakpoint):
+    def stop(self):
+        try:
+            conn = reg('rax')
+            for pending_io in (pending, pending_writes):
+                for goroutine, state in list(pending_io.items()):
+                    if state[0] == conn:
+                        del pending_io[goroutine]
+            connection_closed(hex(conn))
+        except Exception as exc:
+            emit('hook_error', stage='close', error=type(exc).__name__)
+        return False
+
+
+Close('*'+hex(base+symbols['functions']['crypto/tls.(*Conn).Close']['start']), internal=True)
 for name in ('crypto/tls.(*Conn).Write','crypto/tls.(*Conn).Read'):Entry(name)
 read=symbols['functions']['crypto/tls.(*Conn).Read']
 instructions=gdb.selected_inferior().architecture().disassemble(base+read['start'],base+read['end'])
@@ -119,7 +184,7 @@ emit('probe_ready',pid=pid,binary_sha256=symbols['binary_sha256'],read_return_si
 def on_exit_syscall():
     emit('cli_exit',code=reg('rdi'))
     for breakpoint in list(gdb.breakpoints()):
-        if isinstance(breakpoint,(Entry,Return,WriteReturn)):
+        if isinstance(breakpoint,(Entry,Return,WriteReturn,Close)) or breakpoint in finish_breakpoints:
             breakpoint.delete()
 gdb.execute('catch syscall exit_group')
 catch=gdb.breakpoints()[-1]

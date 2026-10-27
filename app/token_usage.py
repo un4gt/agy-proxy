@@ -1,6 +1,7 @@
-"""AGY input/total exclude cache reads; output already includes thinking.
+"""Internal input/total exclude cache reads; output already includes thinking.
 
-Keep CLI counters unchanged internally (including stored historical usage).
+Native usageMetadata is normalized to this same stored convention.
+Keep regular CLI counters and stored historical usage unchanged internally.
 OpenAI and Gemini expose inclusive input/total; Anthropic keeps cache separate.
 """
 

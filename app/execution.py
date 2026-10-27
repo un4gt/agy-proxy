@@ -47,6 +47,7 @@ async def execute(request: CanonicalRequest, mgr, *, profile, session_key=None):
                 while True:
                     candidate = None
                     usage_seen = False
+                    usage_snapshot = None
                     profile.attempts += 1
                     try:
                         with trace.span("attempt", attempt=profile.attempts,
@@ -67,10 +68,15 @@ async def execute(request: CanonicalRequest, mgr, *, profile, session_key=None):
                                             elif kind == "step_update":
                                                 trace.mark(f"attempt_{profile.attempts}_first_step")
                                                 session.check_tool_step(event.get("step_update") or {})
+                                            elif kind == "usage":
+                                                # Native capture reports an attempt-wide snapshot,
+                                                # not a delta for each SSE chunk.
+                                                usage_snapshot = event["usage"]
                                             elif kind == "result":
                                                 cli_span.end()
                                                 trace.mark(f"attempt_{profile.attempts}_cli_result")
                                                 profile.add_usage(event["result"].get("usage"))
+                                                profile.usage_complete &= event["result"].get("usage_complete", True)
                                                 usage_seen = True
                                                 with trace.span("validate", attempt=profile.attempts):
                                                     session.check_images_seen()
@@ -85,7 +91,9 @@ async def execute(request: CanonicalRequest, mgr, *, profile, session_key=None):
                         break
                     except AgyError as exc:
                         if not usage_seen:
-                            profile.add_usage(exc.usage)
+                            profile.add_usage(exc.usage or usage_snapshot)
+                            profile.usage_complete &= getattr(exc, "usage_complete", usage_snapshot is None)
+                            usage_seen = True
                         quota = isinstance(exc, AgyQuotaError)
                         if quota and mgr.cfg.account_pool:
                             try:
@@ -112,7 +120,19 @@ async def execute(request: CanonicalRequest, mgr, *, profile, session_key=None):
                                       "Do not execute tools or invent missing facts. The rejected candidate was never delivered.")
                         with trace.span("recovery_restart", after_attempt=profile.attempts, error_code=exc.code):
                             async with asyncio.timeout_at(deadline):
-                                session = await mgr.restart(session, reselect=quota, timing=trace)
+                                try:
+                                    session = await mgr.restart(session, reselect=quota, timing=trace)
+                                except AgyError as restart_error:
+                                    if quota and restart_error.status_code == 429:
+                                        # No alternate account is available. Keep
+                                        # the upstream quota reason and reset time.
+                                        raise exc from restart_error
+                                    raise
+                    finally:
+                        if not usage_seen and usage_snapshot is not None:
+                            # Timeout and cancellation bypass the AgyError handler.
+                            profile.add_usage(usage_snapshot)
+                            profile.usage_complete = False
                 result.usage = dict(profile.usage)
                 profile.mark("result")
                 trace.mark("validated_result")

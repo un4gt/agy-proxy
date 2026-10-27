@@ -19,6 +19,8 @@ FAKE_AGY = (Path(__file__).parent / "fake_agy.py").as_posix()
 def _isolated_data_dir(tmp_path, monkeypatch):
     """Keep each test's API keys and usage counters out of the real data file."""
     monkeypatch.setenv("AGY_PROXY_DATA_DIR", str(tmp_path / "data"))
+    # These fixtures exercise the fake headless CLI, even in a native image.
+    monkeypatch.setenv("AGY_PROXY_NATIVE_CHAT", "false")
 
 
 def make_client() -> TestClient:

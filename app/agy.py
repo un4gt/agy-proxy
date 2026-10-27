@@ -31,6 +31,7 @@ from typing import Any
 from anyio import CancelScope
 
 from .config import Config
+from tools.agy_cli_protocol import CliTurnCounter
 from .account_pool import AccountPoolError, quota_exhausted
 
 log = logging.getLogger("agy_proxy.agy")
@@ -157,6 +158,7 @@ class AgySession:
         self.created_at = time.monotonic()
         self.last_used = self.created_at
         self.turns = 0
+        self._cli_turns = CliTurnCounter()
         self.conversation_id: str | None = None
         self._tasks: list[asyncio.Task] = []
         self._dead = False
@@ -380,6 +382,7 @@ class AgySession:
                 ) from exc
 
             self.turns += 1
+            self._cli_turns.begin()
             started = time.monotonic()
             deadline = started + self.cfg.turn_timeout
             log.info("agy turn started pid=%s conversation=%s turn=%s", self.proc.pid, self.conversation_id, self.turns)
@@ -418,6 +421,12 @@ class AgySession:
                     raise AgyError(f"agy {kind} payload must be an object")
                 if kind == "step_update":
                     step = event[kind]
+                    if step.get("conversation_id") not in (None, self.conversation_id):
+                        raise AgyError("agy step belongs to another conversation")
+                    try:
+                        self._cli_turns.observe(step)
+                    except ValueError as exc:
+                        raise AgyError(str(exc)) from exc
                     if (step.get("step_type") in ("tool", "tool_call", "tool_use", "run_command")
                             or step.get("tool_info") or step.get("tool_name")):
                         self._turn_has_tools = True
@@ -442,9 +451,10 @@ class AgySession:
                     if conversation and self.conversation_id and conversation != self.conversation_id:
                         raise AgyError("agy conversation changed within a duplex session")
                     self.conversation_id = conversation or self.conversation_id
-                    if "num_turns" in result and (type(result["num_turns"]) is not int
-                                                   or result["num_turns"] != self.turns):
-                        raise AgyError("agy result does not match the active turn number")
+                    try:
+                        self._cli_turns.confirm(result.get("num_turns", self._cli_turns.expected))
+                    except ValueError as exc:
+                        raise AgyError(str(exc)) from exc
                     totals = result.get("usage") or {}
                     if not isinstance(totals, dict):
                         raise AgyError("agy usage must be an object")
