@@ -26,6 +26,10 @@ from .account_pool import AccountPoolError, native_credentials
 
 router = APIRouter()
 _HOSTS = ("daily-cloudcode-pa.googleapis.com", "cloudcode-pa.googleapis.com")
+# Cloud Code gates current model variants on a versioned CLI client identity.
+# Keep the compatibility version aligned with the CLI pinned in Dockerfile;
+# the proxy suffix identifies the caller without hiding CLI-only models.
+_ACCOUNT_USER_AGENT = "antigravity/cli/1.4.2 agy-proxy/0.0.17"
 
 
 def credentials_path() -> Path:
@@ -331,7 +335,7 @@ class AccountService:
     ) -> tuple[dict, dict | None, dict | None]:
         headers = {
             "Authorization": f"Bearer {access}",
-            "User-Agent": "antigravity-agy-proxy/0.0.14",
+            "User-Agent": _ACCOUNT_USER_AGENT,
         }
         for host in _HOSTS:
             try:

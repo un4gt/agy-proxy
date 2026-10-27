@@ -98,31 +98,83 @@ import {
   type Key,
 } from "@/lib/api";
 
+let cachedAboutVersion: string | null = null;
+let cachedAuthRequired: boolean | null = null;
+let cachedUpdateVersion = "";
+let cachedDashboard: Dashboard | null = null;
+let cachedModels: ModelGroup[] | null = null;
+let cachedOverviewTab = "models";
+const cachedBridgeState = new Map<string, BridgeState>();
+
+function navigate(href: string, e?: React.MouseEvent<HTMLAnchorElement>) {
+  if (
+    e &&
+    (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0)
+  ) {
+    return;
+  }
+  e?.preventDefault();
+  if (location.pathname !== href) {
+    history.pushState(null, "", href);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  }
+}
+
+function useDelayedSkeleton(loading: boolean, delayMs = 180) {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    if (!loading) {
+      setShow(false);
+      return;
+    }
+    const timer = setTimeout(() => setShow(true), delayMs);
+    return () => clearTimeout(timer);
+  }, [loading, delayMs]);
+  return loading && show;
+}
+
 function Brand() {
-  const [version, setVersion] = useState<string | null>(null);
+  const [version, setVersion] = useState<string | null>(cachedAboutVersion);
   useEffect(() => {
     const controller = new AbortController();
     api<{ version: string }>("/about", { signal: controller.signal })
-      .then((data) => { if (!controller.signal.aborted) setVersion(data.version); })
+      .then((data) => {
+        if (!controller.signal.aborted) {
+          cachedAboutVersion = data.version;
+          setVersion(data.version);
+        }
+      })
       .catch(() => {});
     return () => controller.abort();
   }, []);
   return (
     <a
       href="/"
+      onClick={(e) => {
+        if (location.pathname !== "/signin") navigate("/", e);
+      }}
       className="flex flex-wrap items-center gap-2.5 font-semibold tracking-tight"
     >
-      <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+      <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs">
         <Layers className="size-4" />
       </span>
       <span>agy-proxy</span>
-      {version && <Badge variant="outline" aria-label={`部署版本 v${version}`} title="当前部署的 agy-proxy 版本">v{version}</Badge>}
+      {version && (
+        <Badge
+          variant="outline"
+          className="border-primary/20 bg-primary/5 text-primary"
+          aria-label={`部署版本 v${version}`}
+          title="当前部署的 agy-proxy 版本"
+        >
+          v{version}
+        </Badge>
+      )}
     </a>
   );
 }
 function ErrorNotice({ error }: { error: string }) {
   return error ? (
-    <Alert variant="destructive">
+    <Alert variant="destructive" className="shrink-0 py-2.5">
       <CircleHelp />
       <AlertTitle>暂时无法完成操作</AlertTitle>
       <AlertDescription>{error}</AlertDescription>
@@ -131,9 +183,9 @@ function ErrorNotice({ error }: { error: string }) {
 }
 function Blank({ title, description }: { title: string; description: string }) {
   return (
-    <Empty>
+    <Empty className="my-auto min-h-[200px] border-border/70 bg-muted/20 py-6">
       <EmptyHeader>
-        <EmptyMedia variant="icon">
+        <EmptyMedia variant="icon" className="bg-primary/10 text-primary">
           <Box />
         </EmptyMedia>
         <EmptyTitle>{title}</EmptyTitle>
@@ -154,10 +206,14 @@ function SignIn() {
   const [key, setKey] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
-  const [auth, setAuth] = useState<boolean | null>(null);
+  const [auth, setAuth] = useState<boolean | null>(cachedAuthRequired);
+  const showSkeleton = useDelayedSkeleton(auth === null);
   useEffect(() => {
     api<{ auth_required: boolean }>("/health")
-      .then((d) => setAuth(d.auth_required))
+      .then((d) => {
+        cachedAuthRequired = d.auth_required;
+        setAuth(d.auth_required);
+      })
       .catch((e) => setError(message(e)));
   }, []);
   async function submit(e: FormEvent) {
@@ -173,28 +229,28 @@ function SignIn() {
     }
   }
   return (
-    <div className="grid min-h-svh lg:grid-cols-2">
-      <aside className="dark hidden flex-col justify-between bg-background p-12 text-foreground lg:flex xl:p-16">
+    <div className="grid min-h-svh bg-background lg:h-svh lg:grid-cols-2 lg:overflow-hidden">
+      <aside className="dark relative hidden flex-col justify-between overflow-hidden bg-[radial-gradient(ellipse_at_top_left,oklch(0.28_0.09_264),oklch(0.15_0.028_262)_75%)] p-8 text-foreground lg:flex xl:p-12">
         <Brand />
-        <div className="mx-auto flex w-full max-w-md flex-col gap-9 py-14">
-          <Badge variant="outline">
+        <div className="mx-auto flex w-full max-w-md flex-col gap-6 py-4">
+          <Badge variant="outline" className="border-white/15 bg-white/5 text-white/90">
             <Terminal data-icon="inline-start" /> ANTIGRAVITY WORKSPACE
           </Badge>
-          <div className="flex flex-col gap-5">
-            <h1 className="text-4xl leading-tight font-semibold tracking-tight xl:text-5xl">
+          <div className="flex flex-col gap-3.5">
+            <h1 className="text-3xl leading-tight font-semibold tracking-tight xl:text-4xl">
               一个入口，
               <br />
               连接你的 AI 工作流。
             </h1>
-            <p className="max-w-sm text-base leading-7 text-muted-foreground">
+            <p className="max-w-sm text-sm leading-6 text-muted-foreground">
               统一访问模型、管理 API
               密钥、查看每一次调用。让连接更简单，让用量更清晰。
             </p>
           </div>
-          <Card>
+          <Card className="border-white/10 bg-white/5 shadow-lg backdrop-blur-sm">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Layers className="size-4" /> 统一模型接口
+              <CardTitle className="flex items-center gap-2 text-sm">
+                <Layers className="size-4 text-primary" /> 统一模型接口
               </CardTitle>
               <CardDescription>连接你习惯使用的工具</CardDescription>
             </CardHeader>
@@ -203,8 +259,8 @@ function SignIn() {
               <Badge variant="secondary">Gemini 兼容</Badge>
               <Badge variant="secondary">流式响应</Badge>
             </CardContent>
-            <CardFooter className="gap-2 text-sm text-muted-foreground">
-              <ShieldCheck className="size-4" /> 独立密钥 · 用量追踪 · 集中管理
+            <CardFooter className="gap-2 text-xs text-muted-foreground">
+              <ShieldCheck className="size-3.5 text-primary" /> 独立密钥 · 用量追踪 · 集中管理
             </CardFooter>
           </Card>
         </div>
@@ -212,19 +268,19 @@ function SignIn() {
           Antigravity CLI 的轻量 API 控制台
         </p>
       </aside>
-      <main className="flex min-h-svh flex-col px-6 py-8 sm:px-12">
+      <main className="flex min-h-svh flex-col justify-between px-6 py-6 sm:px-10 lg:h-svh lg:py-8">
         <div className="flex items-center justify-between">
           <div className="lg:invisible">
             <Brand />
           </div>
           <Badge variant="secondary">控制台登录</Badge>
         </div>
-        <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-8 py-16">
-          <div className="flex flex-col gap-3">
-            <span className="flex size-11 items-center justify-center rounded-xl border bg-muted/50">
+        <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-6 py-4">
+          <div className="flex flex-col gap-2">
+            <span className="flex size-10 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
               <KeyRound className="size-5" />
             </span>
-            <h2 className="mt-2 text-3xl font-semibold tracking-tight">
+            <h2 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">
               欢迎回来
             </h2>
             <p className="text-sm leading-6 text-muted-foreground">
@@ -232,63 +288,65 @@ function SignIn() {
             </p>
           </div>
           <ErrorNotice error={error} />
-          {auth === null ? (
-            <Skeleton className="h-32 w-full" />
-          ) : auth ? (
-            <form onSubmit={submit}>
-              <FieldGroup>
-                <Field data-invalid={!!error}>
-                  <FieldLabel htmlFor="password">控制台密码</FieldLabel>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="输入控制台密码"
-                    autoComplete="current-password"
-                    required
-                    value={key}
-                    onChange={(e) => setKey(e.target.value)}
-                    aria-invalid={!!error}
-                  />
-                  <FieldDescription>
-                    使用服务管理员设置的登录密码。
-                  </FieldDescription>
-                </Field>
-                <Button
-                  size="lg"
-                  type="submit"
-                  disabled={pending || !key.trim()}
-                >
-                  {pending ? (
-                    <Loader2
-                      data-icon="inline-start"
-                      className="animate-spin"
+          <div className="min-h-[148px] flex flex-col justify-center">
+            {auth === null ? (
+              showSkeleton ? <Skeleton className="h-32 w-full" /> : null
+            ) : auth ? (
+              <form onSubmit={submit}>
+                <FieldGroup>
+                  <Field data-invalid={!!error}>
+                    <FieldLabel htmlFor="password">控制台密码</FieldLabel>
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="输入控制台密码"
+                      autoComplete="current-password"
+                      required
+                      value={key}
+                      onChange={(e) => setKey(e.target.value)}
+                      aria-invalid={!!error}
                     />
-                  ) : null}
-                  {pending ? "正在登录…" : "登录控制台"}
-                  <ArrowRight data-icon="inline-end" />
+                    <FieldDescription>
+                      使用服务管理员设置的登录密码。
+                    </FieldDescription>
+                  </Field>
+                  <Button
+                    size="lg"
+                    type="submit"
+                    disabled={pending || !key.trim()}
+                  >
+                    {pending ? (
+                      <Loader2
+                        data-icon="inline-start"
+                        className="animate-spin"
+                      />
+                    ) : null}
+                    {pending ? "正在登录…" : "登录控制台"}
+                    <ArrowRight data-icon="inline-end" />
+                  </Button>
+                </FieldGroup>
+              </form>
+            ) : (
+              <div className="flex flex-col gap-4">
+                <Alert>
+                  <ShieldCheck />
+                  <AlertTitle>未设置鉴权</AlertTitle>
+                  <AlertDescription>
+                    当前服务无需密码，可以直接进入控制台。
+                  </AlertDescription>
+                </Alert>
+                <Button asChild size="lg">
+                  <a href="/">
+                    进入控制台
+                    <ArrowRight data-icon="inline-end" />
+                  </a>
                 </Button>
-              </FieldGroup>
-            </form>
-          ) : (
-            <>
-              <Alert>
-                <ShieldCheck />
-                <AlertTitle>未设置鉴权</AlertTitle>
-                <AlertDescription>
-                  当前服务无需密码，可以直接进入控制台。
-                </AlertDescription>
-              </Alert>
-              <Button asChild size="lg">
-                <a href="/">
-                  进入控制台
-                  <ArrowRight data-icon="inline-end" />
-                </a>
-              </Button>
-            </>
-          )}
+              </div>
+            )}
+          </div>
           <Separator />
           <p className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-            <ShieldCheck className="size-3.5" /> 控制台密码与客户端 API
+            <ShieldCheck className="size-3.5 text-primary" /> 控制台密码与客户端 API
             密钥独立管理
           </p>
         </div>
@@ -309,13 +367,13 @@ function Shell({ children, page }: { children: ReactNode; page: string }) {
     }
   }
   return (
-    <div className="min-h-svh bg-muted/30">
-      <header className="border-b bg-background">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-5 py-4 sm:px-8">
-          <div className="flex items-center gap-6">
+    <div className="flex min-h-svh flex-col bg-muted/35 lg:h-svh lg:overflow-hidden">
+      <header className="shrink-0 border-b border-border/80 bg-card/90 backdrop-blur-md">
+        <div className="mx-auto flex min-h-14 max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-2 sm:px-6">
+          <div className="flex items-center gap-4">
             <Brand />
-            <Separator orientation="vertical" className="hidden h-5 sm:block" />
-            <span className="hidden text-sm text-muted-foreground sm:block">
+            <Separator orientation="vertical" className="hidden h-4 sm:block" />
+            <span className="hidden text-xs font-medium text-muted-foreground sm:block">
               工作空间
             </span>
           </div>
@@ -323,9 +381,12 @@ function Shell({ children, page }: { children: ReactNode; page: string }) {
             <Button
               variant={page === "概览" ? "secondary" : "ghost"}
               size="sm"
+              className={cn(
+                page === "概览" && "bg-primary/10 text-primary hover:bg-primary/15",
+              )}
               asChild
             >
-              <a href="/">
+              <a href="/" onClick={(e) => navigate("/", e)}>
                 <LayoutDashboard data-icon="inline-start" />
                 概览
               </a>
@@ -333,16 +394,26 @@ function Shell({ children, page }: { children: ReactNode; page: string }) {
             <Button
               variant={page === "账号详情" ? "secondary" : "ghost"}
               size="sm"
+              className={cn(
+                page === "账号详情" && "bg-primary/10 text-primary hover:bg-primary/15",
+              )}
               asChild
             >
-              <a href="/login">账号详情</a>
+              <a href="/login" onClick={(e) => navigate("/login", e)}>
+                账号详情
+              </a>
             </Button>
             <Button
               variant={page === "CLI 更新" ? "secondary" : "ghost"}
               size="sm"
+              className={cn(
+                page === "CLI 更新" && "bg-primary/10 text-primary hover:bg-primary/15",
+              )}
               asChild
             >
-              <a href="/update">CLI 更新</a>
+              <a href="/update" onClick={(e) => navigate("/update", e)}>
+                CLI 更新
+              </a>
             </Button>
             <Button
               variant="ghost"
@@ -355,17 +426,27 @@ function Shell({ children, page }: { children: ReactNode; page: string }) {
           </nav>
         </div>
       </header>
-      <main className="mx-auto max-w-7xl px-5 py-8 sm:px-8 sm:py-10">
+      <main className="mx-auto flex w-full max-w-7xl flex-1 min-h-0 flex-col px-4 py-4 sm:px-6 sm:py-5 lg:overflow-hidden">
         {children}
       </main>
-      <footer className="mx-auto flex max-w-7xl items-center justify-between px-5 pb-8 text-xs text-muted-foreground sm:px-8">
+      <footer className="mx-auto flex w-full max-w-7xl shrink-0 items-center justify-between border-t border-border/50 px-4 py-2 text-xs text-muted-foreground sm:px-6">
         <span>agy-proxy</span>
         <span>Powered by Antigravity CLI</span>
       </footer>
     </div>
   );
 }
-function KeyManager({ keys, refresh }: { keys: Key[]; refresh: () => void }) {
+function KeyManager({
+  keys,
+  loaded,
+  showSkeleton,
+  refresh,
+}: {
+  keys: Key[];
+  loaded: boolean;
+  showSkeleton: boolean;
+  refresh: () => void;
+}) {
   const [dialog, setDialog] = useState(false);
   const [editing, setEditing] = useState<Key | null>(null);
   const [deleting, setDeleting] = useState<Key | null>(null);
@@ -416,23 +497,29 @@ function KeyManager({ keys, refresh }: { keys: Key[]; refresh: () => void }) {
   }
   return (
     <>
-      <Card>
-        <CardHeader className="gap-4 sm:flex sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-col gap-2">
-            <CardTitle>API 密钥</CardTitle>
-            <CardDescription>
+      <Card className="flex flex-1 min-h-0 flex-col overflow-hidden border-border/80">
+        <CardHeader className="shrink-0 gap-3 border-b border-border/50 bg-muted/20 py-3 sm:flex sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-1">
+            <CardTitle className="text-base">API 密钥</CardTitle>
+            <CardDescription className="text-xs">
               为每个客户端分配独立密钥，随时管理访问权限。
             </CardDescription>
           </div>
-          <Button onClick={() => open()}>
+          <Button size="sm" onClick={() => open()}>
             <Plus data-icon="inline-start" />
             创建密钥
           </Button>
         </CardHeader>
-        <CardContent>
-          {keys.length ? (
+        <CardContent className="flex flex-1 min-h-0 flex-col overflow-y-auto pt-3">
+          {!loaded ? (
+            showSkeleton ? (
+              <Skeleton className="h-48 w-full" />
+            ) : (
+              <div className="min-h-[200px] flex-1" />
+            )
+          ) : keys.length ? (
             <Table>
-              <TableHeader>
+              <TableHeader className="sticky top-0 z-10 bg-card/95 backdrop-blur-xs">
                 <TableRow>
                   {[
                     "备注",
@@ -451,13 +538,13 @@ function KeyManager({ keys, refresh }: { keys: Key[]; refresh: () => void }) {
                 {keys.map((k) => (
                   <TableRow key={k.id}>
                     <TableCell className="font-medium">{k.name}</TableCell>
-                    <TableCell className="font-mono text-xs">
+                    <TableCell className="font-mono text-xs text-muted-foreground">
                       {k.masked}
                     </TableCell>
-                    <TableCell>{number(k.requests)}</TableCell>
-                    <TableCell>{number(k.usage.total_tokens)}</TableCell>
-                    <TableCell>{date(k.last_used_at)}</TableCell>
-                    <TableCell>{date(k.created_at)}</TableCell>
+                    <TableCell className="tabular-nums">{number(k.requests)}</TableCell>
+                    <TableCell className="tabular-nums">{number(k.usage.total_tokens)}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{date(k.last_used_at)}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{date(k.created_at)}</TableCell>
                     <TableCell>
                       <div className="flex gap-1">
                         <Button
@@ -595,16 +682,19 @@ type CatalogModel = { id: string; label: string; family: string; enabled: boolea
 type ModelGroup = { model: string; label: string; enabled: boolean; variants: CatalogModel[] };
 
 function Overview() {
-  const [data, setData] = useState<Dashboard | null>(null);
-  const [models, setModels] = useState<ModelGroup[]>([]);
+  const [data, setData] = useState<Dashboard | null>(cachedDashboard);
+  const [models, setModels] = useState<ModelGroup[]>(cachedModels ?? []);
+  const [loaded, setLoaded] = useState(cachedDashboard !== null);
+  const [tab, setTab] = useState(cachedOverviewTab);
   const [pendingModel, setPendingModel] = useState<string | null>(null);
   const modelRevision = useRef(0);
   const [error, setError] = useState("");
   const [modelError, setModelError] = useState("");
   const [query, setQuery] = useState("");
-  const [version, setVersion] = useState("");
+  const [version, setVersion] = useState(cachedUpdateVersion);
   const [tick, setTick] = useState(0);
   const [busy, setBusy] = useState(false);
+  const showSkeleton = useDelayedSkeleton(!loaded);
   useEffect(() => {
     let alive = true;
     let timer: ReturnType<typeof setTimeout>;
@@ -612,35 +702,43 @@ function Overview() {
       const revision = modelRevision.current;
       setBusy(true);
       try {
-        const d = await api<Dashboard>("/dashboard");
-        try {
-          const list = await api<{ models: CatalogModel[] }>(
-            "/api/models",
-          );
-          const groups = new Map<string, ModelGroup>();
-          for (const m of list.models) {
-            const group = groups.get(m.family) || {
-              model: m.family,
-              label: m.label.replace(/\s*\((Low|Medium|High|XHigh|Max)\)$/i, ""),
-              enabled: m.enabled,
-              variants: [],
-            };
-            group.variants.push(m);
-            groups.set(m.family, group);
-          }
-          if (alive && revision === modelRevision.current) {
-            setModels([...groups.values()].sort((a, b) => a.model.localeCompare(b.model)));
+        const [dashRes, modelsRes] = await Promise.allSettled([
+          api<Dashboard>("/dashboard"),
+          api<{ models: CatalogModel[] }>("/api/models"),
+        ]);
+        if (!alive) return;
+        if (dashRes.status === "rejected") {
+          setError(message(dashRes.reason));
+          setLoaded(true);
+          return;
+        }
+        if (revision === modelRevision.current) {
+          if (modelsRes.status === "fulfilled") {
+            const groups = new Map<string, ModelGroup>();
+            for (const m of modelsRes.value.models) {
+              const group = groups.get(m.family) || {
+                model: m.family,
+                label: m.label.replace(/\s*\((Low|Medium|High|XHigh|Max)\)$/i, ""),
+                enabled: m.enabled,
+                variants: [],
+              };
+              group.variants.push(m);
+              groups.set(m.family, group);
+            }
+            const sorted = [...groups.values()].sort((a, b) =>
+              a.model.localeCompare(b.model),
+            );
+            cachedModels = sorted;
+            setModels(sorted);
             setModelError("");
+          } else {
+            setModelError(message(modelsRes.reason));
           }
-        } catch (e) {
-          if (alive && revision === modelRevision.current) setModelError(message(e));
         }
-        if (alive) {
-          setData(d);
-          setError("");
-        }
-      } catch (e) {
-        if (alive) setError(message(e));
+        cachedDashboard = dashRes.value;
+        setData(dashRes.value);
+        setLoaded(true);
+        setError("");
       } finally {
         if (alive) {
           setBusy(false);
@@ -656,7 +754,10 @@ function Overview() {
   }, [tick]);
   useEffect(() => {
     api<{ version: string }>("/update/status")
-      .then((s) => setVersion(s.version))
+      .then((s) => {
+        cachedUpdateVersion = s.version;
+        setVersion(s.version);
+      })
       .catch(() => {});
   }, []);
   const refresh = () => setTick((t) => t + 1);
@@ -669,9 +770,13 @@ function Overview() {
         `/api/models/${encodeURIComponent(model.model)}`,
         { method: "PATCH", body: JSON.stringify({ enabled }) },
       );
-      setModels((current) => current.map((m) =>
-        m.model === result.family ? { ...m, enabled: result.enabled } : m,
-      ));
+      setModels((current) => {
+        const next = current.map((m) =>
+          m.model === result.family ? { ...m, enabled: result.enabled } : m,
+        );
+        cachedModels = next;
+        return next;
+      });
       toast.success(`${model.model} 及其变体已${result.enabled ? "启用" : "禁用"}`);
     } catch (e) {
       toast.error(message(e));
@@ -720,227 +825,268 @@ function Overview() {
   ];
   return (
     <Shell page="概览">
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-semibold tracking-tight">
-              工作空间概览
-            </h1>
-            {version && <Badge variant="outline">agy v{version}</Badge>}
+      <div className="flex flex-1 min-h-0 flex-col gap-3.5">
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2.5">
+              <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
+                工作空间概览
+              </h1>
+              {version && (
+                <Badge variant="outline" className="border-primary/20 bg-primary/5 text-primary">
+                  agy v{version}
+                </Badge>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              查看模型用量，管理你的 API 连接。
+            </p>
           </div>
-          <p className="text-sm text-muted-foreground">
-            查看模型用量，管理你的 API 连接。
-          </p>
+          <Button variant="outline" size="sm" onClick={refresh} disabled={busy}>
+            <RefreshCw
+              data-icon="inline-start"
+              className={cn(busy && "animate-spin")}
+            />
+            刷新数据
+          </Button>
         </div>
-        <Button variant="outline" onClick={refresh} disabled={busy}>
-          <RefreshCw
-            data-icon="inline-start"
-            className={cn(busy && "animate-spin")}
-          />
-          刷新数据
-        </Button>
-      </div>
-      <ErrorNotice error={error} />
-      <div className="my-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        {metrics.map((m) => (
-          <Card key={m.label}>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardDescription>{m.label}</CardDescription>
-              <m.icon className="size-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              {data ? (
-                <div className="text-3xl font-semibold tracking-tight tabular-nums">
-                  {number(m.value)}
-                </div>
-              ) : (
-                <Skeleton className="h-9 w-28" />
-              )}
-              <p className="mt-2 text-xs text-muted-foreground">{m.detail}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-      <Tabs defaultValue="models" className="gap-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <TabsList>
-            <TabsTrigger value="models">模型列表</TabsTrigger>
-            <TabsTrigger value="keys">API 密钥</TabsTrigger>
-            <TabsTrigger value="recent">最近请求</TabsTrigger>
-          </TabsList>
-          <span className="text-xs text-muted-foreground">
-            {error ? "连接中断" : busy ? "同步中…" : "每 5 秒自动同步"}
-          </span>
-        </div>
-        <TabsContent value="models">
-          <Card>
-            <CardHeader className="gap-4 sm:flex sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex flex-col gap-2">
-                <CardTitle>
-                  模型列表{" "}
-                  <span className="ml-2 text-sm font-normal text-muted-foreground">
-                    {models.length}
-                  </span>
-                </CardTitle>
-                <CardDescription>
-                  按基础模型统一启用或禁用，包含所有变体。禁用后无法调用，也不会出现在客户端同步列表中。
+        <ErrorNotice error={error} />
+        <div className="grid shrink-0 grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+          {metrics.map((m) => (
+            <Card key={m.label} className="gap-1.5 border-border/80 py-3">
+              <CardHeader className="flex flex-row items-center justify-between px-4 py-0">
+                <CardDescription className="text-xs font-medium">
+                  {m.label}
                 </CardDescription>
-              </div>
-              <div className="w-full sm:w-64">
-                <Input
-                  aria-label="搜索模型"
-                  placeholder="搜索模型名称…"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <ErrorNotice error={modelError} />
-              {!data ? (
-                <Skeleton className="h-72 w-full" />
-              ) : !filtered.length ? (
-                <Blank
-                  title={query ? "没有匹配的模型" : "暂无可用模型"}
-                  description={
-                    query
-                      ? "尝试其他关键词。"
-                      : "连接 Antigravity 账号后刷新模型列表。"
-                  }
-                />
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      {["模型", "包含变体", "启用"].map((h) => (
-                        <TableHead key={h}>{h}</TableHead>
-                      ))}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filtered.map((m) => (
-                      <TableRow key={m.model}>
-                        <TableCell>
-                          <div className="flex items-center gap-3 py-2">
-                            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-muted/40">
-                              <Box className="size-4 text-muted-foreground" />
-                            </div>
-                            <div>
-                              <div className="font-mono text-xs font-medium">
-                                {m.model}
-                              </div>
-                              <div className="mt-1 text-xs text-muted-foreground">
-                                {m.label || "Antigravity 模型"}
-                              </div>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="whitespace-normal">
-                          <div className="flex flex-wrap gap-2">
-                            {m.variants.map((v) => (
-                              <Badge key={v.id} variant="outline" title={v.id}>
-                                {v.id === m.model ? "默认" : v.id.slice(m.model.length + 1)}
-                              </Badge>
-                            ))}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <Switch
-                              aria-label={`启用 ${m.model} 及其所有变体`}
-                              checked={m.enabled}
-                              disabled={pendingModel !== null}
-                              onCheckedChange={(enabled) => toggleModel(m, enabled)}
-                            />
-                            <span className="text-xs text-muted-foreground">
-                              {pendingModel === m.model ? "保存中…" : m.enabled ? "已启用" : "已禁用"}
-                            </span>
-                          </div>
-                        </TableCell>
+                <span className="flex size-7 items-center justify-center rounded-md bg-primary/10 text-primary">
+                  <m.icon className="size-3.5" />
+                </span>
+              </CardHeader>
+              <CardContent className="px-4 py-0">
+                {!loaded && showSkeleton ? (
+                  <Skeleton className="h-7 w-20" />
+                ) : (
+                  <div className="text-2xl font-semibold tracking-tight tabular-nums">
+                    {number(m.value)}
+                  </div>
+                )}
+                <p className="mt-1 truncate text-[11px] text-muted-foreground">
+                  {m.detail}
+                </p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <Tabs
+          value={tab}
+          onValueChange={(v) => {
+            cachedOverviewTab = v;
+            setTab(v);
+          }}
+          className="flex flex-1 min-h-0 flex-col gap-3"
+        >
+          <div className="flex shrink-0 flex-wrap items-center justify-between gap-2">
+            <TabsList className="border border-border/60 bg-muted/80">
+              <TabsTrigger value="models">模型列表</TabsTrigger>
+              <TabsTrigger value="keys">API 密钥</TabsTrigger>
+              <TabsTrigger value="recent">最近请求</TabsTrigger>
+            </TabsList>
+            <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span
+                className={cn(
+                  "size-1.5 rounded-full",
+                  error
+                    ? "bg-destructive"
+                    : busy
+                      ? "bg-primary animate-pulse"
+                      : "bg-emerald-500",
+                )}
+              />
+              {error ? "连接中断" : busy ? "同步中…" : "每 5 秒自动同步"}
+            </span>
+          </div>
+          <TabsContent value="models" className="flex flex-1 min-h-0 flex-col">
+            <Card className="flex flex-1 min-h-0 flex-col overflow-hidden border-border/80">
+              <CardHeader className="shrink-0 gap-3 border-b border-border/50 bg-muted/20 py-3 sm:flex sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-1">
+                  <CardTitle className="text-base">
+                    模型列表{" "}
+                    <span className="ml-1.5 text-xs font-normal text-muted-foreground">
+                      {models.length}
+                    </span>
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    按基础模型统一启用或禁用，包含所有变体。禁用后无法调用，也不会出现在客户端同步列表中。
+                  </CardDescription>
+                </div>
+                <div className="w-full sm:w-60">
+                  <Input
+                    aria-label="搜索模型"
+                    placeholder="搜索模型名称…"
+                    className="h-8 text-xs"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                  />
+                </div>
+              </CardHeader>
+              <CardContent className="flex flex-1 min-h-0 flex-col overflow-y-auto pt-3">
+                <ErrorNotice error={modelError} />
+                {!loaded ? (
+                  showSkeleton ? (
+                    <Skeleton className="h-48 w-full" />
+                  ) : (
+                    <div className="min-h-[200px] flex-1" />
+                  )
+                ) : !filtered.length ? (
+                  <Blank
+                    title={query ? "没有匹配的模型" : "暂无可用模型"}
+                    description={
+                      query
+                        ? "尝试其他关键词。"
+                        : "连接 Antigravity 账号后刷新模型列表。"
+                    }
+                  />
+                ) : (
+                  <Table>
+                    <TableHeader className="sticky top-0 z-10 bg-card/95 backdrop-blur-xs">
+                      <TableRow>
+                        {["模型", "包含变体", "启用"].map((h) => (
+                          <TableHead key={h}>{h}</TableHead>
+                        ))}
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-        <TabsContent value="keys">
-          {data ? (
-            <KeyManager keys={data.keys} refresh={refresh} />
-          ) : (
-            <Skeleton className="h-64 w-full" />
-          )}
-        </TabsContent>
-        <TabsContent value="recent">
-          <Card>
-            <CardHeader>
-              <CardTitle>最近请求</CardTitle>
-              <CardDescription>
-                最近 {data?.recent.length || 0} 条 / 共{" "}
-                {data?.recent_total || 0} 条调用记录。
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {!data?.recent.length ? (
-                <Blank
-                  title="还没有请求记录"
-                  description="通过 API 发起调用后，在这里查看状态、耗时与用量。"
-                />
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      {[
-                        "时间",
-                        "模型",
-                        "密钥",
-                        "状态",
-                        "耗时",
-                        "输入",
-                        "输出",
-                        "Tokens",
-                      ].map((h) => (
-                        <TableHead key={h}>{h}</TableHead>
+                    </TableHeader>
+                    <TableBody>
+                      {filtered.map((m) => (
+                        <TableRow key={m.model}>
+                          <TableCell>
+                            <div className="flex items-center gap-2.5 py-0.5">
+                              <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-primary/15 bg-primary/5">
+                                <Box className="size-3.5 text-primary" />
+                              </div>
+                              <div>
+                                <div className="font-mono text-xs font-medium">
+                                  {m.model}
+                                </div>
+                                <div className="mt-0.5 text-xs text-muted-foreground">
+                                  {m.label || "Antigravity 模型"}
+                                </div>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="whitespace-normal">
+                            <div className="flex flex-wrap gap-1.5">
+                              {m.variants.map((v) => (
+                                <Badge key={v.id} variant="outline" title={v.id}>
+                                  {v.id === m.model ? "默认" : v.id.slice(m.model.length + 1)}
+                                </Badge>
+                              ))}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2.5">
+                              <Switch
+                                aria-label={`启用 ${m.model} 及其所有变体`}
+                                checked={m.enabled}
+                                disabled={pendingModel !== null}
+                                onCheckedChange={(enabled) => toggleModel(m, enabled)}
+                              />
+                              <span className="text-xs text-muted-foreground">
+                                {pendingModel === m.model ? "保存中…" : m.enabled ? "已启用" : "已禁用"}
+                              </span>
+                            </div>
+                          </TableCell>
+                        </TableRow>
                       ))}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {data.recent.map((r, i) => (
-                      <TableRow key={`${r.ts}-${i}`}>
-                        <TableCell>{date(r.ts)}</TableCell>
-                        <TableCell className="font-mono text-xs">
-                          {r.model}
-                        </TableCell>
-                        <TableCell>{r.key_name}</TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={
-                              r.status === "SUCCESS"
-                                ? "secondary"
-                                : "destructive"
-                            }
-                          >
-                            {r.status === "SUCCESS" ? "成功" : r.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {r.duration_ms
-                            ? (r.duration_ms / 1000).toFixed(1) + "s"
-                            : "—"}
-                        </TableCell>
-                        <TableCell>{number(r.usage.input_tokens)}</TableCell>
-                        <TableCell>{number(r.usage.output_tokens)}</TableCell>
-                        <TableCell>{number(r.usage.total_tokens)}</TableCell>
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+          <TabsContent value="keys" className="flex flex-1 min-h-0 flex-col">
+            <KeyManager
+              keys={data?.keys ?? []}
+              loaded={loaded}
+              showSkeleton={showSkeleton}
+              refresh={refresh}
+            />
+          </TabsContent>
+          <TabsContent value="recent" className="flex flex-1 min-h-0 flex-col">
+            <Card className="flex flex-1 min-h-0 flex-col overflow-hidden border-border/80">
+              <CardHeader className="shrink-0 gap-1 border-b border-border/50 bg-muted/20 py-3">
+                <CardTitle className="text-base">最近请求</CardTitle>
+                <CardDescription className="text-xs">
+                  最近 {data?.recent.length || 0} 条 / 共{" "}
+                  {data?.recent_total || 0} 条调用记录。
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-1 min-h-0 flex-col overflow-y-auto pt-3">
+                {!loaded ? (
+                  showSkeleton ? (
+                    <Skeleton className="h-48 w-full" />
+                  ) : (
+                    <div className="min-h-[200px] flex-1" />
+                  )
+                ) : !data?.recent.length ? (
+                  <Blank
+                    title="还没有请求记录"
+                    description="通过 API 发起调用后，在这里查看状态、耗时与用量。"
+                  />
+                ) : (
+                  <Table>
+                    <TableHeader className="sticky top-0 z-10 bg-card/95 backdrop-blur-xs">
+                      <TableRow>
+                        {[
+                          "时间",
+                          "模型",
+                          "密钥",
+                          "状态",
+                          "耗时",
+                          "输入",
+                          "输出",
+                          "Tokens",
+                        ].map((h) => (
+                          <TableHead key={h}>{h}</TableHead>
+                        ))}
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+                    </TableHeader>
+                    <TableBody>
+                      {data.recent.map((r, i) => (
+                        <TableRow key={`${r.ts}-${i}`}>
+                          <TableCell className="text-xs text-muted-foreground">{date(r.ts)}</TableCell>
+                          <TableCell className="font-mono text-xs">
+                            {r.model}
+                          </TableCell>
+                          <TableCell>{r.key_name}</TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={
+                                r.status === "SUCCESS"
+                                  ? "secondary"
+                                  : "destructive"
+                              }
+                            >
+                              {r.status === "SUCCESS" ? "成功" : r.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="tabular-nums">
+                            {r.duration_ms
+                              ? (r.duration_ms / 1000).toFixed(1) + "s"
+                              : "—"}
+                          </TableCell>
+                          <TableCell className="tabular-nums">{number(r.usage.input_tokens)}</TableCell>
+                          <TableCell className="tabular-nums">{number(r.usage.output_tokens)}</TableCell>
+                          <TableCell className="tabular-nums">{number(r.usage.total_tokens)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
     </Shell>
   );
 }
@@ -998,19 +1144,19 @@ function LoginTerminal({
     }
   }
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>CLI 交互终端</CardTitle>
-        <CardDescription>
+    <Card className="border-border/80">
+      <CardHeader className="py-2.5">
+        <CardTitle className="text-sm">CLI 交互终端</CardTitle>
+        <CardDescription className="text-xs">
           查看当前提示，用下方按键选择登录方式或授权选项。回车会确认当前选项，请先核对内容。
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex min-w-0 flex-col gap-4">
+      <CardContent className="flex min-w-0 flex-col gap-3">
         <div
           role="region"
           aria-label="CLI 当前画面"
           tabIndex={0}
-          className="max-h-96 min-h-32 overflow-auto rounded-md border bg-muted/40 p-4 outline-offset-2"
+          className="max-h-56 min-h-24 overflow-auto rounded-md border bg-muted/40 p-3 outline-offset-2"
           onKeyDown={(e) => {
             if (
               e.target !== e.currentTarget ||
@@ -1061,7 +1207,7 @@ function LoginTerminal({
           </pre>
         </div>
         <div
-          className="flex flex-wrap gap-2"
+          className="flex flex-wrap gap-1.5"
           role="group"
           aria-label="CLI 按键"
         >
@@ -1096,8 +1242,11 @@ function Bridge({
 }) {
   const base = update ? "/update" : "/login";
   const accountQuery = !update && accountId ? `?account_id=${encodeURIComponent(accountId)}` : "";
+  const cacheKey = base + accountQuery;
   const title = update ? "CLI 更新" : "账号授权";
-  const [state, setState] = useState<BridgeState | null>(null);
+  const [state, setState] = useState<BridgeState | null>(
+    () => cachedBridgeState.get(cacheKey) ?? null,
+  );
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [code, setCode] = useState("");
@@ -1109,6 +1258,8 @@ function Bridge({
       try {
         const d = await api<BridgeState>(base + "/status" + accountQuery);
         if (alive) {
+          cachedBridgeState.set(cacheKey, d);
+          if (update && d.version) cachedUpdateVersion = d.version;
           setState(d);
           setError("");
         }
@@ -1123,7 +1274,7 @@ function Bridge({
       alive = false;
       clearTimeout(timer);
     };
-  }, [base, tick, accountQuery]);
+  }, [base, tick, accountQuery, cacheKey, update]);
   async function action(path: string, body?: object) {
     setBusy(true);
     setError("");
@@ -1132,6 +1283,7 @@ function Bridge({
         method: "POST",
         body: JSON.stringify({ ...body, session_id: state?.session_id }),
       });
+      cachedBridgeState.set(cacheKey, d);
       setState(d);
       if (path === "/code") setCode("");
       setTick((t) => t + 1);
@@ -1155,57 +1307,57 @@ function Bridge({
     error: "操作失败",
   };
   const content = (
-    <div className="mx-auto flex max-w-2xl flex-col gap-6">
+    <div className={cn("mx-auto flex w-full max-w-2xl flex-col gap-4", !embedded && "flex-1 min-h-0")}>
       {!embedded && (
-        <>
-          <Button variant="ghost" size="sm" asChild className="self-start">
-            <a href="/">
-              <ArrowLeft data-icon="inline-start" />
-              返回概览
-            </a>
-          </Button>
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-            <p className="mt-2 text-sm text-muted-foreground">
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-col gap-1">
+            <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{title}</h1>
+            <p className="text-xs text-muted-foreground">
               {update
                 ? "检查并更新 Antigravity CLI，无需重新部署服务。"
                 : "连接 Google 账号，让你的应用开始使用 Antigravity 模型。"}
             </p>
           </div>
-        </>
+          <Button variant="ghost" size="sm" asChild>
+            <a href="/" onClick={(e) => navigate("/", e)}>
+              <ArrowLeft data-icon="inline-start" />
+              返回概览
+            </a>
+          </Button>
+        </div>
       )}
       <ErrorNotice error={error} />
-      <Card>
+      <Card className="shrink-0 border-border/80">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>
+            <CardTitle className="text-base">
               {update ? "Antigravity CLI" : "Antigravity 账号"}
             </CardTitle>
             <Badge
               variant={state?.state === "error" ? "destructive" : "secondary"}
             >
-              {state ? label[state.state] || state.state : "正在检查…"}
+              {state ? label[state.state] || state.state : "尚未开始"}
             </Badge>
           </div>
-          <CardDescription>
+          <CardDescription className="text-xs">
             {update
-              ? `当前版本：${state?.version ? "v" + state.version : "读取中…"}`
+              ? `当前版本：${state?.version || cachedUpdateVersion ? "v" + (state?.version || cachedUpdateVersion) : "—"}`
               : "授权信息保存在当前服务，无需每次重新登录。"}
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-5">
+        <CardContent className="flex flex-col gap-3.5">
           {state?.message && (
             <p className="text-sm text-muted-foreground">{state.message}</p>
           )}
           {!update && (
-            <ol className="grid grid-cols-3 gap-3 text-xs text-muted-foreground">
+            <ol className="grid grid-cols-1 gap-2 text-xs text-muted-foreground sm:grid-cols-3">
               {["确认 CLI 提示", "登录 Google 账号", "提交授权码"].map(
                 (s, i) => (
-                  <li key={s} className="flex flex-col gap-2">
-                    <span className="flex size-7 items-center justify-center rounded-full border bg-muted">
+                  <li key={s} className="flex items-center gap-2 rounded-lg border border-border/60 bg-muted/30 px-2.5 py-2">
+                    <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-medium text-primary">
                       {i + 1}
                     </span>
-                    {s}
+                    <span className="truncate">{s}</span>
                   </li>
                 ),
               )}
@@ -1213,7 +1365,7 @@ function Bridge({
           )}
           {state?.url && !update && (
             <div className="flex flex-wrap gap-2">
-              <Button asChild>
+              <Button size="sm" asChild>
                 <a
                   href={/^https:\/\//.test(state.url) ? state.url : "#"}
                   target="_blank"
@@ -1223,7 +1375,7 @@ function Bridge({
                   <ExternalLink data-icon="inline-end" />
                 </a>
               </Button>
-              <Button variant="outline" onClick={() => copyText(state.url!)}>
+              <Button size="sm" variant="outline" onClick={() => copyText(state.url!)}>
                 <Copy data-icon="inline-start" />
                 复制链接
               </Button>
@@ -1251,7 +1403,7 @@ function Bridge({
                       完成授权后，从跳转页面复制授权码并粘贴到这里。
                     </FieldDescription>
                   </Field>
-                  <Button disabled={running || !code.trim()}>
+                  <Button size="sm" disabled={running || !code.trim()}>
                     提交授权码
                     <ArrowRight data-icon="inline-end" />
                   </Button>
@@ -1259,18 +1411,19 @@ function Bridge({
               </form>
             )}
           {update && (
-            <p className="text-sm leading-6 text-muted-foreground">
+            <p className="text-xs leading-5 text-muted-foreground">
               更新会释放空闲会话；正在进行的请求会继续完成。
             </p>
           )}
         </CardContent>
         <CardFooter className="flex-wrap gap-2">
           {!update && state?.state === "authenticated" && (
-            <Button disabled={busy} onClick={() => action("/finish")}>
+            <Button size="sm" disabled={busy} onClick={() => action("/finish")}>
               完成并关闭
             </Button>
           )}
           <Button
+            size="sm"
             disabled={!state || running || (!update && state.interactive)}
             onClick={() => action("/start")}
           >
@@ -1289,6 +1442,7 @@ function Bridge({
           </Button>
           {!update && state?.interactive && (
             <Button
+              size="sm"
               variant="outline"
               disabled={busy}
               onClick={() => action("/stop")}
@@ -1304,12 +1458,12 @@ function Bridge({
         <LoginTerminal state={state} onChange={setState} accountQuery={accountQuery} />
       ) : null}
       {update && (state?.output || state?.tail) && (
-        <Card>
-          <CardHeader>
-            <CardTitle>运行日志</CardTitle>
+        <Card className="flex flex-1 min-h-0 flex-col border-border/80">
+          <CardHeader className="shrink-0 py-2.5">
+            <CardTitle className="text-sm">运行日志</CardTitle>
           </CardHeader>
-          <CardContent>
-            <pre className="max-h-80 overflow-auto rounded-md bg-muted p-4 font-mono text-xs leading-6 whitespace-pre-wrap break-all">
+          <CardContent className="flex-1 min-h-0 overflow-hidden">
+            <pre className="max-h-56 overflow-auto rounded-md bg-muted/50 p-3 font-mono text-xs leading-5 whitespace-pre-wrap break-all">
               {state.output || state.tail}
             </pre>
           </CardContent>
@@ -1320,7 +1474,12 @@ function Bridge({
   return embedded ? content : <Shell page={title}>{content}</Shell>;
 }
 export default function App() {
-  const path = location.pathname;
+  const [path, setPath] = useState(() => location.pathname);
+  useEffect(() => {
+    const syncPath = () => setPath(location.pathname);
+    window.addEventListener("popstate", syncPath);
+    return () => window.removeEventListener("popstate", syncPath);
+  }, []);
   return (
     <>
       {path === "/signin" ? (

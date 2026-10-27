@@ -331,6 +331,37 @@ def test_recommended_menu_does_not_hide_gemini_or_expose_internal_helpers():
     }
 
 
+def test_account_panel_requests_current_cli_model_catalog(credential, monkeypatch, tmp_path):
+    # The upstream returns HTTP 200 for generic clients too, but silently omits
+    # current CLI variants. A successful response alone does not prove completeness.
+    current = {
+        f"{family}-{effort}": {"displayName": f"{label} ({effort.title()})"}
+        for family, label in [("gemini-4-argon", "Gemini 4 Argon"),
+                              ("gemini-3.8-flash", "Gemini 3.8 Flash")]
+        for effort in ("low", "medium", "high")
+    }
+
+    def handler(request):
+        if request.url.path.endswith("fetchAvailableModels"):
+            assert json.loads(request.content) == {"project": "PRIVATE_PROJECT"}
+            if request.headers["user-agent"].startswith("antigravity/cli/1.4.2 "):
+                return httpx.Response(200, json={"models": {**MODELS["models"], **current}})
+        return ok(request)
+
+    mocked(monkeypatch, handler)
+    client = TestClient(create_app(Config(password="panel", data_dir=str(tmp_path / "data"))))
+    response = client.get("/api/accounts/current/usage",
+                          headers={"Authorization": "Bearer panel"})
+    assert response.status_code == 200
+    doc = response.json()
+    assert doc["status"] == "connected" and doc["models_error"] is None
+    assert {model["id"] for model in doc["models"]} == set(MODELS["models"]) | set(current)
+    assert all(model["remaining_fraction"] is None for model in doc["models"]
+               if model["id"] in current)
+    assert doc["usage"]["groups"][0]["buckets"][0]["remaining_fraction"] == 0.9806
+    assert "PRIVATE" not in response.text
+
+
 @pytest.mark.parametrize(
     "value", [None, "0.9", True, -1, 2, float("nan"), float("inf")]
 )
