@@ -12,7 +12,7 @@
 
 ## 镜像与版本
 
-使用 `tumuer/agy-proxy:v0.0.17-native.9`，可切换原公网入口，也可通过 [docker-compose.native.yml](../docker-compose.native.yml) 使用独立的 Compose 项目和数据卷。镜像内常规 CLI 为 1.4.2，原生后端单独固定到已验证的 Linux amd64 CLI 1.4.0；更新页面只更新常规 CLI，不替换原生二进制。
+使用 `tumuer/agy-proxy:v0.0.17-native.10`，可切换原公网入口，也可通过 [docker-compose.native.yml](../docker-compose.native.yml) 使用独立的 Compose 项目和数据卷。原生后端单独固定到已验证的 Linux amd64 CLI 1.4.0；更新页面只更新常规 CLI，不替换原生二进制。
 
 `native.8` 接入图片附件：保持输入清理开启，只允许 `view_file` 读取请求专属目录中的附件，逐一确认读取成功后再验证最终 `finish`。单图、多图、流式响应、图片会话续接及 Pi 工具返回图片格式均通过真实验证。仍按完整结果校验后交付；格式、数量和大小限制沿用既有图片输入校验。详见[发布记录](releases/v0.0.17-native.8.md)。
 
@@ -24,7 +24,7 @@
 
 `native.5` 的轮次/FIFO 和模型目录修复、`native.6` 的基础模型额度分组一并包含。
 
-当前源码另有尚未发布的 finish 轮次边界修正：GDB 在固定 CLI 内限制 finish 检查、强制提交计数与结构化结果选择的作用范围，防止历史 finish 被算作当前轮提交。缺失提交时由同一 CLI executor 在本轮内部补交，最多三次；原生提交次数耗尽时返回 `native_finish_exhausted`，保留用量且不再整轮重放。构建时需重新生成符号文件。native.8 和 native.9 均不包含这项边界修正；下一版本的范围与验证见[待发布说明](releases/unreleased.md)。
+`native.10` 发布 finish 轮次边界修正：GDB 在固定 CLI 内限制 finish 检查、强制提交计数与结构化结果选择的作用范围，防止历史 finish 被算作当前轮提交。缺失提交时由同一 CLI executor 在本轮内部补交，最多三次；原生提交次数耗尽时返回 `native_finish_exhausted`，保留用量且不再整轮重放。构建时重新生成符号文件。native.8 和 native.9 均不包含这项边界修正。本版也包含控制台布局、加载状态和账号额度分组更新，以及重新构建的前端产物；范围与验证见[发布记录](releases/v0.0.17-native.10.md)。
 
 已验证的 Cloud Code 路由在 `ANY + finish` 下仍可能返回纯文本。不能把设置 ANY 等同于上游已强制执行输出契约；轮次边界修正与上游约束失效是两个不同问题。内部补交仍会增加模型调用与等待，不承诺持续缺失时也能成功。
 
