@@ -84,6 +84,12 @@ import {
 } from "@/components/ui/empty";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Progress } from "@/components/ui/progress";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Toaster } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
 import { Accounts } from "@/components/accounts";
@@ -96,6 +102,7 @@ import {
   zero,
   type Dashboard,
   type Key,
+  type Usage,
 } from "@/lib/api";
 
 let cachedAboutVersion: string | null = null;
@@ -192,6 +199,170 @@ function Blank({ title, description }: { title: string; description: string }) {
         <EmptyDescription>{description}</EmptyDescription>
       </EmptyHeader>
     </Empty>
+  );
+}
+function LoadingStatus({ label }: { label: string }) {
+  return (
+    <p
+      role="status"
+      className="flex items-center gap-2 text-xs text-muted-foreground"
+    >
+      <Loader2 className="size-3.5 shrink-0 animate-spin" />
+      {label}
+    </p>
+  );
+}
+function ModelsSkeleton() {
+  return (
+    <div aria-hidden="true">
+      <Table>
+        <TableHeader className="sticky top-0 z-10 bg-card/95 backdrop-blur-xs">
+          <TableRow>
+            {["模型", "包含变体", "启用"].map((h) => (
+              <TableHead key={h}>{h}</TableHead>
+            ))}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {[0, 1, 2, 3, 4].map((row) => (
+            <TableRow key={row}>
+              <TableCell>
+                <div className="flex items-center gap-2.5 py-0.5">
+                  <Skeleton className="size-8 shrink-0 rounded-lg" />
+                  <div className="flex flex-col gap-1.5">
+                    <Skeleton className="h-3 w-32" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="flex flex-wrap gap-1.5">
+                  <Skeleton className="h-5 w-12 rounded-full" />
+                  <Skeleton className="h-5 w-16 rounded-full" />
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-2.5">
+                  <Skeleton className="h-[1.15rem] w-8 rounded-full" />
+                  <Skeleton className="h-3 w-10" />
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+function TableSkeleton({
+  headers,
+  rows = 4,
+}: {
+  headers: string[];
+  rows?: number;
+}) {
+  return (
+    <div aria-hidden="true">
+      <Table>
+        <TableHeader className="sticky top-0 z-10 bg-card/95 backdrop-blur-xs">
+          <TableRow>
+            {headers.map((h) => (
+              <TableHead key={h}>{h}</TableHead>
+            ))}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {Array.from({ length: rows }, (_, row) => (
+            <TableRow key={row}>
+              {headers.map((h, col) => (
+                <TableCell key={h}>
+                  <Skeleton
+                    className={cn("h-4", col === 0 ? "w-28" : "w-16")}
+                  />
+                </TableCell>
+              ))}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+function cacheRate(usage: Usage): number | null {
+  // CLI input/total exclude cache_read; the full prompt is uncached + cached.
+  const prompt = (usage.input_tokens || 0) + (usage.cache_read_tokens || 0);
+  return prompt > 0 ? ((usage.cache_read_tokens || 0) / prompt) * 100 : null;
+}
+function UsageStat({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value?: number | null;
+  hint?: string;
+}) {
+  return (
+    <div className="flex flex-col gap-0.5" title={hint}>
+      <span className="text-[11px] text-muted-foreground">{label}</span>
+      <span className="text-xs font-medium tabular-nums">
+        {value === null || value === undefined ? "—" : number(value)}
+      </span>
+    </div>
+  );
+}
+function RequestUsage({ usage }: { usage: Usage }) {
+  const rate = cacheRate(usage);
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label="查看用量明细"
+          className="flex flex-col items-start gap-0.5 rounded-sm text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+        >
+          <span className="text-xs tabular-nums">
+            入 {number(usage.input_tokens)} · 出 {number(usage.output_tokens)}
+          </span>
+          <span className="text-[11px] text-muted-foreground tabular-nums">
+            缓存 {number(usage.cache_read_tokens)} ·{" "}
+            {rate === null ? "—" : `${rate.toFixed(1)}%`}
+          </span>
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="end">
+        <div className="flex flex-col gap-2.5">
+          <div className="flex items-baseline justify-between gap-2">
+            <span className="text-xs font-medium">用量明细</span>
+            <span className="text-[11px] text-muted-foreground tabular-nums">
+              {rate === null ? "缓存率 —" : `缓存率 ${rate.toFixed(1)}%`}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+            <UsageStat label="未缓存输入" value={usage.input_tokens} />
+            <UsageStat label="缓存读取" value={usage.cache_read_tokens} />
+            <UsageStat
+              label="缓存写入"
+              value={null}
+              hint="上游未上报缓存写入计数"
+            />
+            <UsageStat label="输出（含思考）" value={usage.output_tokens} />
+            <UsageStat label="其中思考" value={usage.thinking_tokens} />
+            <UsageStat
+              label="总计（不含缓存）"
+              value={usage.total_tokens}
+              hint="CLI 上报的 total，不含缓存读取"
+            />
+          </div>
+          {rate !== null && (
+            <Progress value={rate} aria-label={`缓存命中率 ${rate.toFixed(1)}%`} />
+          )}
+          <p className="text-[11px] leading-4 text-muted-foreground">
+            缓存率 = 缓存读取 ÷（未缓存输入 + 缓存读取）。上游未提供缓存写入计数。
+          </p>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
 async function copyText(text: string) {
@@ -454,6 +625,7 @@ function KeyManager({
   const [secret, setSecret] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const slow = useDelayedSkeleton(!loaded, 2500);
   function open(k?: Key) {
     setEditing(k || null);
     setName(k?.name || "");
@@ -513,7 +685,22 @@ function KeyManager({
         <CardContent className="flex flex-1 min-h-0 flex-col overflow-y-auto pt-3">
           {!loaded ? (
             showSkeleton ? (
-              <Skeleton className="h-48 w-full" />
+              <div className="flex flex-col gap-3">
+                <LoadingStatus
+                  label={slow ? "密钥读取较慢，请稍候…" : "正在读取 API 密钥…"}
+                />
+                <TableSkeleton
+                  headers={[
+                    "备注",
+                    "密钥",
+                    "请求",
+                    "Tokens",
+                    "最近使用",
+                    "创建时间",
+                    "操作",
+                  ]}
+                />
+              </div>
             ) : (
               <div className="min-h-[200px] flex-1" />
             )
@@ -685,6 +872,7 @@ function Overview() {
   const [data, setData] = useState<Dashboard | null>(cachedDashboard);
   const [models, setModels] = useState<ModelGroup[]>(cachedModels ?? []);
   const [loaded, setLoaded] = useState(cachedDashboard !== null);
+  const [modelsLoaded, setModelsLoaded] = useState(cachedModels !== null);
   const [tab, setTab] = useState(cachedOverviewTab);
   const [pendingModel, setPendingModel] = useState<string | null>(null);
   const modelRevision = useRef(0);
@@ -695,6 +883,9 @@ function Overview() {
   const [tick, setTick] = useState(0);
   const [busy, setBusy] = useState(false);
   const showSkeleton = useDelayedSkeleton(!loaded);
+  const showModelsSkeleton = useDelayedSkeleton(!modelsLoaded);
+  const slowDashboard = useDelayedSkeleton(!loaded, 2500);
+  const slowModels = useDelayedSkeleton(!modelsLoaded, 2500);
   useEffect(() => {
     let alive = true;
     let timer: ReturnType<typeof setTimeout>;
@@ -702,43 +893,51 @@ function Overview() {
       const revision = modelRevision.current;
       setBusy(true);
       try {
-        const [dashRes, modelsRes] = await Promise.allSettled([
-          api<Dashboard>("/dashboard"),
-          api<{ models: CatalogModel[] }>("/api/models"),
-        ]);
-        if (!alive) return;
-        if (dashRes.status === "rejected") {
-          setError(message(dashRes.reason));
-          setLoaded(true);
-          return;
-        }
-        if (revision === modelRevision.current) {
-          if (modelsRes.status === "fulfilled") {
-            const groups = new Map<string, ModelGroup>();
-            for (const m of modelsRes.value.models) {
-              const group = groups.get(m.family) || {
-                model: m.family,
-                label: m.label.replace(/\s*\((Low|Medium|High|XHigh|Max)\)$/i, ""),
-                enabled: m.enabled,
-                variants: [],
-              };
-              group.variants.push(m);
-              groups.set(m.family, group);
+        const dashPromise = api<Dashboard>("/dashboard").then(
+          (value) => {
+            if (!alive) return;
+            cachedDashboard = value;
+            setData(value);
+            setLoaded(true);
+            setError("");
+          },
+          (reason) => {
+            if (!alive) return;
+            setError(message(reason));
+            setLoaded(true);
+          },
+        );
+        const modelsPromise = api<{ models: CatalogModel[] }>("/api/models").then(
+          (value) => {
+            if (!alive) return;
+            if (revision === modelRevision.current) {
+              const groups = new Map<string, ModelGroup>();
+              for (const m of value.models) {
+                const group = groups.get(m.family) || {
+                  model: m.family,
+                  label: m.label.replace(/\s*\((Low|Medium|High|XHigh|Max)\)$/i, ""),
+                  enabled: m.enabled,
+                  variants: [],
+                };
+                group.variants.push(m);
+                groups.set(m.family, group);
+              }
+              const sorted = [...groups.values()].sort((a, b) =>
+                a.model.localeCompare(b.model),
+              );
+              cachedModels = sorted;
+              setModels(sorted);
+              setModelError("");
             }
-            const sorted = [...groups.values()].sort((a, b) =>
-              a.model.localeCompare(b.model),
-            );
-            cachedModels = sorted;
-            setModels(sorted);
-            setModelError("");
-          } else {
-            setModelError(message(modelsRes.reason));
-          }
-        }
-        cachedDashboard = dashRes.value;
-        setData(dashRes.value);
-        setLoaded(true);
-        setError("");
+            setModelsLoaded(true);
+          },
+          (reason) => {
+            if (!alive) return;
+            setModelError(message(reason));
+            setModelsLoaded(true);
+          },
+        );
+        await Promise.allSettled([dashPromise, modelsPromise]);
       } finally {
         if (alive) {
           setBusy(false);
@@ -787,6 +986,7 @@ function Overview() {
     }
   }
   const u = data?.totals.usage || zero;
+  const totalCacheRate = cacheRate(u);
   const filtered = models.filter((m) =>
     `${m.model} ${m.label} ${m.variants.map((v) => `${v.id} ${v.label}`).join(" ")}`
       .toLowerCase().includes(query.toLowerCase()),
@@ -819,7 +1019,10 @@ function Overview() {
     {
       label: "总缓存",
       value: u.cache_read_tokens,
-      detail: "累计缓存命中 Tokens",
+      detail:
+        totalCacheRate === null
+          ? "累计缓存命中 Tokens"
+          : `缓存命中率 ${totalCacheRate.toFixed(1)}%`,
       icon: Database,
     },
   ];
@@ -931,9 +1134,18 @@ function Overview() {
               </CardHeader>
               <CardContent className="flex flex-1 min-h-0 flex-col overflow-y-auto pt-3">
                 <ErrorNotice error={modelError} />
-                {!loaded ? (
-                  showSkeleton ? (
-                    <Skeleton className="h-48 w-full" />
+                {!modelsLoaded ? (
+                  showModelsSkeleton ? (
+                    <div className="flex flex-col gap-3">
+                      <LoadingStatus
+                        label={
+                          slowModels
+                            ? "模型列表读取较慢，首次读取需要调用 agy，最长约 45 秒…"
+                            : "正在读取模型列表…"
+                        }
+                      />
+                      <ModelsSkeleton />
+                    </div>
                   ) : (
                     <div className="min-h-[200px] flex-1" />
                   )
@@ -1023,7 +1235,26 @@ function Overview() {
               <CardContent className="flex flex-1 min-h-0 flex-col overflow-y-auto pt-3">
                 {!loaded ? (
                   showSkeleton ? (
-                    <Skeleton className="h-48 w-full" />
+                    <div className="flex flex-col gap-3">
+                      <LoadingStatus
+                        label={
+                          slowDashboard
+                            ? "调用记录读取较慢，请稍候…"
+                            : "正在读取调用记录…"
+                        }
+                      />
+                      <TableSkeleton
+                        headers={[
+                          "时间",
+                          "模型",
+                          "账号",
+                          "密钥",
+                          "状态",
+                          "耗时",
+                          "用量",
+                        ]}
+                      />
+                    </div>
                   ) : (
                     <div className="min-h-[200px] flex-1" />
                   )
@@ -1039,12 +1270,11 @@ function Overview() {
                         {[
                           "时间",
                           "模型",
+                          "账号",
                           "密钥",
                           "状态",
                           "耗时",
-                          "输入",
-                          "输出",
-                          "Tokens",
+                          "用量",
                         ].map((h) => (
                           <TableHead key={h}>{h}</TableHead>
                         ))}
@@ -1056,6 +1286,12 @@ function Overview() {
                           <TableCell className="text-xs text-muted-foreground">{date(r.ts)}</TableCell>
                           <TableCell className="font-mono text-xs">
                             {r.model}
+                          </TableCell>
+                          <TableCell
+                            className="max-w-[160px] truncate text-xs text-muted-foreground"
+                            title={r.account_id || undefined}
+                          >
+                            {r.account_name || "—"}
                           </TableCell>
                           <TableCell>{r.key_name}</TableCell>
                           <TableCell>
@@ -1074,9 +1310,9 @@ function Overview() {
                               ? (r.duration_ms / 1000).toFixed(1) + "s"
                               : "—"}
                           </TableCell>
-                          <TableCell className="tabular-nums">{number(r.usage.input_tokens)}</TableCell>
-                          <TableCell className="tabular-nums">{number(r.usage.output_tokens)}</TableCell>
-                          <TableCell className="tabular-nums">{number(r.usage.total_tokens)}</TableCell>
+                          <TableCell>
+                            <RequestUsage usage={r.usage} />
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>

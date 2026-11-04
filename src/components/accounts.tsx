@@ -101,6 +101,42 @@ function Failure({ text }: { text: string }) {
   );
 }
 
+function AccountCardSkeleton() {
+  return (
+    <Card className="min-w-0 border-border/80" aria-hidden="true">
+      <CardHeader>
+        <div className="flex items-center justify-between gap-3">
+          <Skeleton className="size-8 rounded-lg" />
+          <Skeleton className="h-5 w-16 rounded-full" />
+        </div>
+        <Skeleton className="mt-1 h-5 w-3/4" />
+        <Skeleton className="h-3.5 w-1/2" />
+      </CardHeader>
+      <CardContent className="flex flex-col gap-2.5">
+        <Skeleton className="h-3.5 w-full" />
+        <Skeleton className="h-3.5 w-2/3" />
+        <Skeleton className="h-3 w-24" />
+      </CardContent>
+      <CardFooter className="flex-wrap gap-2">
+        <Skeleton className="h-8 w-24" />
+        <Skeleton className="h-8 w-20" />
+      </CardFooter>
+    </Card>
+  );
+}
+
+function LoadingNote({ label }: { label: string }) {
+  return (
+    <p
+      role="status"
+      className="flex items-center gap-2 text-xs text-muted-foreground"
+    >
+      <Loader2 className="size-3.5 shrink-0 animate-spin" />
+      {label}
+    </p>
+  );
+}
+
 function resetLabel(
   reset: number | null,
   now: number,
@@ -165,8 +201,28 @@ function UsageDetails({
             role="status"
             aria-label="正在查询额度"
           >
-            <Skeleton className="h-32 w-full" />
-            <Skeleton className="h-32 w-full" />
+            <LoadingNote label="正在查询账号额度，上游较慢时最长约 25 秒…" />
+            <Card className="border-border/80" aria-hidden="true">
+              <CardHeader className="py-2.5">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-3 w-64 max-w-full" />
+              </CardHeader>
+              <CardContent className="grid gap-3 sm:grid-cols-2">
+                {[0, 1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="flex flex-col gap-2 rounded-lg border border-border/60 bg-muted/20 p-2.5"
+                  >
+                    <div className="flex items-baseline justify-between gap-2">
+                      <Skeleton className="h-3.5 w-24" />
+                      <Skeleton className="h-3.5 w-16" />
+                    </div>
+                    <Skeleton className="h-2 w-full rounded-full" />
+                    <Skeleton className="h-3 w-32" />
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
           </div>
         ) : failure ? (
           <Failure text={failure} />
@@ -385,6 +441,7 @@ export function Accounts({ login }: { login: (accountId: string) => ReactNode })
   const [error, setError] = useState("");
   const [tick, setTick] = useState(0);
   const showSkeleton = useDelayedSkeleton(!loaded);
+  const slow = useDelayedSkeleton(!loaded, 2500);
   useEffect(() => {
     const controller = new AbortController();
     setBusy(true);
@@ -446,8 +503,23 @@ export function Accounts({ login }: { login: (accountId: string) => ReactNode })
       <div className="flex flex-1 min-h-0 flex-col overflow-y-auto">
         {!loaded ? (
           showSkeleton ? (
-            <div className="grid items-start gap-4 md:grid-cols-2 xl:grid-cols-3">
-              <Skeleton className="h-52 w-full" />
+            <div className="flex flex-col gap-3">
+              <LoadingNote
+                label={
+                  slow
+                    ? "账号状态检查较慢，上游最长约 25 秒…"
+                    : "正在检查账号状态…"
+                }
+              />
+              <div
+                className="grid items-start gap-4 md:grid-cols-2 xl:grid-cols-3"
+                aria-busy="true"
+                aria-label="正在加载账号列表"
+              >
+                {[0, 1, 2].map((i) => (
+                  <AccountCardSkeleton key={i} />
+                ))}
+              </div>
             </div>
           ) : (
             <div className="min-h-[220px] flex-1" />

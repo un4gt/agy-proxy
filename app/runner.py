@@ -12,7 +12,7 @@ import time
 from dataclasses import dataclass, field
 from typing import AsyncIterator, Literal
 
-from .agy import AgyError, SessionManager, account_failover
+from .agy import AgyError, SessionManager, account_failover, account_label
 from .auth import api_key_record
 from .config import Config
 from .contracts import ExecutionOutcome
@@ -28,6 +28,8 @@ class TurnProfile:
 
     started: float = field(default_factory=time.monotonic)
     model: str | None = None
+    account_id: str | None = None
+    account_name: str = "—"
     new_session: bool = False
     marks: dict[str, float] = field(default_factory=dict)
     request_id: str = ""
@@ -198,6 +200,8 @@ async def record_dashboard_usage(
             usage=profile.usage if profile is not None else usage,
             duration_ms=duration_ms,
             status=status,
+            account_id=profile.account_id if profile is not None else None,
+            account_name=profile.account_name if profile is not None else "—",
             diagnostics=profile.diagnostics() if profile is not None else None,
         )
     except Exception:  # pragma: no cover - accounting must not break chat
@@ -227,6 +231,7 @@ async def run_turn(
     context = SessionContext.build(session_key, ["plain", system], messages)
     session = await mgr.acquire(model=model, effort=effort, context=context)
     if profile is not None:
+        profile.account_id, profile.account_name = account_label(session)
         profile.new_session = session.turns == 0
         profile.mark("session_ready")
     if session.input_offset:

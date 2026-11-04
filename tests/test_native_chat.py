@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 from contextlib import aclosing
 from pathlib import Path
 import sys
@@ -11,6 +12,7 @@ from fastapi.testclient import TestClient
 from app import create_app
 from app.agy import AgyError
 from app.config import Config, load_config
+from app.contracts import CandidateError
 from app.native_chat import NativeAgySession, NativeSessionManager, captured_output
 
 
@@ -56,6 +58,20 @@ def test_invalid_capture_fails_closed(change):
         result['calls'][0]['args']['unknown'] = 'must not silently drop'
     with pytest.raises(AgyError):
         captured_output(result)
+
+
+def test_capture_mismatch_is_repairable_without_logging_content(caplog):
+    result = captured()
+    result['cli']['structured_output'] = dict(OUTPUT, content='different-secret')
+    with caplog.at_level(logging.WARNING, logger='agy_proxy.native_chat'):
+        with pytest.raises(CandidateError) as caught:
+            captured_output(result)
+    assert caught.value.code == 'native_capture_mismatch'
+    assert caught.value.feedback['constraint'] == 'native_capture_mismatch'
+    assert 'native capture mismatch' in caplog.text
+    assert '$.content' in caplog.text
+    assert 'different-secret' not in caplog.text
+    assert 'native-marker' not in caplog.text
 
 
 def test_native_chat_is_explicitly_opt_in(monkeypatch):
@@ -178,7 +194,11 @@ def test_native_quota_failover_uses_other_account_only_for_explicit_quota(tmp_pa
             json={'model': 'auto', 'messages': [{'role': 'user', 'content': 'test quota'}]})
         assert response.status_code == (200 if quota else 429), response.text
         assert used == [a.id for a in accounts[:2 if quota else 1]]
-        assert client.app.state.store.requests[-1].public()['repair_attempts'] == 0
+        record = client.app.state.store.requests[-1].public()
+        assert record['repair_attempts'] == 0
+        expected = accounts[1] if quota else accounts[0]
+        assert record['account_id'] == expected.id
+        assert record['account_name'] == expected.name
         if quota:
             assert response.json()['choices'][0]['message']['content'] == OUTPUT['content']
         else:
@@ -238,7 +258,8 @@ def test_native_repair_is_bounded_verified_and_never_delivers_rejected_output(tm
         response = client.post('/v1/chat/completions', json={'model': 'auto', 'messages': history, 'stream': stream},
                                headers={'Authorization': 'Bearer alice'})
         assert 'REJECTED_PRIVATE_TEXT' not in response.text
-        expected_attempts = 2 if failure in ('missing', 'persistent_missing') else 1
+        repaired = failure in ('missing', 'mismatch')
+        expected_attempts = 2 if repaired or failure == 'persistent_missing' else 1
         assert len(sessions) == expected_attempts
         assert all(isinstance(s, NativeAgySession) and s.observer.closed for s in sessions)
         assert client.app.state.native_sessions.live_count == 0
@@ -248,14 +269,17 @@ def test_native_repair_is_bounded_verified_and_never_delivers_rejected_output(tm
             assert record['repair_attempts'] == 0
             assert record['usage']['input_tokens'] == 20
             assert 'native_finish_exhausted' in response.text
-        if failure == 'missing':
+        if repaired:
             assert response.status_code == 200
             assert response.text.count('native-marker') == 1
             assert record['repair_attempts'] == 1
             assert record['usage']['input_tokens'] == 40
             assert record['usage_complete'] is True
             assert all(marker in prompts[1] for marker in ('ORIGINAL_CLIENT_HISTORY', 'PRIOR_CONFIRMED_ANSWER', 'CURRENT_REQUEST'))
-            assert 'required_submission' in prompts[1]
+            if failure == 'missing':
+                assert 'required_submission' in prompts[1]
+            else:
+                assert 'native_capture_mismatch' in prompts[1]
         elif stream:
             events = [json.loads(line[6:]) for line in response.text.splitlines()
                       if line.startswith('data: ') and line != 'data: [DONE]']

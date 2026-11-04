@@ -640,6 +640,8 @@ def test_dashboard_reports_agy_usage(monkeypatch):
         assert d["totals"]["usage"]["thinking_tokens"] > 0
         assert d["recent"][0]["model"] == "gemini-3-pro-high"
         assert d["recent"][0]["key_name"] == "client"
+        assert d["recent"][0]["account_id"] == "current"
+        assert d["recent"][0]["account_name"] == "当前账号"
         assert d["keys"][0]["requests"] == 1
         assert "key" not in d["keys"][0]  # never expose the secret in listings
 

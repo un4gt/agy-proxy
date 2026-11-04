@@ -168,6 +168,7 @@ class AgySession:
         self.client_history: tuple[str, ...] = ()
         self.input_offset = 0
         self.account_id = cfg.account_id
+        self.account_name = ""
         self._turn_has_tools = False
 
     # -- lifecycle ---------------------------------------------------------
@@ -518,6 +519,13 @@ class AgySession:
 # -- session manager --------------------------------------------------------
 
 
+def account_label(session: AgySession) -> tuple[str, str]:
+    """Account identity used for request attribution; never queries upstream."""
+    account_id = session.account_id or "current"
+    name = session.account_name or ("当前账号" if account_id == "current" else account_id[:8])
+    return account_id, name
+
+
 class SessionManager:
     """Server-owned conversations, matched by explicit identity or exact history."""
 
@@ -555,6 +563,7 @@ class SessionManager:
         async with self._timed_lock(timing):
             context = session.client_context
             cfg = session.cfg
+            profile = None
             await session.kill()
             self._sessions.pop(session, None)
             if reselect and self.cfg.account_pool:
@@ -569,6 +578,7 @@ class SessionManager:
             fresh = getattr(self, "session_type", AgySession)(cfg, model=session.model, effort=session.effort,
                                output_schema=session.output_schema, attachments=session.attachments,
                                session_instructions=session.session_instructions)
+            fresh.account_name = profile.name if profile is not None else session.account_name
             fresh.leased = True
             fresh.client_context = context
             self._sessions[fresh] = None
@@ -682,6 +692,7 @@ class SessionManager:
             cfg = profile.configured(cfg)
         session = getattr(self, "session_type", AgySession)(cfg, model=model, effort=effort, output_schema=output_schema, attachments=attachments,
                              session_instructions=session_instructions)
+        session.account_name = profile.name if profile is not None else ""
         session.leased = leased
         self._sessions[session] = None
         try:

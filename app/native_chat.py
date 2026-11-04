@@ -5,16 +5,84 @@ validated and must agree with CLI lifecycle confirmation before final delivery.
 """
 from contextlib import aclosing
 from dataclasses import replace
+import hashlib
 import logging
 import sys
 from pathlib import Path
 import shutil
 
+from . import json_codec as json
 from .agy import AgyError, AgyQuotaError, AgySession, SessionManager, _child_env
 from .contracts import CandidateError
 from .tool_guard import allowed_image_call
 
 log = logging.getLogger("agy_proxy.native_chat")
+
+MAX_MISMATCH_DIFFS = 12
+
+
+def _summary(value) -> dict:
+    """Describe a value without copying user content into logs."""
+    if isinstance(value, bool) or value is None:
+        return {"type": type(value).__name__, "value": value}
+    if isinstance(value, str):
+        return {
+            "type": "string",
+            "chars": len(value),
+            "sha256": hashlib.sha256(value.encode("utf-8", "replace")).hexdigest()[:12],
+        }
+    if isinstance(value, (int, float)):
+        text = repr(value)
+        return {"type": type(value).__name__, "value": text[:40]}
+    if isinstance(value, dict):
+        return {"type": "object", "keys": [str(key)[:60] for key in sorted(value)[:20]],
+                "count": len(value)}
+    if isinstance(value, list):
+        return {"type": "array", "count": len(value)}
+    return {"type": type(value).__name__}
+
+
+def _clip_path(path: str) -> str:
+    return path if len(path) <= 160 else "$…" + path[-150:]
+
+
+def _diff_values(captured, confirmed, path="$", differences=None, depth=0):
+    """Record where captured and CLI-confirmed output diverge, content-free."""
+    if differences is None:
+        differences = []
+    if len(differences) >= MAX_MISMATCH_DIFFS:
+        return differences
+    if depth >= 12:
+        differences.append({"path": _clip_path(path), "issue": "depth_limit"})
+        return differences
+    if isinstance(captured, dict) and isinstance(confirmed, dict):
+        captured_keys, confirmed_keys = set(captured), set(confirmed)
+        for key in sorted(captured_keys - confirmed_keys):
+            differences.append({"path": _clip_path(f"{path}.{key}"),
+                                "issue": "only_in_capture", **_summary(captured[key])})
+            if len(differences) >= MAX_MISMATCH_DIFFS:
+                return differences
+        for key in sorted(confirmed_keys - captured_keys):
+            differences.append({"path": _clip_path(f"{path}.{key}"),
+                                "issue": "only_in_cli", **_summary(confirmed[key])})
+            if len(differences) >= MAX_MISMATCH_DIFFS:
+                return differences
+        for key in sorted(captured_keys & confirmed_keys):
+            _diff_values(captured[key], confirmed[key], f"{path}.{key}", differences, depth + 1)
+            if len(differences) >= MAX_MISMATCH_DIFFS:
+                return differences
+    elif isinstance(captured, list) and isinstance(confirmed, list):
+        if len(captured) != len(confirmed):
+            differences.append({"path": _clip_path(path), "issue": "array_length",
+                                "captured": len(captured), "cli": len(confirmed)})
+        for index, (left, right) in enumerate(zip(captured, confirmed)):
+            _diff_values(left, right, f"{path}[{index}]", differences, depth + 1)
+            if len(differences) >= MAX_MISMATCH_DIFFS:
+                return differences
+    elif captured != confirmed:
+        differences.append({"path": _clip_path(path), "issue": "value",
+                            "captured": _summary(captured), "cli": _summary(confirmed)})
+    return differences
 
 
 def captured_output(result, *, image_paths=(), images_seen=()):
@@ -51,8 +119,22 @@ def captured_output(result, *, image_paths=(), images_seen=()):
     if not isinstance(args, dict):
         raise AgyError("Native finish arguments are invalid", code="native_capture_invalid")
     output = {key: value for key, value in args.items() if key not in {"toolAction", "toolSummary"}}
-    if output != result["cli"].get("structured_output"):
-        raise AgyError("Native capture differs from CLI-confirmed output", code="native_capture_mismatch")
+    confirmed = result["cli"].get("structured_output")
+    if output != confirmed:
+        differences = _diff_values(output, confirmed)
+        log.warning("native capture mismatch conversation=%s turn=%s differences=%s",
+                    result["cli"].get("conversation_id"),
+                    (result.get("metrics") or {}).get("turn"),
+                    json.dumps_text(differences))
+        raise CandidateError(
+            "Native capture differs from CLI-confirmed output",
+            code="native_capture_mismatch",
+            feedback={
+                "constraint": "native_capture_mismatch",
+                "instruction": "Submit finish exactly once again with the complete client response. "
+                               "The previous submission could not be verified against the CLI-confirmed output.",
+            },
+        )
     return output
 
 

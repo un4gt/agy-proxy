@@ -78,12 +78,16 @@ class UsageRecord:
     status: str
     duration_ms: float
     usage: dict[str, int]
+    account_id: str | None = None
+    account_name: str = "—"
     diagnostics: dict = field(default_factory=dict)
 
     def public(self) -> dict:
         return {
             "ts": self.ts,
             "model": self.model,
+            "account_id": self.account_id,
+            "account_name": self.account_name,
             "key_name": self.key_name,
             "status": self.status,
             "duration_ms": self.duration_ms,
@@ -171,6 +175,8 @@ class Store:
                         status=str(item.get("status") or "SUCCESS"),
                         duration_ms=float(item.get("duration_ms") or 0),
                         usage=normalize_usage(item.get("usage")),
+                        account_id=item.get("account_id"),
+                        account_name=str(item.get("account_name") or "—"),
                         diagnostics={k: item[k] for k in ("request_id", "protocol", "attempts", "repair_attempts",
                                                          "error_code", "usage_complete") if k in item},
                     )
@@ -299,6 +305,8 @@ class Store:
         usage: dict | None,
         duration_ms: float = 0.0,
         status: str = "SUCCESS",
+        account_id: str | None = None,
+        account_name: str = "—",
         diagnostics: dict | None = None,
     ) -> None:
         normalized = normalize_usage(usage)
@@ -310,6 +318,8 @@ class Store:
             status=status,
             duration_ms=round(float(duration_ms or 0.0), 1),
             usage=normalized,
+            account_id=account_id,
+            account_name=account_name or "—",
             diagnostics=diagnostics or {},
         )
         async with self._lock:

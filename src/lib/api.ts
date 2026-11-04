@@ -89,6 +89,8 @@ export type Key = {
 export type Recent = {
   ts: number;
   model: string;
+  account_id?: string | null;
+  account_name?: string;
   key_name: string;
   status: string;
   duration_ms: number;

@@ -84,7 +84,7 @@ docker build -f Dockerfile.native --build-context native-cli=/path/to/verified-c
 
 原生二进制必须是 SHA-256 `60e72242f07c131f75afcd9a9e425d6ee097a1a1b3190ea98ae78fa4180bbfa8` 的 CLI 1.4.0。构建时校验哈希与版本并生成符号；本次发布使用此前验收容器保存的同哈希二进制。二进制不入 Git；没有此构建时可直接拉取发布镜像，不能用新版 CLI 替换后跳过校验。
 
-实验镜像需要 `SYS_PTRACE` 和 `seccomp=unconfined`。每个会话有独立 CLI/GDB、二进制快照、管道和工作目录；原生池默认上限 2，其他协议仍使用常规池，两池容量分别计算。交付前候选结果错误与 `native_capture_incomplete` 共用一次自动恢复预算：销毁旧进程，按完整客户端历史重新生成。结果不一致、非法原生工具调用及输入清理错误仍直接失败。恢复、失败或取消后销毁相应会话，后续客户端续接使用新进程。实验模式的账号删除会同时检查两个池。
+实验镜像需要 `SYS_PTRACE` 和 `seccomp=unconfined`。每个会话有独立 CLI/GDB、二进制快照、管道和工作目录；原生池默认上限 2，其他协议仍使用常规池，两池容量分别计算。交付前候选结果错误、`native_capture_incomplete` 与 `native_capture_mismatch` 共用一次自动恢复预算：销毁旧进程，按完整客户端历史重新生成。捕获结果不一致时先记录脱敏差异（字段路径、类型、长度、sha256 前缀，不记录正文），再进入重试；非法原生工具调用及输入清理错误仍直接失败。恢复、失败或取消后销毁相应会话，后续客户端续接使用新进程。实验模式的账号删除会同时检查两个池。
 
 观察器在 TLS 连接关闭时清理两方向的 HTTP 解析器、HPACK 和请求关联；同一对象地址出现新 HTTP/2 前言时重新初始化，前言允许跨 TLS 分片。所有请求已接收完整、但没有 `finish` 的候选，即使 CLI 留有非 null 的 `structured_output`，也进入 `native_finish_missing` 恢复流程。捕获失败记录脱敏事件计数，用于区分无 TLS 观察、请求未关联和响应不完整。
 

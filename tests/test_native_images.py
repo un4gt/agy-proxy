@@ -127,7 +127,8 @@ def test_native_image_api_validates_pixels_reads_and_final_capture(tmp_path, mon
         *[{'type': 'image_url', 'image_url': {'url': image_url(c)}} for c in ('red', 'blue')]]}]}
     with TestClient(create_app(cfg)) as client:
         response = client.post('/v1/chat/completions', json=body, headers={'Authorization': 'Bearer owner'})
-        assert len(observers) == 1
+        # A capture mismatch is repairable once; the retry sees the same failure.
+        assert len(observers) == (2 if failure == 'mismatch' else 1)
         if failure is None:
             assert response.status_code == 200, response.text
             assert OUTPUT['content'] in response.text

@@ -9,7 +9,7 @@ from anyio import CancelScope
 
 from . import json_codec as json
 from .account_pool import AccountPoolError
-from .agy import AgyError, AgyQuotaError
+from .agy import AgyError, AgyQuotaError, account_label
 from .contracts import CandidateError, CanonicalRequest
 from .session_context import SessionContext
 
@@ -41,6 +41,7 @@ async def execute(request: CanonicalRequest, mgr, *, profile, session_key=None):
                                                  attachments=request.attachments, context=context, timing=trace)
                 with trace.span("session_acquire"):
                     session = await acquire()
+                profile.account_id, profile.account_name = account_label(session)
                 profile.new_session = session.turns == 0
                 profile.mark("session_ready")
                 yield "ready", None
@@ -122,6 +123,7 @@ async def execute(request: CanonicalRequest, mgr, *, profile, session_key=None):
                             async with asyncio.timeout_at(deadline):
                                 try:
                                     session = await mgr.restart(session, reselect=quota, timing=trace)
+                                    profile.account_id, profile.account_name = account_label(session)
                                 except AgyError as restart_error:
                                     if quota and restart_error.status_code == 429:
                                         # No alternate account is available. Keep
