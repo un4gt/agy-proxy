@@ -166,12 +166,14 @@ async def _prepare(request: Request, body: dict, *, session_body: dict | None, t
             raise AgyError("AGY_PROXY_EFFORT is invalid", status_code=500, code="configuration_error") from None
     # Validate before looking up models or leasing any process.
     response_format = ResponseFormat.from_body(body)
+    bridge_external = None
     if response_format and not body.get("tools"):
         # Keep history validation even when the structured-output executor is
-        # selected (including role order and orphan tool results).
+        # selected (including role order and orphan tool results).  The legacy
+        # path must keep external=None so response_format.run is selected.
         validation = dict(execution, tools=[])
         validation.pop("response_format", None)
-        ExternalTools.from_body(validation)
+        bridge_external = ExternalTools.from_body(validation)
         external = None
     else:
         external = ExternalTools.from_body(dict(execution, tools=execution.get("tools", [])))
@@ -190,9 +192,20 @@ async def _prepare(request: Request, body: dict, *, session_body: dict | None, t
     model, effort = apply_effort(model, effort, slugs)
     profile.mark("models_done")
     manager = (request.app.state.native_sessions
-               if cfg.native_chat and request.url.path == "/v1/chat/completions"
+               if cfg.native_chat and not cfg.bridge and request.url.path == "/v1/chat/completions"
                else request.app.state.sessions)
-    if external:
+    if cfg.bridge:
+        raw_max = body.get("max_tokens", body.get("max_completion_tokens"))
+        if raw_max is not None and (type(raw_max) is not int or raw_max <= 0):
+            raise invalid("max_tokens must be a positive integer")
+        from .bridge.turn import BridgeTurn
+        turn = BridgeTurn(cfg, request.app.state.bridge_sessions,
+                          external=external or bridge_external,
+                          response_format=response_format,
+                          model=model, effort=effort, profile=profile,
+                          session_key=session_key, max_tokens=raw_max,
+                          images=images)
+    elif external:
         turn = external.run(manager, model=model, effort=effort, profile=profile,
                             images=images, session_key=session_key)
     elif response_format:

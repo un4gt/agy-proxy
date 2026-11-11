@@ -214,6 +214,6 @@ async def gemini_models(request: Request) -> Response:
             "version": "1",
             "supportedGenerationMethods": ["generateContent", "streamGenerateContent", "countTokens"],
         }
-        for slug in enabled_models(request, slugs)
+        for slug in enabled_models(request, slugs, owner=client_session_key(request).owner)
     ]
     return JSONResponse({"models": models})

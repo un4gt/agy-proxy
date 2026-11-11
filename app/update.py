@@ -232,6 +232,11 @@ async def update_start(request: Request):
     denied = _auth_error(request)
     if denied is not None:
         return denied
+    if request.app.state.cfg.bridge:
+        return JSONResponse(
+            {"error": "native bridge image is pinned to CLI 1.4.2; update the container image instead"},
+            status_code=409,
+        )
     bridge = _bridge(request)
     if bridge.state == "running":
         return JSONResponse(bridge.snapshot())

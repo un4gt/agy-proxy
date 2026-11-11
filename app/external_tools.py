@@ -233,12 +233,12 @@ class ExternalTools:
     def session_instructions(self, *, has_images: bool = False) -> str:
         """Register the stable bridge contract once, outside conversation history."""
         native_rule = (
-            "Before submitting finish, use native view_file on EACH exact attachment path listed below. "
+            "Before submitting finish, use native view_file (or read_file) on EACH exact attachment path listed below. "
             "All other native tools and paths are forbidden. "
             if has_images else "Do not call native file, shell, web, MCP, scheduling or agent tools. "
         )
         callable_rule = (
-            "Your callable tools are view_file for the allowlisted attachments and finish for the client response. "
+            "Your callable tools are view_file/read_file for the allowlisted attachments and finish for the client response. "
             "You MUST read every attachment before finish, including images in earlier conversation turns. "
             if has_images else "Your ONLY callable tool is finish. "
         )

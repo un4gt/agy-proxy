@@ -495,14 +495,19 @@ async def edit_account(account_id: str, request: Request):
         return JSONResponse({"error": "账号不存在，请先添加或导入隔离账号。"}, status_code=404)
     try:
         raw = await request.body()
-        if len(raw) > 4096:
+        if len(raw) > 65536:
             raise AccountPoolError("请求过大。")
         body = json.loads(raw)
-        if not isinstance(body, dict) or set(body) != {"name"}:
-            raise AccountPoolError("仅支持修改账号名称。")
-        result = pool.rename(account_id, body["name"])
+        if not isinstance(body, dict) or not body or set(body) - {"name", "disabled_models"}:
+            raise AccountPoolError("仅支持修改账号名称和模型限制。")
+        if "name" in body and not isinstance(body["name"], str):
+            raise AccountPoolError("账号名称须为 1–100 个字符。")
+        if "disabled_models" in body and not isinstance(body["disabled_models"], list):
+            raise AccountPoolError("模型限制必须是字符串列表。")
+        result = pool.update_account(account_id, name=body.get("name"),
+                                     disabled_models=body.get("disabled_models"))
     except (ValueError, TypeError):
-        return JSONResponse({"error": "保存失败，请检查名称（1–100 个字符）及数据目录写入权限。"}, status_code=400)
+        return JSONResponse({"error": "保存失败，请检查名称（1–100 个字符）、模型限制及数据目录写入权限。"}, status_code=400)
     return JSONResponse(result, headers={"Cache-Control": "no-store"})
 
 

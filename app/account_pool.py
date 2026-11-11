@@ -30,6 +30,12 @@ class AccountPoolError(ValueError):
     pass
 
 
+def _family(model: str) -> str:
+    # reasoning imports agy, which imports this module; resolve lazily.
+    from .reasoning import model_family
+    return model_family(model)
+
+
 def write_private(path: Path, data: bytes) -> None:
     """Replace a private file atomically; never leave a partial credential file."""
     path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -106,6 +112,7 @@ class AccountProfile:
     id: str
     name: str
     home: Path
+    disabled_models: tuple[str, ...] = ()
 
     @property
     def credentials(self) -> Path:
@@ -133,6 +140,13 @@ class AccountPool:
                     if (not isinstance(entry, dict) or not isinstance(entry.get("id"), str)
                             or not _ID.fullmatch(entry["id"]) or not isinstance(entry.get("name"), str)):
                         raise ValueError()
+                    disabled = entry.get("disabled_models")
+                    entry["disabled_models"] = sorted({
+                        family for family in (
+                            _family(item.strip()) for item in disabled
+                            if isinstance(item, str) and item.strip()
+                        ) if family
+                    }) if isinstance(disabled, list) else []
                 ids = {a["id"] for a in data["accounts"]}
                 if len(ids) != len(data["accounts"]) or any(v not in ids for v in data["bindings"].values()):
                     raise ValueError()
@@ -170,7 +184,8 @@ class AccountPool:
 
     def profiles(self) -> list[AccountProfile]:
         with self._lock:
-            return [AccountProfile(a["id"], a["name"], self.root / "accounts" / a["id"] / "home")
+            return [AccountProfile(a["id"], a["name"], self.root / "accounts" / a["id"] / "home",
+                                   tuple(a.get("disabled_models") or ()))
                     for a in self.data["accounts"]]
 
     def get(self, account_id: str) -> AccountProfile:
@@ -250,6 +265,42 @@ class AccountPool:
             self._save()
             return self.public(account_id)
 
+    @staticmethod
+    def _clean_disabled_models(models: object) -> list[str]:
+        if not isinstance(models, list) or len(models) > 200:
+            raise AccountPoolError("模型限制必须是字符串列表。")
+        cleaned = set()
+        for item in models:
+            if not isinstance(item, str):
+                raise AccountPoolError("模型限制必须是字符串列表。")
+            family = item.strip()
+            if not family or len(family) > 120 or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:-]*", family):
+                raise AccountPoolError("模型名称格式无效。")
+            cleaned.add(_family(family))
+        return sorted(cleaned)
+
+    def update_account(self, account_id: str, *, name: str | None = None,
+                       disabled_models: object = None) -> dict:
+        """Update name and/or model restrictions atomically; empty means all models."""
+        if name is not None and (not isinstance(name, str) or not name.strip() or len(name) > 100):
+            raise AccountPoolError("账号名称须为 1–100 个字符。")
+        cleaned = None if disabled_models is None else self._clean_disabled_models(disabled_models)
+        with self._lock:
+            self.get(account_id)
+            if account_id in self._removing:
+                raise AccountPoolError("账号正在删除，请稍后重试。")
+            entry = next(a for a in self.data["accounts"] if a["id"] == account_id)
+            changed = False
+            if name is not None and entry["name"] != name.strip():
+                entry["name"] = name.strip()
+                changed = True
+            if cleaned is not None and (entry.get("disabled_models") or []) != cleaned:
+                entry["disabled_models"] = cleaned
+                changed = True
+            if changed:
+                self._save()
+            return self.public(account_id)
+
     @contextmanager
     def removing(self, account_id: str):
         """Block new logins/discovery while idle sessions are being closed."""
@@ -315,14 +366,26 @@ class AccountPool:
                 return True
         return False
 
-    def select(self, owner: str | None = None, model: str | None = None) -> AccountProfile | None:
+    @staticmethod
+    def _binding_key(owner: str | None) -> str:
+        return hashlib.sha256((owner or "default").encode()).hexdigest()
+
+    def _restricted(self, account_id: str, model: str | None) -> bool:
+        if not model:
+            return False
+        family = _family(model)
+        entry = next((a for a in self.data["accounts"] if a["id"] == account_id), None)
+        return bool(entry and family in (entry.get("disabled_models") or ()))
+
+    def select(self, owner: str | None = None, model: str | None = None, *,
+               require_model: bool = True) -> AccountProfile | None:
         from .agy import AgyError
         with self._lock:
             if not self.enabled:
                 return None
             # API key owners are already hashed. Hash again so direct callers
             # cannot accidentally persist a raw key or a session ID.
-            key = hashlib.sha256((owner or "default").encode()).hexdigest()
+            key = self._binding_key(owner)
             bound = self.data["bindings"].get(key)
             if bound:
                 if bound in self._removing:
@@ -334,18 +397,43 @@ class AccountPool:
                 if not self._blocked(bound, model):
                     if not profile.credentials.is_file():
                         raise AgyError("绑定账号的凭据缺失，请重新登录该账号。", status_code=503)
+                    if require_model and self._restricted(bound, model):
+                        raise AgyError(
+                            f"当前绑定的账号「{profile.name}」未启用模型「{_family(model)}」，请更换账号或开启该模型。",
+                            status_code=404, code="model_disabled_for_account")
                     return profile
             profiles = self.profiles()
             if bound:
                 index = next(i for i, p in enumerate(profiles) if p.id == bound)
                 profiles = profiles[index + 1:] + profiles[:index + 1]
-            profile = next((p for p in profiles if p.id not in self._removing
-                            and p.credentials.is_file() and not self._blocked(p.id, model)), None)
+            candidates = [p for p in profiles if p.id not in self._removing
+                          and p.credentials.is_file() and not self._blocked(p.id, model)]
+            profile = next((p for p in candidates
+                            if not (require_model and self._restricted(p.id, model))), None)
             if profile is None:
+                if require_model and model and candidates:
+                    raise AgyError(
+                        f"没有启用模型「{_family(model)}」的可用账号，请在账号设置中开启该模型。",
+                        status_code=404, code="model_disabled_for_account")
                 raise AgyError("没有可用额度的已登录账号，请刷新额度或添加账号。", status_code=429)
             self.data["bindings"][key] = profile.id
             self._save()
             return profile
+
+    def model_available_for_owner(self, owner: str | None, model: str | None) -> bool:
+        """Whether any account usable by this owner enables the model family."""
+        if not model or not self.enabled:
+            return True
+        with self._lock:
+            profiles = self.profiles()
+            ids = {p.id for p in profiles}
+            if not ids:
+                return True
+            bound = self.data["bindings"].get(self._binding_key(owner))
+            if bound in ids:
+                return not self._restricted(bound, model)
+            eligible = [p for p in profiles if p.id not in self._removing and p.credentials.is_file()]
+            return True if not eligible else any(not self._restricted(p.id, model) for p in eligible)
 
     def mark_exhausted(self, account_id: str, model: str | None) -> None:
         with self._lock:
@@ -409,6 +497,7 @@ class AccountPool:
         with self._lock:
             profile = self.get(account_id)
             return {"id": profile.id, "name": profile.name, "isolated": True,
+                    "disabled_models": list(profile.disabled_models),
                     "bound_clients": sum(v == account_id for v in self.data["bindings"].values()),
                     "exhausted_scopes": [scope for scope in self.data["exhausted"].get(account_id, {})
                                          if self._blocked(account_id, scope)]}

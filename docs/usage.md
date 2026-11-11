@@ -2,13 +2,45 @@
 
 [返回 README](../README.md) · [环境变量](configuration.md)
 
-四种推理 API 统一使用受限客户端模式。未声明工具时只能回答；声明的工具由客户端执行。Chat/Gemini 的普通文本 SSE 也先发送开始标记／心跳，等待完整结果校验后再交付正文，不再转发 CLI 的逐 token 输出。协议能力、恢复行为及升级变化见[统一协议兼容层](unified-client-protocols.md)。
+四种推理 API 共用协议适配层。镜像默认的 `AGY_PROXY_BRIDGE=true` 使用原生 `GetChatMessageRequest`：文本和工具调用会实时转发，工具由客户端执行；`AGY_PROXY_BRIDGE=false` 时才回到受限 stream-json 客户端模式（先等待完整结果校验再交付正文，不转发 CLI 的逐 token 输出）。协议能力、恢复行为及升级变化见[统一协议兼容层](unified-client-protocols.md)。
 
 先在控制台创建 API Key，并从 `GET /v1/models` 获取实际可用的模型 ID。示例中的模型名需按你的账号替换；curl 示例使用 Bash：
 
 ```bash
 export AGY_API_KEY="控制台创建的API密钥"
 ```
+
+## 模型上下文与输出上限
+
+`agy models` 和 `GET /v1/models` 只返回模型 ID/名称，不返回上下文大小。下表来自当前账号的 `fetchAvailableModels` 目录（`maxTokens` / `maxOutputTokens`，2026-11-10 实测）；无 effort 后缀的基名与同系列 low/medium/high 变体使用相同窗口：
+
+| 模型系列 | 可用 slug | 上游上下文 | 上游最大输出 |
+| --- | --- | ---: | ---: |
+| Gemini 4 Argon | `gemini-4-argon`、`gemini-4-argon-low/medium/high` | 1,048,576 | 65,536 |
+| Gemini 3.8 Flash | `gemini-3.8-flash`、`gemini-3.8-flash-low/medium/high` | 1,048,576 | 65,536 |
+| Claude Opus 5.5 | `claude-opus-5-5`、`claude-opus-5-5-low/medium/high` | 1,000,000 | 128,000 |
+| Claude Sonnet 5.5 | `claude-sonnet-5-5`、`claude-sonnet-5-5-low/medium/high` | 1,000,000 | 128,000 |
+| GPT-OSS 120B | `gpt-oss-120b`、`gpt-oss-120b-medium` | 131,072 | 32,768 |
+
+**镜像默认的 native bridge 直接使用上表窗口。** `AGY_PROXY_BRIDGE=true` 时代理构造 `GetChatMessageRequest`，绕过 CLI 的 agent 循环和内部 55K 截断。2026-11-11 用 `gemini-3.8-flash-medium` 实测：800 KB 文档得到 `prompt_tokens=170,910`；4.5 MB 文档得到 `prompt_tokens=961,028`，尾部 needle 完整返回；4.85 MB 文档得到 `prompt_tokens=1,035,024`，尾部 needle 前缀已正确返回（256 输出预算被 thinking 消耗，截断的是输出而非输入）。这说明 bridge 可使用接近完整 1M 窗口；完整 1,048,576 输入和 65K 单次输出仍需按账号配额/延迟单独验收。
+
+**legacy stream-json 回退的实际限制更低。** `AGY_PROXY_BRIDGE=false` 时仍走旧路径；2026-11-10 用 `gemini-3.8-flash-low` 实测：约 100 万 token 文档在 CLI 内被截断到约 **55K prompt tokens**，只保留开头，中段和尾部的独立标记均返回 `UNKNOWN`；Pi 按 1M 配置不会触发自动压缩，尾部内容直接丢失。CLI 设置中的 `max-tokens-per-step` 为 **16,384**，但实测单次回答可输出 42,711 tokens，说明它不是最终硬上限；模型仍会提前停止或拒绝超长输出，不能把 65,536 当作稳定的一次性输出预算。
+
+因此镜像默认（bridge）客户端可按上表配置 1M/65K；只有显式关闭 bridge 时才应把上下文窗口降到 **约 55K**，并预留约 8K 输出，让自动压缩在 CLI 截断前触发。上游目录也可能随账号或模型更新变化，升级后应重新核对。
+
+Pi 默认（bridge）建议值。`models.json`：
+
+```json
+{"id": "gemini-3.8-flash-medium", "contextWindow": 1048576, "maxTokens": 65536}
+```
+
+`settings.json` 可保留自动压缩作为兜底；bridge 下窗口按 1M 配置，压缩通常要到接近 1M 才触发：
+
+```json
+{"compaction": {"enabled": true, "reserveTokens": 8192, "keepRecentTokens": 4096}}
+```
+
+legacy stream-json 回退时改用 `contextWindow: 55000, maxTokens: 8192`；这样会在约 47K tokens 触发压缩，早于 CLI 的约 55K 截断。实测旧路径在 65K/8K 配置下能在 `tokensBefore=92590` 时写出 `compaction` 条目；同一会话改用 1M 配置则不会压缩，尾部标记丢失。需要按 model 单独覆盖时使用 `compaction.modelOverrides["provider/modelId"]`。
 
 ## Token 统计口径
 
@@ -90,6 +122,10 @@ result = client.chat.completions.create(
 
 ## Pi coding agent 与客户端工具
 
+镜像默认的 `AGY_PROXY_BRIDGE=true` 使用**原生 function calling**：代理把 Pi 的 `tools`/`tool_choice` 和完整消息历史翻译成 `GetChatMessageRequest`，把上游 `deltaToolCalls` 转成 OpenAI `tool_calls`；Pi 在本机执行 `read`、`write`、`edit`、shell 等工具，再把 `role: tool` 和 `tool_call_id` 回传。代理按 tool call ID 缓存并持久化 Gemini 的 `thinkingSignature` 并在下一轮回填，否则 Gemini 会拒绝工具续轮；`bridge-signatures.json` 位于数据目录，0600，保留 7 天/最多 4096 条。没有临时工作目录、`finish` 结构化输出或 PreToolUse hook；工具参数仍会按客户端 schema 校验，未知工具或非法参数返回 `502`。
+
+Pi 的 `models.json` 在 bridge 下使用 1M 窗口（见[模型上下文与输出上限](#模型上下文与输出上限)），可直接参考 [examples/pi-bridge/models.json](../examples/pi-bridge/models.json)。以下旧描述仅适用于 `AGY_PROXY_BRIDGE=false` 的 stream-json 回退：
+
 所有 OpenAI 请求均进入**受限客户端模式**；声明 `tools` 时启用客户端工具桥接（下方 Pi 配置适用于 0.87.1）：
 
 1. 代理为 agy 创建独立临时工作目录，选择仅允许 `finish` 的自定义主 Agent；`PreToolUse` hook 拒绝其余服务端工具。`finish` 只负责提交结构化结果，必须保留。
@@ -134,7 +170,7 @@ Codex 的 `config.toml` 示例（密钥通过 `OPENAI_API_KEY` 环境变量提�
 model = "gemini-3.8-flash"
 model_provider = "agy"
 model_reasoning_effort = "low"
-model_context_window = 200000
+model_context_window = 55000
 web_search = "disabled"
 
 [model_providers.agy]

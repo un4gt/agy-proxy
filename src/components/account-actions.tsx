@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { api, message } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
@@ -16,32 +17,80 @@ import {
 } from "@/components/ui/alert-dialog";
 
 type Props = {
-  account: { id: string; name?: string; email: string | null; bound_clients?: number };
+  account: {
+    id: string;
+    name?: string;
+    email: string | null;
+    bound_clients?: number;
+    disabled_models?: string[];
+  };
   disabled: boolean;
-  onRenamed: (name: string) => void;
+  onUpdated: (name: string, disabledModels: string[]) => void;
   onDeleted: () => void;
 };
 
-export function AccountActions({ account, disabled, onRenamed, onDeleted }: Props) {
+export function AccountActions({ account, disabled, onUpdated, onDeleted }: Props) {
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [name, setName] = useState("");
+  const [disabledModels, setDisabledModels] = useState<string[]>([]);
+  const [catalog, setCatalog] = useState<{ family: string; label: string }[]>([]);
+  const [catalogLoading, setCatalogLoading] = useState(false);
+  const [catalogError, setCatalogError] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const label = account.name || account.email || "Antigravity 账号";
   const path = `/api/accounts/${encodeURIComponent(account.id)}`;
+
+  async function loadCatalog() {
+    setCatalogLoading(true);
+    setCatalogError("");
+    try {
+      const data = await api<{ models: { id: string; label: string; family: string }[] }>("/api/models");
+      const groups = new Map<string, string>();
+      for (const model of data.models) {
+        if (!groups.has(model.family)) {
+          groups.set(
+            model.family,
+            model.label.replace(/\s*\((Low|Medium|High|XHigh|Max)\)$/i, "") || model.family,
+          );
+        }
+      }
+      setCatalog(
+        [...groups]
+          .map(([family, modelLabel]) => ({ family, label: modelLabel }))
+          .sort((a, b) => a.family.localeCompare(b.family)),
+      );
+    } catch (err) {
+      setCatalogError(message(err));
+    } finally {
+      setCatalogLoading(false);
+    }
+  }
+
+  function openEdit(open: boolean) {
+    if (busy) return;
+    setEditing(open);
+    setError("");
+    if (open) {
+      setName(account.name || "");
+      setDisabledModels([...(account.disabled_models || [])]);
+      void loadCatalog();
+    }
+  }
 
   async function save() {
     if (!name.trim() || busy) return;
     setBusy(true);
     setError("");
     try {
-      const result = await api<{ name: string }>(path, {
-        method: "PATCH", body: JSON.stringify({ name: name.trim() }),
+      const result = await api<{ name: string; disabled_models: string[] }>(path, {
+        method: "PATCH",
+        body: JSON.stringify({ name: name.trim(), disabled_models: disabledModels }),
       });
-      onRenamed(result.name);
+      onUpdated(result.name, result.disabled_models || []);
       setEditing(false);
-      toast.success("账号名称已更新");
+      toast.success("账号设置已更新");
     } catch (err) {
       setError(message(err));
     } finally {
@@ -73,24 +122,27 @@ export function AccountActions({ account, disabled, onRenamed, onDeleted }: Prop
     </Alert>
   );
 
+  const rows = [...catalog];
+  for (const family of disabledModels) {
+    if (!rows.some((row) => row.family === family)) {
+      rows.push({ family, label: family });
+    }
+  }
+  rows.sort((a, b) => a.family.localeCompare(b.family));
+
   return (
     <div className="flex shrink-0 items-center gap-1">
-      <Dialog open={editing} onOpenChange={(open) => {
-        if (busy) return;
-        setEditing(open);
-        setName(account.name || "");
-        setError("");
-      }}>
+      <Dialog open={editing} onOpenChange={openEdit}>
         <DialogTrigger asChild>
           <Button variant="ghost" size="icon-sm" disabled={disabled || busy}
             aria-label={`编辑账号 ${label}`} title="编辑账号">
             <Pencil />
           </Button>
         </DialogTrigger>
-        <DialogContent showCloseButton={!busy}>
+        <DialogContent showCloseButton={!busy} className="max-h-[88svh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>编辑账号</DialogTitle>
-            <DialogDescription>设置一个便于识别的名称，用于区分你的账号。</DialogDescription>
+            <DialogDescription>修改备注,并设置该账号可以使用的模型。</DialogDescription>
           </DialogHeader>
           <form className="flex flex-col gap-5" onSubmit={(event) => { event.preventDefault(); void save(); }}>
             <FieldGroup>
@@ -100,13 +152,59 @@ export function AccountActions({ account, disabled, onRenamed, onDeleted }: Prop
                   disabled={busy} onChange={(event) => setName(event.target.value)} autoComplete="off" />
                 <FieldDescription>最多 100 个字符。</FieldDescription>
               </Field>
+              <Field data-disabled={busy}>
+                <FieldLabel>可用模型</FieldLabel>
+                <FieldDescription>
+                  关闭的模型不会再用于此账号；全部开启表示不限制。按基础模型生效，包含该模型的全部思考档位。
+                </FieldDescription>
+                <div className="max-h-56 overflow-y-auto rounded-md border border-border/70">
+                  {catalogLoading ? (
+                    <div className="flex items-center gap-2 px-2.5 py-3 text-xs text-muted-foreground">
+                      <Loader2 className="size-3.5 animate-spin" />
+                      正在读取模型列表…
+                    </div>
+                  ) : catalogError ? (
+                    <p className="px-2.5 py-3 text-xs text-destructive">{catalogError}</p>
+                  ) : rows.length ? (
+                    <div className="divide-y divide-border/60">
+                      {rows.map((row) => (
+                        <div key={row.family} className="flex items-center justify-between gap-3 px-2.5 py-2">
+                          <div className="min-w-0">
+                            <p className="truncate text-xs font-medium">{row.label}</p>
+                            <p className="truncate font-mono text-[11px] text-muted-foreground">{row.family}</p>
+                          </div>
+                          <Switch
+                            aria-label={`${row.label} 在此账号可用`}
+                            checked={!disabledModels.includes(row.family)}
+                            disabled={busy}
+                            onCheckedChange={(value) =>
+                              setDisabledModels((current) =>
+                                value
+                                  ? current.filter((family) => family !== row.family)
+                                  : [...new Set([...current, row.family])],
+                              )
+                            }
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="px-2.5 py-3 text-xs text-muted-foreground">暂无可配置的模型。</p>
+                  )}
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  {disabledModels.length === 0
+                    ? "当前未限制，所有模型都可用于此账号。"
+                    : `当前已限制 ${disabledModels.length} 个模型。`}
+                </p>
+              </Field>
             </FieldGroup>
             {failure}
             <DialogFooter>
               <Button type="button" variant="outline" disabled={busy} onClick={() => setEditing(false)}>取消</Button>
               <Button type="submit" disabled={busy || !name.trim()}>
                 {busy && <Loader2 data-icon="inline-start" className="animate-spin" />}
-                {busy ? "正在保存…" : "保存名称"}
+                {busy ? "正在保存…" : "保存设置"}
               </Button>
             </DialogFooter>
           </form>

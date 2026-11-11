@@ -1,4 +1,10 @@
-"""agy CLI duplex stream-json process management.
+"""Legacy agy CLI duplex stream-json process management.
+
+Production bridge deployments (``AGY_PROXY_BRIDGE=true``, the Docker image
+default) do not use ``AgySession``/``SessionManager``; they use
+``app.bridge.session`` and ``app.bridge.turn``.  The stream-json classes below
+remain as the explicitly selected fallback for images or local runs without
+the fixed-SHA patched binary, and for the legacy image/native experiments.
 
 Protocol (per official headless docs + observed behaviour):
 - spawn: agy --input-format stream-json --output-format stream-json [--model slug ...]
@@ -31,6 +37,7 @@ from typing import Any
 from anyio import CancelScope
 
 from .config import Config
+from .tool_guard import image_call_path
 from tools.agy_cli_protocol import CliTurnCounter
 from .account_pool import AccountPoolError, quota_exhausted
 
@@ -106,11 +113,15 @@ def _agy_argv(cfg: Config, extra: list[str]) -> list[str]:
     return parts + extra
 
 
-def _child_env(cfg: Config) -> dict[str, str] | None:
+def _child_env(cfg: Config) -> dict[str, str]:
     """Isolate native state and force file credentials for managed accounts."""
-    if not cfg.http_proxy and not cfg.account_home:
-        return None
     env = os.environ.copy()
+    # The image pins one CLI build; a background auto-update can silently
+    # change the stream-json/tool contract between requests. The image-read
+    # aliases are handled, but keep the tested build stable; explicit
+    # `agy update` still works with this flag. 1.4.2 checks the value is
+    # exactly "true" (four bytes), not "1".
+    env["AGY_CLI_DISABLE_AUTO_UPDATE"] = "true"
     if cfg.http_proxy:
         for name in ("HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy"):
             env[name] = cfg.http_proxy
@@ -502,14 +513,14 @@ class AgySession:
                                 ("tool", "tool_call", "tool_use", "run_command")):
             return
         args = info.get("parameters") or {}
-        if (name != "view_file" or not isinstance(args, dict)
-                or args.get("AbsolutePath") not in self.image_paths):
+        path = image_call_path({"name": name, "args": args})
+        if path is None or path not in self.image_paths:
             raise AgyError("agy attempted a server tool in external-tool mode; response discarded",
                            code="native_tool_violation")
         if info.get("error"):
             raise AgyError("agy could not read the supplied image attachment")
         if step.get("state") == "DONE":
-            self.images_seen.add(args["AbsolutePath"])
+            self.images_seen.add(path)
 
     def check_images_seen(self) -> None:
         if set(self.image_paths) != self.images_seen:
@@ -900,7 +911,8 @@ def model_labels(cfg: Config) -> dict[str, str]:
 def _discovery_config(cfg: Config, *, owner: str | None = None, model: str | None = None) -> Config:
     if cfg.account_pool and cfg.account_pool.enabled and not cfg.account_home:
         try:
-            profile = cfg.account_pool.select(owner, cfg.model_map.get(model, model) or cfg.default_model)
+            profile = cfg.account_pool.select(owner, cfg.model_map.get(model, model) or cfg.default_model,
+                                              require_model=False)
             cfg.account_pool.prepare(profile)
         except (AccountPoolError, OSError) as exc:
             raise AgyError(str(exc), status_code=503) from None

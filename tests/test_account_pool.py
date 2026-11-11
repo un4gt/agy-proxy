@@ -100,6 +100,13 @@ def test_reimport_after_native_login_or_refresh_keeps_identity(tmp_path, initial
     assert pool.public(profile.id)["exhausted_scopes"] == ["third-party"]
 
 
+def test_child_env_disables_cli_auto_update(monkeypatch):
+    monkeypatch.delenv("AGY_CLI_DISABLE_AUTO_UPDATE", raising=False)
+    env = _child_env(Config())
+    assert env["AGY_CLI_DISABLE_AUTO_UPDATE"] == "true"
+    assert "AGY_CLI_DISABLE_AUTO_UPDATE" not in os.environ
+
+
 def test_child_auth_overrides_do_not_escape_account_home(pool_setup, monkeypatch):
     cfg, _, a, _, _ = pool_setup
     for name in ("AGY_ADC_AUTH", "GOOGLE_APPLICATION_CREDENTIALS", "JETSKI_OAUTH_TOKEN",
@@ -422,7 +429,7 @@ def test_rename_preserves_identity_credentials_quota_and_bindings(pool_setup):
     assert a.credentials.read_bytes() == token
 
 
-@pytest.mark.parametrize("operation", ["rename", "remove"])
+@pytest.mark.parametrize("operation", ["rename", "remove", "models"])
 def test_account_edit_disk_failure_preserves_account(pool_setup, monkeypatch, operation):
     import app.account_pool as module
     cfg, pool, a, _, _ = pool_setup
@@ -433,12 +440,91 @@ def test_account_edit_disk_failure_preserves_account(pool_setup, monkeypatch, op
     with pytest.raises(AccountPoolError):
         if operation == "rename":
             pool.rename(a.id, "changed")
+        elif operation == "models":
+            pool.update_account(a.id, disabled_models=["gemini-4-argon"])
         else:
             pool.remove(a.id)
     assert pool.data == json.loads(before)
     assert pool.path.read_bytes() == before
     assert a.credentials.read_bytes() == token
     assert AccountPool(cfg).select("client").id == a.id
+
+
+def test_account_model_restrictions_are_family_scoped_and_persisted(pool_setup):
+    cfg, pool, a, _, _ = pool_setup
+    result = pool.update_account(
+        a.id, name=" 主账号 ",
+        disabled_models=["gemini-4-argon-high", "gemini-4-argon-low", "gemini-4-argon-high"],
+    )
+    assert result["name"] == "主账号"
+    assert result["disabled_models"] == ["gemini-4-argon"]
+    assert pool.get(a.id).disabled_models == ("gemini-4-argon",)
+    assert AccountPool(cfg).get(a.id).disabled_models == ("gemini-4-argon",)
+    # An empty list removes the restriction and restores all models.
+    assert pool.update_account(a.id, disabled_models=[])["disabled_models"] == []
+    assert AccountPool(cfg).get(a.id).disabled_models == ()
+
+
+def test_account_model_restrictions_drive_routing_without_stealing_affinity(pool_setup):
+    cfg, pool, a, b, _ = pool_setup
+    pool.update_account(a.id, disabled_models=["gemini-4-argon"])
+    # An unbound client asking for that family is routed to the other account.
+    assert pool.select("argon-client", "gemini-4-argon-high").id == b.id
+    # Affinity is preserved for models the bound account still enables.
+    assert pool.select("bound-client", "gemini-3.8-flash-low").id == a.id
+    with pytest.raises(AgyError) as caught:
+        pool.select("bound-client", "gemini-4-argon-medium")
+    assert caught.value.status_code == 404
+    assert caught.value.code == "model_disabled_for_account"
+    # The failed request must not silently switch the binding.
+    assert pool.select("bound-client", "gemini-3.8-flash-low").id == a.id
+    assert pool.select("bound-client", "gemini-4-argon-high", require_model=False).id == a.id
+    assert pool.model_available_for_owner("argon-client", "gemini-4-argon") is True
+    assert pool.model_available_for_owner("bound-client", "gemini-4-argon") is False
+
+
+def test_all_accounts_restricted_returns_model_specific_error(pool_setup):
+    cfg, pool, a, b, _ = pool_setup
+    pool.update_account(a.id, disabled_models=["gemini-4-argon"])
+    pool.update_account(b.id, disabled_models=["gemini-4-argon-high"])
+    with pytest.raises(AgyError) as caught:
+        pool.select("any-client", "gemini-4-argon-low")
+    assert caught.value.status_code == 404
+    assert caught.value.code == "model_disabled_for_account"
+    assert not pool.data["bindings"]
+
+
+def test_account_model_restrictions_filter_models_and_reject_requests(tmp_path, monkeypatch):
+    from app.session_context import fingerprint
+    fake = (Path(__file__).parent / "fake_tools_agy.py").as_posix()
+    monkeypatch.setenv("FAKE_AGY_ARGV_FILE", str(tmp_path / "argv.jsonl"))
+    cfg = Config(agy_bin=f"{sys.executable} {fake}", data_dir=str(tmp_path / "data"),
+                 api_keys=("owner",), default_model="gemini-3-flash-low")
+    with TestClient(create_app(cfg)) as client:
+        pool = client.app.state.account_pool
+        a = pool.create("A", credentials("A"))
+        pool.create("B", credentials("B"))
+        assert pool.select(fingerprint("owner"), "gemini-3-flash-low").id == a.id
+        pool.update_account(a.id, disabled_models=["gemini-3-pro-high"])
+        headers = {"Authorization": "Bearer owner"}
+
+        listed = [m["id"] for m in client.get("/v1/models", headers=headers).json()["data"]]
+        assert "gemini-3-flash-low" in listed
+        assert not [model for model in listed if model.startswith("gemini-3-pro")]
+        gemini = [m["name"] for m in client.get("/v1beta/models", headers=headers).json()["models"]]
+        assert not [name for name in gemini if "gemini-3-pro" in name]
+
+        assert client.get("/v1/models/gemini-3-pro-high", headers=headers).status_code == 404
+        response = client.post("/v1/chat/completions", headers=headers, json={
+            "model": "gemini-3-pro-high", "messages": [{"role": "user", "content": "PING"}]})
+        assert response.status_code == 404
+        assert "model_disabled_for_account" in response.text
+
+        # Clearing the list restores every model for the bound account.
+        pool.update_account(a.id, disabled_models=[])
+        listed = [m["id"] for m in client.get("/v1/models", headers=headers).json()["data"]]
+        assert any(model.startswith("gemini-3-pro") for model in listed)
+        assert client.get("/v1/models/gemini-3-pro-high", headers=headers).status_code == 200
 
 
 def test_delete_clears_only_selected_account_and_its_bindings(pool_setup):
@@ -489,12 +575,21 @@ def test_account_mutations_require_panel_auth_and_validate_names(tmp_path, monke
     assert client.patch(path, json={"name": "new"}).status_code == 401
     assert client.delete(path).status_code == 401
     client.post("/signin", json={"key": "panel"})
-    for body in ({"name": ""}, {"name": "  "}, {"name": "a" * 101}, {"name": 3}, [],
+    for body in ({"name": ""}, {"name": "  "}, {"name": "a" * 101}, {"name": 3}, {"name": None},
+                 [], {}, {"disabled_models": None}, {"disabled_models": "gemini-4-argon"},
+                 {"disabled_models": ["bad model"]}, {"disabled_models": [3]},
                  {"name": "new", "machine_id": "change-not-allowed"}):
         assert client.patch(path, json=body).status_code == 400
         assert app.state.account_pool.get(profile.id).name == "A"
-    response = client.patch(path, json={"name": "主账号"})
-    assert response.status_code == 200 and response.json()["name"] == "主账号"
+    response = client.patch(path, json={
+        "name": "主账号",
+        "disabled_models": ["gemini-4-argon-high", "gemini-4-argon-low"],
+    })
+    assert response.status_code == 200
+    assert response.json()["name"] == "主账号"
+    assert response.json()["disabled_models"] == ["gemini-4-argon"]
+    cleared = client.patch(path, json={"disabled_models": []})
+    assert cleared.status_code == 200 and cleared.json()["disabled_models"] == []
     assert "PRIVATE" not in response.text
     assert client.delete(path).status_code == 200
     assert client.delete(path).status_code == 404

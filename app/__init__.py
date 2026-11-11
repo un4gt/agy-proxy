@@ -40,7 +40,7 @@ def create_app(cfg: Config | None = None) -> FastAPI:
                 await asyncio.sleep(interval)
                 try:
                     await app.state.sessions.sweep()
-                    if cfg.native_chat:
+                    if cfg.native_chat and not cfg.bridge:
                         await app.state.native_sessions.sweep()
                     await app.state.sessions.ensure_prewarm()
                 except Exception:  # pragma: no cover - keep the sweeper alive
@@ -79,7 +79,7 @@ def create_app(cfg: Config | None = None) -> FastAPI:
                 await updater.shutdown()
             await app.state.store.flush()
             await app.state.sessions.close_all()
-            if cfg.native_chat:
+            if cfg.native_chat and not cfg.bridge:
                 await app.state.native_sessions.close_all()
 
     app = FastAPI(
@@ -96,8 +96,15 @@ def create_app(cfg: Config | None = None) -> FastAPI:
     app.add_middleware(RequestContextMiddleware)
     cfg.account_pool = AccountPool(cfg)
     app.state.account_pool = cfg.account_pool
-    app.state.sessions = SessionManager(cfg)
-    if cfg.native_chat:
+    if cfg.bridge:
+        from .bridge.session import BridgeSessionManager
+        app.state.sessions = BridgeSessionManager(cfg)
+        app.state.bridge_sessions = app.state.sessions
+        if cfg.native_chat:
+            log.warning("AGY_PROXY_BRIDGE takes precedence over AGY_PROXY_NATIVE_CHAT")
+    else:
+        app.state.sessions = SessionManager(cfg)
+    if cfg.native_chat and not cfg.bridge:
         from .native_chat import NativeSessionManager
         app.state.native_sessions = NativeSessionManager(cfg)
     app.state.store = Store(cfg)
@@ -209,7 +216,7 @@ def create_app(cfg: Config | None = None) -> FastAPI:
                 "status": "ok",
                 "version": "0.0.17",
                 "auth_required": cfg.auth_enabled,
-                "chat_backend": "native" if cfg.native_chat else "headless",
+                "chat_backend": "bridge" if cfg.bridge else ("native" if cfg.native_chat else "headless"),
                 "native_input_clean": cfg.native_chat and cfg.native_input_clean,
                 "signed_in": (any(p.credentials.is_file() for p in cfg.account_pool.profiles())
                               if cfg.account_pool.enabled else account.credentials_present()),

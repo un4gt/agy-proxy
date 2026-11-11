@@ -288,7 +288,11 @@ async def models_list(request: Request) -> Response:
         {
             "object": "list",
             "data": [{"id": s, "object": "model", "created": 0, "owned_by": "antigravity"}
-                     for s in enabled_models(request, list(dict.fromkeys([*slugs, *model_families(slugs)])))],
+                     for s in enabled_models(
+                         request,
+                         list(dict.fromkeys([*slugs, *model_families(slugs)])),
+                         owner=client_session_key(request).owner,
+                     )],
         }
     )
 
@@ -305,6 +309,13 @@ async def model_detail(model_id: str, request: Request) -> Response:
     try:
         resolved = _resolve_model(model_id, cfg, slugs)
         require_enabled_model(request, model_id, resolved)
+        owner = client_session_key(request).owner
+        pool = getattr(cfg, "account_pool", None)
+        if pool is not None and pool.enabled and not (
+            pool.model_available_for_owner(owner, model_id)
+            and (not resolved or pool.model_available_for_owner(owner, resolved))
+        ):
+            return openai_error(404, f"Model '{model_id}' not found", "invalid_request_error", "model_not_found")
     except AgyError:
         return openai_error(404, f"Model '{model_id}' not found", "invalid_request_error", "model_not_found")
     if model_id in slugs or resolved in slugs:

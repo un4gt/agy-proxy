@@ -288,7 +288,8 @@ def test_parameter_schema_validation_and_local_references(client):
     assert send(client, body).status_code == 400
 
 
-@pytest.mark.parametrize("name,decision", [("view_file", "deny"), ("run_command", "deny"),
+@pytest.mark.parametrize("name,decision", [("view_file", "deny"), ("read_file", "deny"),
+                                           ("run_command", "deny"),
                                            ("invoke_subagent", "deny"), ("finish", "allow")])
 def test_pretool_hook_denies_native_execution(name, decision):
     guard = Path(__file__).parents[1] / "app" / "tool_guard.py"

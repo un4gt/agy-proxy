@@ -61,3 +61,13 @@ PR 描述说明问题、修改后的行为、验证命令与结果；有对应 i
 源码启动读取进程环境变量，不自动加载 `.env`；配置项见 `docs/configuration.md`。密钥、账号凭据、私有会话和临时验证脚本留在忽略的 `.devdata/`，不要写入提交或日志。部署前备份并保留数据卷。
 
 代理默认用中文沟通，修改前先分析相关调用链；保留已有未提交改动，并遵守用户对提交及部署范围的约定。
+
+## Agent skills
+
+### Issue tracker
+
+Issues and wayfinder maps live as local markdown under `.scratch/`. See `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+Single-context: `GLOSSARY.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.

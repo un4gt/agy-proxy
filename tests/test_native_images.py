@@ -48,6 +48,9 @@ def test_native_capture_requires_allowed_reads_and_successful_completion(tmp_pat
     own = str(path.resolve())
     calls = [read_call(own), finish_call()]
     assert captured_output(result(calls), image_paths=[own], images_seen={own}) == OUTPUT
+    # read_file/Path is the alias emitted by some CLI builds.
+    alias = {'name': 'read_file', 'args': {'Path': own}}
+    assert captured_output(result([alias, finish_call()]), image_paths=[own], images_seen={own}) == OUTPUT
     # Already viewed images may be reused from the same session's history.
     assert captured_output(result([finish_call()]), image_paths=[own], images_seen={own}) == OUTPUT
     with pytest.raises(AgyError, match='confirmed successful'):

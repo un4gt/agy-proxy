@@ -14,7 +14,7 @@ import shutil
 from . import json_codec as json
 from .agy import AgyError, AgyQuotaError, AgySession, SessionManager, _child_env
 from .contracts import CandidateError
-from .tool_guard import allowed_image_call
+from .tool_guard import allowed_image_call, image_call_path
 
 log = logging.getLogger("agy_proxy.native_chat")
 
@@ -99,7 +99,7 @@ def captured_output(result, *, image_paths=(), images_seen=()):
         elif not allowed_image_call(call, image_paths):
             raise AgyError("Native capture contains an unapproved server tool call",
                            code="native_tool_violation")
-        elif call["args"]["AbsolutePath"] not in images_seen:
+        elif image_call_path(call) not in images_seen:
             raise AgyError("Native attachment read was not confirmed successful",
                            code="native_image_incomplete")
     if set(image_paths) != set(images_seen):

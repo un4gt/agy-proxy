@@ -68,6 +68,9 @@ class Config:
     native_input_clean: bool = False
     native_bin: str | None = None
     native_symbols: str = "/evidence/symbols.json"
+    # Native bridge uses the fixed-SHA 1.4.2 patched binary instead of the
+    # stream-json duplex process.  Off by default for source-only installs.
+    bridge: bool = False
     # Internal per-child context; never change the proxy's own process home.
     account_home: str | None = field(default=None, repr=False)
     account_id: str | None = None
@@ -138,4 +141,5 @@ def load_config() -> Config:
         native_input_clean=_bool("NATIVE_INPUT_CLEAN", False),
         native_bin=_env("NATIVE_BIN"),
         native_symbols=_env("NATIVE_SYMBOLS") or "/evidence/symbols.json",
+        bridge=_bool("BRIDGE", False),
     )

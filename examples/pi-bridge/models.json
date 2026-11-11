@@ -1,0 +1,33 @@
+{
+  "providers": {
+    "agy-bridge": {
+      "baseUrl": "http://127.0.0.1:8317/v1",
+      "api": "openai-completions",
+      "apiKey": "${AGY_API_KEY}",
+      "authHeader": true,
+      "models": [
+        {
+          "id": "gemini-3.8-flash-medium",
+          "name": "AGY Bridge Gemini 3.8 Flash (Medium)",
+          "reasoning": true,
+          "input": ["text"],
+          "contextWindow": 1048576,
+          "maxTokens": 65536,
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": "low",
+            "low": "low",
+            "medium": "medium",
+            "high": "high",
+            "xhigh": null,
+            "max": null
+          },
+          "compat": {
+            "supportsReasoningEffort": true,
+            "thinkingFormat": "openai"
+          }
+        }
+      ]
+    }
+  }
+}

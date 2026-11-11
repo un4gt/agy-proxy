@@ -1,7 +1,7 @@
 model = "gemini-3.8-flash"
 model_provider = "agy"
 model_reasoning_effort = "low"
-model_context_window = 200000
+model_context_window = 55000
 web_search = "disabled"
 
 [model_providers.agy]

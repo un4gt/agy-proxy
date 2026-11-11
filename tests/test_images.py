@@ -16,7 +16,7 @@ from PIL import Image
 import pytest
 
 from app import create_app
-from app.agy import AgyError
+from app.agy import AgyError, AgySession
 from app.config import Config
 from app import images
 
@@ -142,6 +142,11 @@ def test_missing_or_unauthorized_native_image_read_fails(client, prompt):
     assert client.app.state.sessions.live_count == 0
 
 
+def test_read_file_alias_is_accepted(client):
+    response = client.post("/v1/chat/completions", json=body("chat", [picture()[1]], prompt="READ_FILE_TOOL"))
+    assert response.status_code == 200
+
+
 def test_image_and_json_schema(client):
     payload = body("chat", [picture()[1]], prompt="Describe the image", response_format={"type": "json_schema", "json_schema": {
         "name": "inspector", "schema": {"type": "object", "properties": {"name": {"type": "string"}, "age": {"type": "integer"}},
@@ -230,11 +235,31 @@ def test_hook_allows_only_exact_request_image(tmp_path):
     manifest = tmp_path / "allow.json"
     manifest.write_text(json.dumps([str(own.resolve())]))
     guard = Path(__file__).parents[1] / "app/tool_guard.py"
-    for path, tool, expected in [(own, "view_file", "allow"), (other, "view_file", "deny"),
-                                  (own, "run_command", "deny")]:
+    for path, tool, key, expected in [
+            (own, "view_file", "AbsolutePath", "allow"), (other, "view_file", "AbsolutePath", "deny"),
+            (own, "read_file", "Path", "allow"), (other, "read_file", "Path", "deny"),
+            (own, "run_command", "Path", "deny")]:
         result = subprocess.run([sys.executable, str(guard), str(manifest)], input=json.dumps({"toolCall": {
-            "name": tool, "args": {"AbsolutePath": str(path.resolve())}}}), text=True, capture_output=True, check=True)
+            "name": tool, "args": {key: str(path.resolve())}}}), text=True, capture_output=True, check=True)
         assert json.loads(result.stdout)["decision"] == expected
+
+
+def test_tool_step_accepts_current_and_legacy_image_tools(tmp_path):
+    paths = [str((tmp_path / name).resolve()) for name in ("one.png", "two.png")]
+    for path in paths:
+        Path(path).write_bytes(picture()[0])
+    session = AgySession(Config(), model=None, effort=None)
+    session.image_paths = paths
+    session.check_tool_step({"state": "DONE", "tool_info": {"name": "view_file",
+                                                            "parameters": {"AbsolutePath": paths[0]}}})
+    session.check_tool_step({"state": "DONE", "tool_info": {"name": "read_file",
+                                                            "parameters": {"Path": paths[1]}}})
+    assert session.images_seen == set(paths)
+    with pytest.raises(AgyError, match="server tool"):
+        session.check_tool_step({"tool_info": {"name": "read_file", "parameters": {"Path": "/etc/passwd"}}})
+    with pytest.raises(AgyError, match="server tool"):
+        session.check_tool_step({"tool_info": {"name": "read_file",
+                                               "parameters": {"Path": paths[0], "Extra": True}}})
 
 
 def test_image_redirect_does_not_forward_cookies_between_hosts(monkeypatch):
@@ -263,15 +288,15 @@ def test_hook_requires_all_images_before_finish(tmp_path):
     manifest = tmp_path / 'allow.json'
     manifest.write_text(json.dumps([str(p.resolve()) for p in paths]))
     guard = Path(__file__).parents[1] / 'app/tool_guard.py'
-    def decision(name, path=None):
-        tool = {'name': name, 'args': {'AbsolutePath': str(path.resolve())} if path else {}}
+    def decision(name, path=None, key='AbsolutePath'):
+        tool = {'name': name, 'args': {key: str(path.resolve())} if path else {}}
         output = subprocess.run([sys.executable, str(guard), str(manifest)],
             input=json.dumps({'toolCall': tool}), text=True, capture_output=True, check=True)
         return json.loads(output.stdout)['decision']
     assert decision('finish') == 'deny'
     assert decision('view_file', paths[0]) == 'allow'
     assert decision('finish') == 'deny'
-    assert decision('view_file', paths[1]) == 'allow'
+    assert decision('read_file', paths[1], 'Path') == 'allow'
     assert decision('finish') == 'allow'
 
 

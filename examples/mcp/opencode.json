@@ -12,7 +12,7 @@
       "models": {
         "gemini-3.8-flash-low": {
           "name": "AGY Gemini Flash Low",
-          "limit": {"context": 200000, "output": 8192}
+          "limit": {"context": 55000, "output": 8192}
         }
       }
     }

@@ -2,7 +2,7 @@
 
 Invoked by the same Python interpreter as the proxy, without importing the app.
 finish submits structured output. With a request-private manifest, view_file
-may inspect only that request's validated image attachments.
+or read_file may inspect only that request's validated image attachments.
 """
 
 import orjson
@@ -11,18 +11,31 @@ import sys
 from pathlib import Path
 
 
-def allowed_image_call(tool, paths):
+_IMAGE_ARG = {"view_file": "AbsolutePath", "read_file": "Path"}
+
+
+def image_call_path(tool):
+    """Return the image path for a supported native read, or None."""
+    key = _IMAGE_ARG.get(tool.get("name"))
     args = tool.get("args")
-    if tool.get("name") != "view_file" or not isinstance(args, dict):
-        return False
-    if set(args) - {"AbsolutePath", "toolAction", "toolSummary"}:
-        return False
-    value = args.get("AbsolutePath")
-    if not isinstance(value, str):
+    if key is None or not isinstance(args, dict):
+        return None
+    if set(args) - {key, "toolAction", "toolSummary"}:
+        return None
+    value = args.get(key)
+    return value if isinstance(value, str) else None
+
+
+def allowed_image_call(tool, paths):
+    value = image_call_path(tool)
+    if value is None:
         return False
     path = Path(value)
-    return (value in paths and not path.is_symlink()
-            and path.is_file() and str(path.resolve(strict=True)) == value)
+    try:
+        return (value in paths and not path.is_symlink()
+                and path.is_file() and str(path.resolve(strict=True)) == value)
+    except OSError:
+        return False
 
 
 def allowed_image(tool, manifest):
@@ -48,15 +61,16 @@ def main() -> None:
                 paths = orjson.loads(Path(manifest).read_text(encoding="utf-8"))
                 allowed = isinstance(paths, list) and all(read_marker(manifest, p).is_file() for p in paths)
                 if not allowed:
-                    reason = ("Before finish, use view_file to read EVERY attachment listed in [Image attachments], "
-                              "even if earlier conversation text already describes it. Then submit finish again.")
+                    reason = ("Before finish, use view_file (or read_file) to read EVERY attachment listed in "
+                              "[Image attachments], even if earlier conversation text already describes it. "
+                              "Then submit finish again.")
             else:
                 allowed = allowed_image(tool, manifest)
                 if allowed:
                     # This records permission to attempt a read. The parent
                     # separately requires successful DONE events for every
                     # image; failed reads can never become a successful API result.
-                    read_marker(manifest, tool["args"]["AbsolutePath"]).touch(mode=0o600, exist_ok=True)
+                    read_marker(manifest, image_call_path(tool)).touch(mode=0o600, exist_ok=True)
     except (ValueError, AttributeError, OSError, TypeError):
         allowed = False
     sys.stdout.buffer.write(orjson.dumps({

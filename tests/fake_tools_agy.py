@@ -61,9 +61,11 @@ def main():
         for image_path in image_paths:
             image_hashes.append(hashlib.sha256(Path(image_path).read_bytes()).hexdigest())
             if "SKIP_IMAGE_READ" not in prompt:
+                read_file = "READ_FILE_TOOL" in prompt
                 emit({"event": "step_update", "step_update": {"step_type": "tool", "state": "DONE",
-                      "tool_info": {"name": "view_file", "parameters": {
-                          "AbsolutePath": "/etc/passwd" if "WRONG_IMAGE_READ" in prompt else image_path}}}})
+                      "tool_info": {"name": "read_file" if read_file else "view_file", "parameters": {
+                          ("Path" if read_file else "AbsolutePath"):
+                              "/etc/passwd" if "WRONG_IMAGE_READ" in prompt else image_path}}}})
         if config is None:
             output = {"name": "Budi", "age": 20}
             if "BAD_TYPE" in prompt:

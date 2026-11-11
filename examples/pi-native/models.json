@@ -11,7 +11,7 @@
           "name": "AGY Native Gemini Flash Low",
           "reasoning": false,
           "input": ["text"],
-          "contextWindow": 200000,
+          "contextWindow": 55000,
           "maxTokens": 8192
         }
       ]

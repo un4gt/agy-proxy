@@ -102,6 +102,7 @@ TurnEvent = tuple[Literal["ready", "delta", "result"], object]
 @dataclass
 class TurnResult(ExecutionOutcome):
     status: str = "SUCCESS"
+    stop_reason: str | None = None
 
     @property
     def tool_calls(self):
@@ -110,7 +111,9 @@ class TurnResult(ExecutionOutcome):
 
     @property
     def finish_reason(self) -> str:
-        return "tool_calls" if self.tool_calls else "stop"
+        if self.tool_calls:
+            return "tool_calls"
+        return self.stop_reason or "stop"
 
     def message(self) -> dict:
         message = {"role": "assistant", "content": self.text or (None if self.tool_calls else "")}

@@ -48,6 +48,7 @@ type Account = {
   isolated?: boolean;
   bound_clients?: number;
   exhausted_scopes?: string[];
+  disabled_models?: string[];
 };
 type AccountUsage = Account & {
   usage_error: string | null;
@@ -571,10 +572,12 @@ export function Accounts({ login }: { login: (accountId: string) => ReactNode })
                         <AccountActions
                           account={account}
                           disabled={busy}
-                          onRenamed={(name) =>
+                          onUpdated={(name, disabledModels) =>
                             setAccounts((items) => {
                               const next = items.map((item) =>
-                                item.id === account.id ? { ...item, name } : item,
+                                item.id === account.id
+                                  ? { ...item, name, disabled_models: disabledModels }
+                                  : item,
                               );
                               cachedAccounts = next;
                               return next;
@@ -607,6 +610,14 @@ export function Accounts({ login }: { login: (accountId: string) => ReactNode })
                       <Badge variant="outline">独立账号环境</Badge>
                       {!!account.bound_clients && (
                         <Badge variant="secondary">已绑定请求</Badge>
+                      )}
+                      {!!account.disabled_models?.length && (
+                        <Badge
+                          variant="outline"
+                          title={account.disabled_models.join("、")}
+                        >
+                          已限制 {account.disabled_models.length} 个模型
+                        </Badge>
                       )}
                       {!!account.exhausted_scopes?.length && (
                         <Badge variant="destructive">部分模型额度耗尽</Badge>
