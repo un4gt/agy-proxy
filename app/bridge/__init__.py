@@ -1,8 +1,8 @@
 """Fixed-SHA native bridge for the pinned Antigravity CLI.
 
-The patcher and bridge client are intentionally isolated from the legacy
-stream-json session manager.  They only support the SHA-pinned Linux 1.4.2
-build; every other input is rejected before any bytes are written.
+The patcher and bridge client are self-contained. They only support the
+SHA-pinned Linux 1.4.2 build; every other input is rejected before any bytes
+are written.
 """
 from __future__ import annotations
 

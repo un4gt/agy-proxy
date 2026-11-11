@@ -471,9 +471,7 @@ async def add_account(request: Request):
             # first managed account is added; native credential files stay put.
             pool.create("原服务账号", json.loads(source.read_bytes()),
                         machine_id=installation.read_text(encoding="utf-8").strip() if installation.is_file() else None)
-        elif not pool.enabled and any(manager.live_count for manager in (
-            request.app.state.sessions, getattr(request.app.state, "native_sessions", None)
-        ) if manager is not None):
+        elif not pool.enabled and request.app.state.sessions.live_count:
             return JSONResponse({"error": "原服务仍有会话，但未找到可迁移的文件凭据。请先结束原会话，再优先导入原账号凭据。"}, status_code=409)
         profile = pool.create(name, credentials, machine_id=machine_id)
     except (OSError, ValueError, TypeError):
@@ -527,9 +525,8 @@ async def delete_account(account_id: str, request: Request):
     if bridges is None:
         bridges = request.app.state.account_login_bridges = {}
     try:
-        native = getattr(request.app.state, "native_sessions", None)
         result = await request.app.state.sessions.remove_account(
-            account_id, login_bridges=bridges, other_managers=(native,) if native else ())
+            account_id, login_bridges=bridges)
     except AgyError as exc:
         return JSONResponse({"error": str(exc)}, status_code=exc.status_code)
     except (AccountPoolError, OSError):

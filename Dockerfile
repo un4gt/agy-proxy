@@ -45,17 +45,12 @@ COPY main.py ./
 
 RUN pip install --no-cache-dir .
 
-# Only the active observer modules ship; historical harnesses stay in source.
-COPY tools/agy_cli_protocol.py /app/tools/agy_cli_protocol.py
-COPY tools/agy_native_wire_probe/runtime.py tools/agy_native_wire_probe/probe_gdb.py tools/agy_native_wire_probe/observe.py tools/agy_native_wire_probe/input_clean.py tools/agy_native_wire_probe/input_guard.py tools/agy_native_wire_probe/finish_guard.py tools/agy_native_wire_probe/symbols.py tools/agy_native_wire_probe/usage.py /app/tools/agy_native_wire_probe/
-
-# Neutral cwd so no workspace rules leak into chat sessions
+# Neutral cwd so no workspace rules leak into bridge hosts
 RUN mkdir -p /workspace-empty
 ENV AGY_PROXY_CWD=/workspace-empty \
     AGY_PROXY_HOST=0.0.0.0 \
     AGY_PROXY_DATA_DIR=/root/.agy-proxy \
-    AGY_PROXY_BIN=/opt/agy-bridge/agy \
-    AGY_PROXY_BRIDGE=true
+    AGY_PROXY_BIN=/opt/agy-bridge/agy
 
 LABEL org.opencontainers.image.title="agy-proxy" \
       org.opencontainers.image.description="Gemini / OpenAI compatible reverse proxy backed by the Antigravity CLI (agy) native bridge" \

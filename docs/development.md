@@ -46,18 +46,19 @@ uv run --with playwright python tests/browser_smoke.py
 ```text
 客户端（OpenAI / Gemini / Anthropic）
   └─ HTTP / SSE → agy-proxy（FastAPI）
-                   └─ stdin / stdout NDJSON → agy（每个会话独立 PID）
+                   └─ HTTP NDJSON /_bridge → patched agy 1.4.2（每账号一个常驻 host）
+                                                └─ GetChatMessageRequest → 上游
 ```
 
-agy 使用 `--input-format stream-json --output-format stream-json`。非流式请求在代理内汇总到本轮 `result` 后返回 JSON；流式请求发送 SSE，并在等待期间发送心跳。
+镜像在构建时用 [app/bridge/patcher.py](../app/bridge/patcher.py) 给固定 SHA 的 1.4.2 CLI 增加 `/_bridge` HTTP 入口。代理不解析 CLI 的 stream-json 输出；每轮把完整消息历史、工具定义和配置组装成 `GetChatMessageRequest`，再把上游的 `deltaText`、`deltaToolCalls` 和 usage 转成客户端协议。流式请求发送 SSE，并在等待期间发送心跳。
 
-- `init` 每个 CLI 会话一次，`result` 每轮一次。
-- `agent_response.text_delta` 在 `ACTIVE` 和 `DONE` 中均为增量；`DONE` 仅表示当前步骤结束。
-- 累计 usage 按轮差分后映射与记账，thinking 已包含在 output 中。
-- 工具参数和结构化 JSON 必须等待最终结果通过完整校验后才交给客户端。
-- 会话续接核对历史后发送增量；进程重建时重放完整历史，账号绑定独立持久化。
+- 每账号一个常驻 host，请求之间不保存对话状态；会话隔离由代理按客户端会话标识维护。
+- 文本增量实时转发；工具调用等待完整参数后返回，工具由客户端执行。
+- Gemini 的 `thinkingSignature` 按 tool call ID 持久化到数据目录，工具续轮时回填。
+- 上游取消通过 `(*http.Request).Context()` 传递；客户端断开后停止上游请求。
+- 模型目录来自 `agy models` 与固定 1.4.2 的内部枚举映射；升级 CLI 必须重新提取。
 
-协议证据见 [Headless 分析](archive/headless-protocol-analysis-20261011.md)，会话和任务状态排查见[修正记录](archive/session-continuity-and-todos-20261011.md)。
+旧 stream-json/GDB 实现保存在本地分支 `legay_stream_json_version`，不参与 main 构建。
 
 ## 延迟分析
 

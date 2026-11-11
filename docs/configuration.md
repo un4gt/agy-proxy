@@ -27,18 +27,17 @@ OAuth 配置用于账号查询模块；CLI 自身的登录与令牌刷新流程�
 | `PORT` | `8317` | Compose 的宿主机对外端口，映射到容器内 `8317` |
 | `AGY_PROXY_HOST` | `127.0.0.1` | 应用监听地址；Docker 镜像设为 `0.0.0.0` |
 | `AGY_PROXY_PORT` | `8317` | 应用内部监听端口；修改时须同步容器端口映射与健康检查 |
-| `AGY_PROXY_BIN` | `agy` | agy 可执行文件或命令行，如 `python fake.py`；原生诊断可临时追加 `--v=2` 或 `--vmodule=模块名=2`，详见[原生日志](agy-native-logging.md)。bridge 镜像设为 `/opt/agy-bridge/agy` |
-| `AGY_PROXY_BRIDGE` | `false` | 使用固定 SHA 1.4.2 原生 bridge；镜像默认 `true`。开启后不再使用 stream-json/agent 路径，详见下方“原生 bridge” |
+| `AGY_PROXY_BIN` | `agy` | agy 可执行文件或命令行；bridge 镜像固定 `/opt/agy-bridge/agy`。原生诊断可临时追加 `--v=2` 或 `--vmodule=模块名=2`，详见[原生日志](agy-native-logging.md) |
 | `AGY_PROXY_HTTP_PROXY` | 空 | 访问上游的出站代理，如 `http://host.docker.internal:7890`；无协议前缀时补 `http://` |
 | `AGY_PROXY_CWD` | 空 | agy 工作目录；建议为空目录，避免加载项目中的规则文件；镜像设为 `/workspace-empty` |
 
 出站代理用于账号查询及 agy 子进程（含登录和更新），并注入子进程的 `HTTP_PROXY`、`HTTPS_PROXY`、`ALL_PROXY` 及小写变体。容器访问宿主机代理时，代理需监听容器可访问的地址；只监听宿主机 `127.0.0.1` 通常无法连接。
 
-代理为所有 agy 子进程设置 `AGY_CLI_DISABLE_AUTO_UPDATE=true`，镜像也内置该变量。CLI 1.4.2 只认精确的 `true`（长度 4），`1` 不会生效。镜像固定 CLI `1.4.2`；后台自更新会在请求之间改变协议与工具契约，增加难以复现的差异（`1.5.4` 把图片读取从 `view_file`/`AbsolutePath` 改为 `read_file`/`Path`，代理已同时接受两种别名）。手动控制台的“更新”操作仍执行显式 `agy update`，不受该变量影响；升级后应先跑图片、工具调用和流式回归。
+代理为所有 agy 子进程设置 `AGY_CLI_DISABLE_AUTO_UPDATE=true`，镜像也内置该变量。CLI 1.4.2 只认精确的 `true`（长度 4），`1` 不会生效。镜像固定 CLI `1.4.2`；后台自更新会在请求之间改变 bridge 二进制与工具契约。升级只能通过重建镜像完成，控制台 `/update/start` 固定返回 `409`。
 
-### 原生 bridge（1.4.2）
+### Native bridge（固定 1.4.2）
 
-镜像默认 `AGY_PROXY_BRIDGE=true`，使用由 [app/bridge/patcher.py](../app/bridge/patcher.py) 从固定 SHA `085f43e0…f455ef` 生成的副本 `/opt/agy-bridge/agy`（产物 SHA `0a32d852…056259`）。patcher 在 Docker 构建时校验源文件与产物 SHA；任一不匹配都会让构建失败。它保留真实 CLI 登录/bootstrap 与 updater 代码，在 `setUpHTTPServeMux` 返回块注册 `/_bridge`，由代理发送 `GetChatMessageRequest` 并解析原始响应。
+镜像使用由 [app/bridge/patcher.py](../app/bridge/patcher.py) 从固定 SHA `085f43e0…f455ef` 生成的副本 `/opt/agy-bridge/agy`（产物 SHA `636570d0…060649`）。patcher 在 Docker 构建时校验源文件与产物 SHA；任一不匹配都会让构建失败。它保留真实 CLI 登录/bootstrap 与 updater 代码，在 `setUpHTTPServeMux` 返回块注册 `/_bridge`，由代理发送 `GetChatMessageRequest` 并解析原始响应。main 不再包含 stream-json 聊天路径；旧实现保留在 `legay_stream_json_version` 分支。
 
 - 需要 Linux 与可读的 `/proc`（用于发现 CLI 的随机监听端口）。非 Linux 环境会返回 `503`。
 - 每个账号保留一个常驻 CLI host；请求之间不保存对话状态，代理每次发送完整消息历史。
@@ -46,10 +45,8 @@ OAuth 配置用于账号查询模块；CLI 自身的登录与令牌刷新流程�
 - 工具调用是原生 function calling。Gemini 的 `thinkingSignature` 由代理按 tool call ID 缓存，并持久化到数据目录的 `bridge-signatures.json`（7 天/最多 4096 条，0600）；容器重启后仍可续轮。升级 CLI 或清空数据目录会使旧签名失效。
 - 图片输入已接入 bridge：代理把已验证的 PNG/JPEG/WebP/GIF 以 `media.inlineData` 发送；数量、字节和像素限制与旧路径相同（最多 8 张、20 MiB、32 MP）。图片 URL 仍由代理先下载并校验。
 - bridge 处理器使用 `(*http.Request).Context()` 调用上游；客户端断开时取消信号会传入 `GetChatMessage`。2026-11-11 实测 3 秒断连后 `raw.Err`/`Close` 在约 3 秒内命中，后续请求正常。
-- bridge 模式下 `/update/start` 返回 `409`，避免 `agy update` 覆盖固定 SHA 副本；升级通过重建镜像完成。
-- 与 `AGY_PROXY_NATIVE_CHAT=true` 同时设置时 bridge 优先。
-- `AGY_PROXY_BRIDGE=false` 仅保留为迁移回退；bridge 稳定后计划移除 stream-json 代码和对应旧测试。
-- 升级现有 Compose 时，确认没有覆盖镜像内置的 `AGY_PROXY_BIN=/opt/agy-bridge/agy` 或把 `AGY_PROXY_BRIDGE` 设为 `false`；否则会回到未打补丁的 CLI/stream-json 路径。
+- `/update/start` 固定返回 `409`，避免 `agy update` 覆盖固定 SHA 副本；升级通过重建镜像完成。
+- 只支持 Linux 与可读的 `/proc`；源码运行必须指向已打补丁的 1.4.2 二进制，否则启动 bridge host 失败。
 
 升级固定 CLI 的步骤：
 
@@ -65,18 +62,13 @@ OAuth 配置用于账号查询模块；CLI 自身的登录与令牌刷新流程�
 
 | 变量 | 默认值 | 用途 |
 |---|---|---|
-| `AGY_PROXY_MAX_SESSIONS` | `8` | agy 进程数上限，最低 1；满时回收空闲进程，全忙返回 429 |
+| `AGY_PROXY_MAX_SESSIONS` | `8` | 常驻 bridge host 数上限，最低 1；满时回收空闲 host，全忙返回 429 |
 | `AGY_PROXY_TURN_TIMEOUT` | `600` | 单轮生成总超时，最低 5；不包含所有请求前置操作 |
-| `AGY_PROXY_RECOVERY_ATTEMPTS` | `1` | 请求共享恢复预算：参数修正、可恢复传输故障、配额换号总共最多一次；`0` 关闭，其他整数限制到 0–1 |
-| `AGY_PROXY_IDLE_TIMEOUT` | `0` | CLI stdout 静默超时；0 禁用，正数表示允许无输出的时长 |
 | `AGY_PROXY_STREAM_HEARTBEAT` | `10` | 流式等待期间发送 SSE 心跳的间隔，最低 0.1 |
-| `AGY_PROXY_SESSION_TTL` | `1800` | 空闲会话及预热进程的回收时间，最低 30 |
+| `AGY_PROXY_SESSION_TTL` | `1800` | 空闲 bridge host 的回收时间，最低 30 |
 | `AGY_PROXY_MODELS_TTL` | `300` | `agy models` 列表缓存时间，最低 10 |
-| `AGY_PROXY_PREWARM_MODELS` | 空 | 英文逗号分隔的模型 slug；提前启动空闲进程以减少冷启动，消耗进程名额和内存 |
 
-模型思考时可能没有 stdout 输出，通常保留 `IDLE_TIMEOUT=0`；单轮总超时仍由 `TURN_TIMEOUT` 控制。SSE 心跳用于维持 HTTP 连接，不表示模型生成了内容。`SESSION_TTL` 只回收进程，不清除账号身份或持久化绑定，也不触发换号。
-
-原始尝试与恢复共用 `TURN_TIMEOUT`，重建进程不会重置截止时间。所有四种协议的正文均等待完整校验；开始事件和心跳之后仍可恢复，正文交付之后不重新生成。参数修正保留账号、模型和 effort；只有明确的配额耗尽可以换号。取消、超时、鉴权失败、NDJSON 协议损坏及原生工具违规不恢复。
+SSE 心跳用于维持 HTTP 连接，不表示模型生成了内容。`SESSION_TTL` 只回收 host，不清除账号身份或持久化绑定。`TURN_TIMEOUT` 是单轮上游请求的总预算；客户端断开时通过 `Request.Context` 取消上游。bridge 不包含 stream-json 的恢复重放或 NDJSON 解析。
 
 ## 模型与 agy 参数
 
@@ -85,26 +77,8 @@ OAuth 配置用于账号查询模块；CLI 自身的登录与令牌刷新流程�
 | `AGY_PROXY_DEFAULT_MODEL` | 空 | 默认模型映射目标；各 API 的未知模型校验见[接入文档](usage.md) |
 | `AGY_PROXY_MODEL_MAP` | 空 | JSON 模型别名映射，如 `{"my-model":"gemini-3.8-flash-high"}` |
 | `AGY_PROXY_EFFORT` | 空 | 请求未指定时使用的默认思考级别 |
-| `AGY_PROXY_AGENT` | 空 | 内部旧执行入口的默认 `--agent`；四种客户端推理 API 均忽略此项 |
-| `AGY_PROXY_SKIP_PERMISSIONS` | `false` | 内部旧执行入口的权限参数；四种客户端推理 API 均不传入跳过权限标记 |
-| `AGY_PROXY_SANDBOX` | `false` | 向 agy 传入 `--sandbox` |
 
-布尔值接受 `1`、`true`、`yes`、`on`，不区分大小写。模型别名与默认映射仍受模型禁用设置约束。客户端工具模式使用受限 Agent，不采用上述自定义 Agent 或跳过权限配置。
-
-代理不设置模型上下文窗口或提示字符上限；消息历史和工具定义完整交给 AGY，由 AGY 与上游模型处理上下文容量。HTTP 请求体的 32 MiB 传输限制及图片数量、字节和像素限制独立保留。客户端的 `contextWindow` 用于客户端自身的上下文管理，不由代理修改；上游目录值与当前 CLI 约 55K 的实际输入上限见[客户端接入](usage.md#模型上下文与输出上限)。
-
-## 原生实验后端
-
-以下变量需使用 [原生实验镜像与独立 Compose](native-backend.md)。默认正式 Compose 不启用原生后端。
-
-| 变量 | 默认值 | 用途 |
-|---|---|---|
-| `AGY_PROXY_NATIVE_CHAT` | `false` | 仅 Chat Completions 选择原生后端 |
-| `AGY_PROXY_NATIVE_INPUT_CLEAN` | `false` | 原生后端清理已验证的 CLI 输入包装 |
-| `AGY_PROXY_NATIVE_BIN` | 空，沿用 `BIN` | 原生后端独立二进制；实验镜像固定 `/opt/agy-native/agy` |
-| `AGY_PROXY_NATIVE_SYMBOLS` | `/evidence/symbols.json` | 实验镜像固定 `/opt/agy-native/symbols.json` |
-| `NATIVE_BIND` / `NATIVE_PORT` | `127.0.0.1` / `18317` | 独立实验 Compose 的宿主机监听地址 |
-| `AGY_PROXY_NATIVE_MAX_SESSIONS` | `2` | 独立实验 Compose 映射到该服务的 `MAX_SESSIONS` |
+模型别名与默认映射仍受模型禁用设置约束。代理不设置模型上下文窗口或提示字符上限；消息历史和工具定义完整交给 bridge，由 AGY 与上游模型处理上下文容量。HTTP 请求体的 32 MiB 传输限制及图片数量、字节和像素限制独立保留。客户端的 `contextWindow` 用于客户端自身的上下文管理，不由代理修改；bridge 的上游目录支持接近 1M 的输入，实测见[客户端接入](usage.md#模型上下文与输出上限)。
 
 ## 链路计时与日志
 

@@ -5,7 +5,7 @@
 - `main.py` 启动 FastAPI；`app/` 包含协议适配、CLI 会话、账号隔离、用量和存储逻辑。
 - `src/` 是 React 19 + TypeScript 控制台；`src/components/ui/` 存放 shadcn/ui 组件，`src/lib/` 存放共享逻辑。
 - `app/static/` 是随仓库分发的前端产物；修改前端后重新构建，并在 PR 中包含相关产物。
-- `tests/` 包含单元测试、模拟 CLI 和客户端验收脚本；`tools/agy_native_wire_probe/` 是原生协议探针。
+- `tests/` 包含单元测试和客户端验收脚本；`app/bridge/` 是固定 SHA 1.4.2 的 patcher、请求转换与常驻 host 管理。
 - `docs/` 存放开发、配置和部署指南；`examples/` 提供客户端配置示例。
 
 ## 构建、测试与本地开发
@@ -51,7 +51,7 @@ PR 描述说明问题、修改后的行为、验证命令与结果；有对应 i
    docker compose up -d --no-build agy-proxy
    ```
 
-   命令须沿用原部署的 `-p` 和全部 `-f` 参数；例如原生主服务使用 `-f docker-compose.yml -f docker-compose.native-primary.yml`。更新镜像需要 `up -d` 重建容器，单独执行 `restart` 不会切换镜像。
+   命令须沿用原部署的 `-p` 和全部 `-f` 参数；更新镜像需要 `up -d` 重建容器，单独执行 `restart` 不会切换镜像。
 4. 检查容器状态、`/health`、实际镜像版本及关键接口；确认原有账号、密钥和用量数据保留。记录上一版本，回滚时恢复其 `image:` 标签，再执行相同的拉取和重建命令。
 
 正式更新通过已发布镜像交付，不在服务器构建镜像、复制源码补丁或直接修改运行中容器。

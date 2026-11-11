@@ -1,6 +1,6 @@
 # 历史研究与验收归档
 
-本目录保留各次实验当时的实现、版本、证据与限制，不代表当前部署状态。机器摘要仍位于 `../reference/`，原始敏感证据不入库。
+本目录保留各次实验当时的实现、版本、证据与限制，不代表当前部署状态。机器摘要仍位于 `../reference/`，原始敏感证据不入库。2026-11-11 起 main 只保留 native bridge；文中指向 `tools/agy_native_wire_probe/`、`app/native_chat.py`、`app/execution.py`、`Dockerfile.native`、`docker-compose.native-*` 和旧测试文件的链接，对应实现已移到 `legay_stream_json_version` 分支。
 
 当前操作入口：[部署指南](../deployment.md)、[客户端接入](../usage.md)、[原生实验后端](../native-backend.md)、[v0.0.17 发布说明](../releases/v0.0.17.md)。
 

@@ -1,7 +1,7 @@
 [project]
 name = "agy-proxy"
 version = "0.0.17"
-description = "Gemini / OpenAI compatible reverse proxy backed by the Antigravity CLI (`agy`) stream-json duplex mode"
+description = "Gemini / OpenAI compatible reverse proxy backed by the Antigravity CLI native bridge"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [

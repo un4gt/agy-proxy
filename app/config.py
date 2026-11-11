@@ -13,13 +13,6 @@ def _env(name: str, default: str | None = None) -> str | None:
     return os.environ.get(PREFIX + name, default)
 
 
-def _bool(name: str, default: bool = False) -> bool:
-    raw = _env(name)
-    if raw is None:
-        return default
-    return raw.strip().lower() in ("1", "true", "yes", "on")
-
-
 def _int(name: str, default: int) -> int:
     raw = _env(name)
     try:
@@ -50,27 +43,14 @@ class Config:
     max_sessions: int = 8
     session_ttl: float = 1800.0
     turn_timeout: float = 600.0
-    recovery_attempts: int = 1
-    # CLI stdout omits thinking/upstream activity; silence is not a stalled run.
-    idle_timeout: float = 0.0
+    # SSE heartbeat while the bridge waits for upstream tokens.
     stream_heartbeat: float = 10.0
     models_ttl: float = 300.0
     effort: str | None = None
-    agent: str | None = None
-    skip_permissions: bool = False
-    sandbox: bool = False
     http_proxy: str | None = None
     oauth_client_id: str | None = None
     oauth_client_secret: str | None = field(default=None, repr=False)
     agy_cwd: str | None = None
-    prewarm_models: tuple[str, ...] = ()
-    native_chat: bool = False
-    native_input_clean: bool = False
-    native_bin: str | None = None
-    native_symbols: str = "/evidence/symbols.json"
-    # Native bridge uses the fixed-SHA 1.4.2 patched binary instead of the
-    # stream-json duplex process.  Off by default for source-only installs.
-    bridge: bool = False
     # Internal per-child context; never change the proxy's own process home.
     account_home: str | None = field(default=None, repr=False)
     account_id: str | None = None
@@ -108,9 +88,6 @@ def load_config() -> Config:
     if http_proxy and "://" not in http_proxy:
         http_proxy = "http://" + http_proxy
 
-    prewarm_raw = _env("PREWARM_MODELS") or ""
-    prewarm = tuple(m.strip() for m in prewarm_raw.split(",") if m.strip())
-
     return Config(
         agy_bin=(_env("BIN") or "agy"),
         host=(_env("HOST") or "127.0.0.1"),
@@ -124,22 +101,11 @@ def load_config() -> Config:
         max_sessions=max(1, _int("MAX_SESSIONS", 8)),
         session_ttl=max(30.0, _float("SESSION_TTL", 1800.0)),
         turn_timeout=max(5.0, _float("TURN_TIMEOUT", 600.0)),
-        recovery_attempts=min(1, max(0, _int("RECOVERY_ATTEMPTS", 1))),
-        idle_timeout=max(0.0, _float("IDLE_TIMEOUT", 0.0)),
         stream_heartbeat=max(0.1, _float("STREAM_HEARTBEAT", 10.0)),
         models_ttl=max(10.0, _float("MODELS_TTL", 300.0)),
         effort=_env("EFFORT"),
-        agent=_env("AGENT"),
-        skip_permissions=_bool("SKIP_PERMISSIONS", False),
-        sandbox=_bool("SANDBOX", False),
         http_proxy=http_proxy,
         oauth_client_id=_env("OAUTH_CLIENT_ID"),
         oauth_client_secret=_env("OAUTH_CLIENT_SECRET"),
         agy_cwd=_env("CWD"),
-        prewarm_models=prewarm,
-        native_chat=_bool("NATIVE_CHAT", False),
-        native_input_clean=_bool("NATIVE_INPUT_CLEAN", False),
-        native_bin=_env("NATIVE_BIN"),
-        native_symbols=_env("NATIVE_SYMBOLS") or "/evidence/symbols.json",
-        bridge=_bool("BRIDGE", False),
     )

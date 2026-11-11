@@ -178,7 +178,7 @@ def test_response_format_with_tools_is_rejected():
 
 
 def test_signature_cache_is_bounded(tmp_path):
-    manager = BridgeSessionManager(Config(data_dir=str(tmp_path), bridge=True))
+    manager = BridgeSessionManager(Config(data_dir=str(tmp_path)))
     for i in range(4100):
         manager.remember_signature(f"call_{i}", f"sig_{i}")
     assert manager.signature("call_0") is None
@@ -187,7 +187,7 @@ def test_signature_cache_is_bounded(tmp_path):
 
 
 def test_signature_cache_survives_manager_restart(tmp_path):
-    cfg = Config(data_dir=str(tmp_path), bridge=True)
+    cfg = Config(data_dir=str(tmp_path))
     first = BridgeSessionManager(cfg)
     first.remember_signature("call_1", "sig-call-1")
     first.remember_signature("assistant:call_1", "sig-assistant")

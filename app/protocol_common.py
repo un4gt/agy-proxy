@@ -18,7 +18,7 @@ from .model_policy import require_enabled_model
 from .external_tools import ExternalTools
 from .images import ImageInput
 from .latency import LatencyTrace
-from .openai_api import _parse_messages, _resolve_model
+from .openai_api import _resolve_model
 from .reasoning import ReasoningError, apply_effort, parse_effort
 from .runner import TurnProfile, TurnResult, record_dashboard_usage
 from .structured_output import ResponseFormat
@@ -191,28 +191,14 @@ async def _prepare(request: Request, body: dict, *, session_body: dict | None, t
     require_enabled_model(request, requested, model)
     model, effort = apply_effort(model, effort, slugs)
     profile.mark("models_done")
-    manager = (request.app.state.native_sessions
-               if cfg.native_chat and not cfg.bridge and request.url.path == "/v1/chat/completions"
-               else request.app.state.sessions)
-    if cfg.bridge:
-        raw_max = body.get("max_tokens", body.get("max_completion_tokens"))
-        if raw_max is not None and (type(raw_max) is not int or raw_max <= 0):
-            raise invalid("max_tokens must be a positive integer")
-        from .bridge.turn import BridgeTurn
-        turn = BridgeTurn(cfg, request.app.state.bridge_sessions,
-                          external=external or bridge_external,
-                          response_format=response_format,
-                          model=model, effort=effort, profile=profile,
-                          session_key=session_key, max_tokens=raw_max,
-                          images=images)
-    elif external:
-        turn = external.run(manager, model=model, effort=effort, profile=profile,
-                            images=images, session_key=session_key)
-    elif response_format:
-        system, history, final_user = _parse_messages(execution)
-        turn = response_format.run(manager, system=system, history=history,
-                                   final_user=final_user, model=model, effort=effort, profile=profile,
-                                   images=images, session_key=session_key)
-    else:
-        raise invalid("A client-tool execution context is required")
+    raw_max = body.get("max_tokens", body.get("max_completion_tokens"))
+    if raw_max is not None and (type(raw_max) is not int or raw_max <= 0):
+        raise invalid("max_tokens must be a positive integer")
+    from .bridge.turn import BridgeTurn
+    turn = BridgeTurn(cfg, request.app.state.bridge_sessions,
+                      external=external or bridge_external,
+                      response_format=response_format,
+                      model=model, effort=effort, profile=profile,
+                      session_key=session_key, max_tokens=raw_max,
+                      images=images)
     return PreparedTurn(request, body, model, profile, turn)

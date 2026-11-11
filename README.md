@@ -69,7 +69,6 @@ curl http://127.0.0.1:8317/v1/chat/completions \
 | [客户端接入](docs/usage.md) | API 示例、模型选择、工具、图片、会话与兼容限制 |
 | [多账号隔离](docs/account-isolation.md) | 固定安装标识、账号绑定与额度耗尽后切换 |
 | [本地开发](docs/development.md) | 源码启动、前端构建、测试与性能分析 |
-| [原生实验后端](docs/native-backend.md) | 独立实验镜像、SSH 转发、Pi 接入与固定 CLI |
 | [历史归档](docs/archive/README.md) | 阶段性研究与客户端验收记录 |
 
 源码运行需要 Python 3.12+、[uv](https://docs.astral.sh/uv/) 和已登录的 agy CLI：

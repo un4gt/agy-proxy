@@ -3,8 +3,9 @@
 One process is kept per account.  The process only provides authentication,
 the HTTP server and the real CodeAssistClient; each request is independent and
 carries the full conversation.  Process lifetime is therefore much simpler
-than the old duplex stream-json session: no per-conversation CLI state lives
-in the process.
+than a duplex CLI session: no per-conversation CLI state lives in the process.
+The stream-json flags only put the pinned CLI into headless mode so the
+patched HTTP host starts; chat messages do not use the stream-json protocol.
 """
 from __future__ import annotations
 

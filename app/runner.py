@@ -1,7 +1,8 @@
-"""Shared turn executor used by both the Gemini and OpenAI routers.
+"""Shared turn types and accounting for the native bridge.
 
-Seeds a fresh conversation or submits just the new messages of an identified
-client session. HTTP streaming is independent of the CLI's duplex NDJSON.
+The bridge owns streaming and tool translation; this module keeps the
+protocol-neutral result/profile types plus the dashboard usage hook used by
+the OpenAI, Gemini, Messages and Responses adapters.
 """
 
 from __future__ import annotations
@@ -12,12 +13,10 @@ import time
 from dataclasses import dataclass, field
 from typing import AsyncIterator, Literal
 
-from .agy import AgyError, SessionManager, account_failover, account_label
 from .auth import api_key_record
 from .config import Config
 from .contracts import ExecutionOutcome
 from .latency import LatencyTrace
-from .session_context import SessionContext, SessionIdentity
 
 log = logging.getLogger("agy_proxy.runner")
 
@@ -93,8 +92,6 @@ class TurnProfile:
         ]
         return " ".join(parts)
 
-# history entries are (role, text) tuples; role is "user" | "assistant" | "tool"
-History = list[tuple[str, str]]
 
 TurnEvent = tuple[Literal["ready", "delta", "result"], object]
 
@@ -130,52 +127,6 @@ async def chain_events(first_events: list, agen) -> AsyncIterator[TurnEvent]:
         yield item
 
 
-def build_seed_prompt(system: str, history: History, final_user: str | None) -> str:
-    """Prompt for a NEW agy session: replay the conversation, then ask for a reply."""
-    blocks: list[str] = []
-    if system:
-        blocks.append("[System instructions]\n" + system)
-    for role, text in history:
-        label = {"user": "User", "assistant": "Assistant", "tool": "Tool output"}.get(role, role.capitalize())
-        blocks.append(f"[{label}]\n{text}")
-    if final_user is not None:
-        blocks.append("[User]\n" + final_user)
-        blocks.append(
-            "The conversation above is the recorded history. "
-            "Reply to the most recent [User] message as the assistant, "
-            "honoring any [System instructions]. Output only the reply itself."
-        )
-    else:
-        blocks.append("Continue the conversation above as the assistant.")
-    return "\n\n".join(blocks)
-
-
-class DeltaTracker:
-    """Streams agent_response text deltas across agy step_update events.
-
-    text_delta is incremental in BOTH ACTIVE and DONE, including repeated text.
-    A DONE transition does not imply a cumulative snapshot or a completed turn.
-    """
-
-    def __init__(self) -> None:
-        self._emitted: dict[int, str] = {}
-
-    def feed(self, step: dict) -> str | None:
-        if step.get("step_type") != "agent_response":
-            return None
-        idx = step.get("step_index", 0)
-        fragment = step.get("text_delta")
-        if not isinstance(fragment, str) or not fragment:
-            return None
-        emitted = self._emitted.get(idx, "")
-        self._emitted[idx] = emitted + fragment
-        return fragment
-
-    @property
-    def streamed(self) -> str:
-        return "".join(self._emitted.values())
-
-
 async def record_dashboard_usage(
     cfg: Config,
     state,
@@ -209,110 +160,3 @@ async def record_dashboard_usage(
         )
     except Exception:  # pragma: no cover - accounting must not break chat
         log.warning("failed to record dashboard usage", exc_info=True)
-
-
-@account_failover
-async def run_turn(
-    cfg: Config,
-    mgr: SessionManager,
-    *,
-    system: str,
-    history: History,
-    final_user: str | None,
-    model: str | None,
-    effort: str | None,
-    profile: TurnProfile | None = None,
-    session_key: SessionIdentity | str | None = None,
-) -> AsyncIterator[TurnEvent]:
-    """Execute one agy turn, yielding ("delta", text) events then ("result", TurnResult)."""
-    if profile is not None:
-        profile.model = model
-        profile.mark("turn_start")
-    messages = [(r, t.strip() if r == "assistant" else t) for r, t in history]
-    if final_user is not None:
-        messages.append(("user", final_user))
-    context = SessionContext.build(session_key, ["plain", system], messages)
-    session = await mgr.acquire(model=model, effort=effort, context=context)
-    if profile is not None:
-        profile.account_id, profile.account_name = account_label(session)
-        profile.new_session = session.turns == 0
-        profile.mark("session_ready")
-    if session.input_offset:
-        prompt = build_seed_prompt("", messages[session.input_offset:], None)
-    elif not history and not system and final_user is not None:
-        prompt = final_user
-    else:
-        prompt = build_seed_prompt(system, history, final_user)
-
-    tracker = DeltaTracker()
-    completed = False
-    reply_text: str | None = None
-    events = session.send_turn(prompt)
-    try:
-        yield "ready", None
-        async for event in events:
-            if not isinstance(event, dict):
-                continue
-            kind = event.get("event")
-            if kind == "init" and profile is not None:
-                profile.mark("init_seen")
-            if kind == "result":
-                envelope = event.get("result")
-                if not isinstance(envelope, dict):
-                    envelope = {}
-                status = envelope.get("status")
-                if status != "SUCCESS":
-                    raise AgyError(
-                        envelope.get("error") or f"agy turn ended with status {status}",
-                        status_code=502,
-                    )
-                text = envelope.get("response")
-                if not isinstance(text, str):
-                    structured = envelope.get("structured_output")
-                    text = json.dumps_text(structured) if structured is not None else ""
-                usage = envelope.get("usage") if isinstance(envelope.get("usage"), dict) else {}
-
-                streamed = tracker.streamed
-                if text and not streamed:
-                    if profile is not None:
-                        profile.mark("first_delta")
-                    yield ("delta", text)
-                elif text.startswith(streamed) and text != streamed:
-                    if profile is not None:
-                        profile.mark("first_delta")
-                    yield ("delta", text[len(streamed):])
-                elif streamed and not text.startswith(streamed):
-                    raise AgyError("agy result text does not match its streamed response")
-
-                reply_text = text or streamed or ""
-                completed = True
-                if profile is not None:
-                    profile.mark("result")
-                yield (
-                    "result",
-                    TurnResult(
-                        text=reply_text,
-                        usage=usage,
-                        status=status,
-                        conversation_id=envelope.get("conversation_id") or session.conversation_id,
-                        num_turns=envelope.get("num_turns"),
-                    ),
-                )
-                return
-            if kind == "step_update":
-                delta = tracker.feed(event.get("step_update") or {})
-                if delta:
-                    if profile is not None:
-                        profile.mark("first_delta")
-                    yield ("delta", delta)
-    finally:
-        if profile is not None:
-            log.info(
-                "turn profile: %s status=%s",
-                profile.summary(),
-                "ok" if completed else "aborted",
-            )
-        try:
-            await events.aclose()
-        finally:
-            await mgr.release(session, reply=("assistant", reply_text.strip()) if completed else None)

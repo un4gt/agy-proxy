@@ -2,7 +2,7 @@
 
 [返回 README](../README.md) · [环境变量](configuration.md)
 
-四种推理 API 共用协议适配层。镜像默认的 `AGY_PROXY_BRIDGE=true` 使用原生 `GetChatMessageRequest`：文本和工具调用会实时转发，工具由客户端执行；`AGY_PROXY_BRIDGE=false` 时才回到受限 stream-json 客户端模式（先等待完整结果校验再交付正文，不转发 CLI 的逐 token 输出）。协议能力、恢复行为及升级变化见[统一协议兼容层](unified-client-protocols.md)。
+四种推理 API 共用协议适配层。代理使用原生 `GetChatMessageRequest`：文本和工具调用会实时转发，工具由客户端执行。main 只保留 bridge 后端；旧 stream-json 实现位于 `legay_stream_json_version` 分支。协议能力及升级变化见[统一协议兼容层](unified-client-protocols.md)。
 
 先在控制台创建 API Key，并从 `GET /v1/models` 获取实际可用的模型 ID。示例中的模型名需按你的账号替换；curl 示例使用 Bash：
 
@@ -22,11 +22,9 @@ export AGY_API_KEY="控制台创建的API密钥"
 | Claude Sonnet 5.5 | `claude-sonnet-5-5`、`claude-sonnet-5-5-low/medium/high` | 1,000,000 | 128,000 |
 | GPT-OSS 120B | `gpt-oss-120b`、`gpt-oss-120b-medium` | 131,072 | 32,768 |
 
-**镜像默认的 native bridge 直接使用上表窗口。** `AGY_PROXY_BRIDGE=true` 时代理构造 `GetChatMessageRequest`，绕过 CLI 的 agent 循环和内部 55K 截断。2026-11-11 用 `gemini-3.8-flash-medium` 实测：800 KB 文档得到 `prompt_tokens=170,910`；4.5 MB 文档得到 `prompt_tokens=961,028`，尾部 needle 完整返回；4.85 MB 文档得到 `prompt_tokens=1,035,024`，尾部 needle 前缀已正确返回（256 输出预算被 thinking 消耗，截断的是输出而非输入）。这说明 bridge 可使用接近完整 1M 窗口；完整 1,048,576 输入和 65K 单次输出仍需按账号配额/延迟单独验收。
+**bridge 直接使用上表窗口。** 代理构造 `GetChatMessageRequest`，绕过 CLI 的 agent 循环和旧路径截断。2026-11-11 用 `gemini-3.8-flash-medium` 实测：800 KB 文档得到 `prompt_tokens=170,910`；4.5 MB 文档得到 `prompt_tokens=961,028`，尾部 needle 完整返回；4.85 MB 文档得到 `prompt_tokens=1,035,024`，尾部 needle 前缀已正确返回（256 输出预算被 thinking 消耗，截断的是输出而非输入）。这说明 bridge 可使用接近完整 1M 窗口；完整 1,048,576 输入和 65K 单次输出仍需按账号配额/延迟单独验收。
 
-**legacy stream-json 回退的实际限制更低。** `AGY_PROXY_BRIDGE=false` 时仍走旧路径；2026-11-10 用 `gemini-3.8-flash-low` 实测：约 100 万 token 文档在 CLI 内被截断到约 **55K prompt tokens**，只保留开头，中段和尾部的独立标记均返回 `UNKNOWN`；Pi 按 1M 配置不会触发自动压缩，尾部内容直接丢失。CLI 设置中的 `max-tokens-per-step` 为 **16,384**，但实测单次回答可输出 42,711 tokens，说明它不是最终硬上限；模型仍会提前停止或拒绝超长输出，不能把 65,536 当作稳定的一次性输出预算。
-
-因此镜像默认（bridge）客户端可按上表配置 1M/65K；只有显式关闭 bridge 时才应把上下文窗口降到 **约 55K**，并预留约 8K 输出，让自动压缩在 CLI 截断前触发。上游目录也可能随账号或模型更新变化，升级后应重新核对。
+客户端可按上表配置 1M/65K；上游目录也可能随账号或模型更新变化，升级后应重新核对。
 
 Pi 默认（bridge）建议值。`models.json`：
 
@@ -40,7 +38,7 @@ Pi 默认（bridge）建议值。`models.json`：
 {"compaction": {"enabled": true, "reserveTokens": 8192, "keepRecentTokens": 4096}}
 ```
 
-legacy stream-json 回退时改用 `contextWindow: 55000, maxTokens: 8192`；这样会在约 47K tokens 触发压缩，早于 CLI 的约 55K 截断。实测旧路径在 65K/8K 配置下能在 `tokensBefore=92590` 时写出 `compaction` 条目；同一会话改用 1M 配置则不会压缩，尾部标记丢失。需要按 model 单独覆盖时使用 `compaction.modelOverrides["provider/modelId"]`。
+需要按 model 单独覆盖时使用 `compaction.modelOverrides["provider/modelId"]`。
 
 ## Token 统计口径
 
@@ -116,23 +114,15 @@ result = client.chat.completions.create(
 
 字段规范见 [OpenAI Chat Completions](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create)，CLI 参数见 [Antigravity headless mode](https://antigravity.google/docs/cli/headless/)。
 
-支持 `response_format: {"type":"json_object"}` 和 `{"type":"json_schema","json_schema":{"name":"result","strict":true,"schema":{...}}}`。代理将 Schema 交给 agy 的 `--json-schema`，并在返回前校验 JSON 和 Schema；不符合要求的上游结果返回错误，不会作为成功响应透传。结构化请求按客户端会话隔离，连续历史且 Schema 等参数一致时可续用原进程；Schema 根类型须为 object，引用仅限本地 `$ref`；当前不能与客户端工具模式组合。结构化流式响应会先缓冲和校验完整结果，再发送标准 SSE 内容、usage（按需）及 `[DONE]`，因此没有逐 token 的首字延迟优势。
+支持 `response_format: {"type":"json_object"}` 和 `{"type":"json_schema","json_schema":{"name":"result","strict":true,"schema":{...}}}`。代理使用合成的 `structured_output` 工具获取对象，并在返回前校验 JSON 和 Schema；不符合要求的上游结果返回错误，不会作为成功响应透传。Schema 根类型须为 object，引用仅限本地 `$ref`；当前不能与客户端工具模式组合。结构化响应在完整校验后一次性返回，没有逐 token 的首字延迟优势。
 
 模型列表可用时，未知模型返回 OpenAI 格式的 `404 / model_not_found`，不会静默回退到默认模型；仍支持显式 `default`、`auto`、模型简称及 `MODEL_MAP` 中配置的自定义别名。常用采样参数被接受不代表 agy CLI 实际支持这些参数；兼容性测试分数不能代替参数语义验证。
 
 ## Pi coding agent 与客户端工具
 
-镜像默认的 `AGY_PROXY_BRIDGE=true` 使用**原生 function calling**：代理把 Pi 的 `tools`/`tool_choice` 和完整消息历史翻译成 `GetChatMessageRequest`，把上游 `deltaToolCalls` 转成 OpenAI `tool_calls`；Pi 在本机执行 `read`、`write`、`edit`、shell 等工具，再把 `role: tool` 和 `tool_call_id` 回传。代理按 tool call ID 缓存并持久化 Gemini 的 `thinkingSignature` 并在下一轮回填，否则 Gemini 会拒绝工具续轮；`bridge-signatures.json` 位于数据目录，0600，保留 7 天/最多 4096 条。没有临时工作目录、`finish` 结构化输出或 PreToolUse hook；工具参数仍会按客户端 schema 校验，未知工具或非法参数返回 `502`。
+代理使用**原生 function calling**：把 Pi 的 `tools`/`tool_choice` 和完整消息历史翻译成 `GetChatMessageRequest`，把上游 `deltaToolCalls` 转成 OpenAI `tool_calls`；Pi 在本机执行 `read`、`write`、`edit`、shell 等工具，再把 `role: tool` 和 `tool_call_id` 回传。代理按 tool call ID 缓存并持久化 Gemini 的 `thinkingSignature` 并在下一轮回填，否则 Gemini 会拒绝工具续轮；`bridge-signatures.json` 位于数据目录，0600，保留 7 天/最多 4096 条。没有临时工作目录、`finish` 结构化输出或 PreToolUse hook；工具参数仍会按客户端 schema 校验，未知工具或非法参数返回 `502`。
 
-Pi 的 `models.json` 在 bridge 下使用 1M 窗口（见[模型上下文与输出上限](#模型上下文与输出上限)），可直接参考 [examples/pi-bridge/models.json](../examples/pi-bridge/models.json)。以下旧描述仅适用于 `AGY_PROXY_BRIDGE=false` 的 stream-json 回退：
-
-所有 OpenAI 请求均进入**受限客户端模式**；声明 `tools` 时启用客户端工具桥接（下方 Pi 配置适用于 0.87.1）：
-
-1. 代理为 agy 创建独立临时工作目录，选择仅允许 `finish` 的自定义主 Agent；`PreToolUse` hook 拒绝其余服务端工具。`finish` 只负责提交结构化结果，必须保留。
-2. 把客户端工具定义和消息交给 agy，使用 `--json-schema` 获取调用请求。内部工具参数直接使用 JSON 对象，校验工具名、参数 schema 和 `tool_choice` 后，由代理序列化成 OpenAI `tool_calls[].function.arguments` 字符串，结束原因为 `tool_calls`。这样避免让模型在 JSON 字符串里再次编码参数，减少文件路径、代码中的引号与换行造成的解析错误。
-3. **Pi 在运行 Pi 的机器上执行** `read`、`write`、`edit`、shell 等工具，然后回传 `role: tool` 和 `tool_call_id`。代理核对客户端历史后，向该会话的独立上游进程发送增量；需要新进程时重放完整历史，保留调用参数和所有工具结果。
-
-这是一层结构化输出适配，不是 agy 原生 function calling 直通。不会把 agy 的 `tool_info` 执行记录转交 Pi 再执行；发现意外服务端工具调用会丢弃响应并返回错误。CLI 的 `init.tools` 仍可能列出内置工具，不能用这份列表判断实际允许执行的工具。临时目录与 hook 是 CLI 级限制，不是操作系统安全沙箱；不会修改全局 agy 设置，且客户端工具模式不使用 `AGY_PROXY_AGENT` / `SKIP_PERMISSIONS`。
+Pi 的 `models.json` 使用 1M 窗口（见[模型上下文与输出上限](#模型上下文与输出上限)），可直接参考 [examples/pi-bridge/models.json](../examples/pi-bridge/models.json)。
 
 Pi 的 `%USERPROFILE%\.pi\agent\models.json`（Linux/macOS 为 `~/.pi/agent/models.json`）使用独立 provider，模型 ID 使用 `/v1/models` 返回的 agy slug：
 
@@ -158,7 +148,7 @@ pi --provider agy-proxy --model gemini-3.8-flash-high --thinking off
 
 启用工具时不要加之前用于连通测试的 `--no-tools`。不要覆盖内置 `openrouter` provider，也不要使用 `google/gemini-3.8-flash` 作为模型 ID。
 
-支持 `tool_choice: auto/none/required/指定函数` 和 `parallel_tool_calls: false`。工具模式的 SSE 会等完整结构化结果校验完成再发送内容与调用，参数不逐字符流出。支持文本、用户图片输入和 function 类型工具，`n` 仅支持 `1`，参数 schema 支持本地 `$ref`，不加载外部引用；不支持与 `response_format: json_object/json_schema` 叠加。`tools: []` 可显式使用无客户端工具的受限模式。普通不带工具字段或历史的请求保留原有 agy 行为。
+支持 `tool_choice: auto/none/required/指定函数` 和 `parallel_tool_calls: false`。文本增量实时转发；工具调用在完整参数校验后作为 `tool_calls` 返回，参数不逐字符流出。支持文本、用户图片输入和 function 类型工具，`n` 仅支持 `1`，参数 schema 支持本地 `$ref`，不加载外部引用；不支持与 `response_format: json_object/json_schema` 叠加。`tools: []` 表示纯文本请求。所有请求均走 bridge，不再有 stream-json/agent 回退。
 
 ## Codex：Responses API
 
@@ -170,7 +160,7 @@ Codex 的 `config.toml` 示例（密钥通过 `OPENAI_API_KEY` 环境变量提�
 model = "gemini-3.8-flash"
 model_provider = "agy"
 model_reasoning_effort = "low"
-model_context_window = 55000
+model_context_window = 1048576
 web_search = "disabled"
 
 [model_providers.agy]
