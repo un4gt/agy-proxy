@@ -54,19 +54,19 @@ Anthropic Messages 的 `input_tokens` 则继续表示未缓存输入，缓存量
 
 ```bash
 # 非流式
-curl -X POST "http://127.0.0.1:8317/v1beta/models/gemini-3-pro-high:generateContent" \
+curl -X POST "http://127.0.0.1:8317/v1beta/models/gemini-3.8-flash-high:generateContent" \
   -H "Authorization: Bearer $AGY_API_KEY" \
   -H "content-type: application/json" \
   -d '{"contents":[{"role":"user","parts":[{"text":"用一句话介绍你自己"}]}]}'
 
 # 流式 (SSE)
-curl -N -X POST "http://127.0.0.1:8317/v1beta/models/gemini-3-pro-high:streamGenerateContent?alt=sse" \
+curl -N -X POST "http://127.0.0.1:8317/v1beta/models/gemini-3.8-flash-high:streamGenerateContent?alt=sse" \
   -H "Authorization: Bearer $AGY_API_KEY" \
   -H "content-type: application/json" \
   -d '{"contents":[{"role":"user","parts":[{"text":"讲个笑话"}]}]}'
 ```
 
-Gemini 路径兼容 `:generateContent` 与 `/generateContent`、`/v1beta/` 与 `/v1/`、带或不带 `models/` 前缀。
+Gemini 路径兼容 `:generateContent` 与 `/generateContent` 两种调用形式，以及 `/v1beta/` 与 `/v1/` 前缀；模型路径必须包含 `models/`。
 
 Gemini SDK 接入：`client = genai.Client(api_key="控制台创建的API密钥", http_options={"base_url": "http://127.0.0.1:8317"})`
 
@@ -76,7 +76,7 @@ Gemini SDK 接入：`client = genai.Client(api_key="控制台创建的API密钥"
 curl -X POST http://127.0.0.1:8317/v1/chat/completions \
   -H "Authorization: Bearer $AGY_API_KEY" \
   -H "content-type: application/json" \
-  -d '{"model":"gemini-3-pro-high","messages":[{"role":"user","content":"你好"}]}'
+  -d '{"model":"gemini-3.8-flash-high","messages":[{"role":"user","content":"你好"}]}'
 ```
 
 openai SDK 接入：`client = OpenAI(base_url="http://127.0.0.1:8317/v1", api_key="控制台创建的API密钥")`
@@ -191,7 +191,7 @@ claude --effort low
 
 模型 ID 必须取自 `/v1/models`，也可以让两个客户端使用同一个 Gemini 模型。Messages 的 Base URL 不包含 `/v1`，Codex 的 Base URL 包含 `/v1`。
 
-两个新接口始终使用受限的客户端工具执行模式，含无工具请求。SSE 在等待期间发送心跳，工具结果校验通过后发送内容；目前不是逐 token 输出。断开连接会取消上游进程并释放工作目录。
+两个接口都支持客户端工具；代理只负责组装请求和校验结果，不执行服务端工具。SSE 在等待期间发送心跳，文本增量实时转发，工具参数完整校验后交付。断开连接会取消本轮上游请求；账号的常驻 bridge host 保留。
 
 兼容范围：支持文本、用户图片输入和客户端工具；不支持音视频、图片生成、工具返回图片、内置服务端搜索、后台任务、WebSocket、Responses conversation 资源或外部加密 reasoning。custom 工具的 grammar 会交给模型指导生成，代理仅校验返回的是字符串，不实现 grammar 解析器。`cache_control` 不建立 Anthropic prompt cache；缓存创建/读取计数为 0。`POST /v1/messages/count_tokens` 提供明确标记为 `X-Agy-Token-Count: estimate` 的近似值，图片按像素粗估，不把 Base64 长度当 Token，也不用于 dashboard 记账。agy CLI 尚不暴露 token 上限或采样参数，`max_tokens` / `max_output_tokens` / thinking budget 不能作为硬性限额，`temperature` / `top_p` 不透传；实际 usage 来自上游。JSON Schema 输出暂不与客户端工具调用叠加。
 
@@ -201,32 +201,33 @@ Pi、Codex、Claude Code、OpenCode 可以在客户端连接 MCP，通过上面�
 
 ## 图片输入
 
-三个接口共用图片校验、下载和隔离执行逻辑，支持 PNG、JPEG、WebP、静态 GIF，接受 Base64 或公网 HTTP(S) 图片。图片可与客户端工具调用、无工具的 JSON Schema 输出及历史续接配合使用。单张图片最多 10 MiB、1600 万像素，每次请求最多 8 张、合计 20 MiB／3200 万像素。真实 API 和客户端验收脚本分别为 [tests/vision_api_smoke.py](../tests/vision_api_smoke.py) 和 [tests/vision_smoke.py](../tests/vision_smoke.py)。
+三个接口共用图片校验、下载和隔离执行逻辑，支持 PNG、JPEG、WebP、静态 GIF，接受 Base64 或公网 HTTP(S) 图片。图片可与客户端工具调用、无工具的 JSON Schema 输出及历史续接配合使用。单张图片最多 10 MiB、1600 万像素，每次请求最多 8 张、合计 20 MiB／3200 万像素。图片验收目前以单元测试和真实客户端手动验证为准，仓库不再保留独立 vision smoke 脚本。
 
 ## 客户端 Skills
 
 Pi、Codex、Claude Code、OpenCode 在客户端发现和加载 `SKILL.md`，代理保留技能指令、引用内容和工具调用；脚本在客户端执行，无需安装到代理服务器。支持自动选择以及客户端各自的显式调用方式。验收脚本 [tests/skills_smoke.py](../tests/skills_smoke.py) 覆盖技能加载、引用读取、脚本执行及独立会话数据检查，使用 `uv run python tests/skills_smoke.py` 运行。
 
-## Agent 会话与进程对应
+## 会话关联与并发
 
-适用于任意 coding agent / agent 客户端，包括 dsh、pi、Codex、Claude Code、OpenCode。**服务端维护会话与独立 AGY PID / conversation_id 的对应关系，客户端无需新增自定义请求头。** 默认在同一 API 凭据内，按完整历史与上一轮实际回复（包括工具调用 ID）识别连续请求。
+适用于任意 coding agent / agent 客户端，包括 dsh、pi、Codex、Claude Code、OpenCode。**服务端按 API Key、显式会话标识和完整历史关联连续请求，客户端无需新增自定义请求头。**
 
 客户端若已有会话字段，优先使用它；兼容 `X-Agy-Session-Id`、`X-Session-Id`、`session-id`、`session_id`、`X-Session-Affinity`、`X-Opencode-Session`，以及 `metadata.session_id`、Codex 的 `client_metadata.session_id/thread_id`、Claude Code 的 JSON `metadata.user_id.session_id`。同时出现多个标识时必须一致；普通用户名、请求 ID、API Key 或相同首条 prompt 不会把多个会话合并。
 
-- 客户端仍提交完整历史，代理核对已确认历史后只向同一 stdin 发送新消息。工具回传包含上一条 assistant 的调用 ID，便于关联真实工具结果
-- 客户端工具声明和固定桥接规则在 AGY 会话启动时写入私有 agent 配置一次；后续回合不再将其追加到用户消息或对话历史。工具定义、选择或并行约束变化时创建新会话并加载新配置；修复重建也为新进程加载一次原配置
-- 单个 PID 同时只执行一轮；显式同会话重叠请求或自动识别出的在途重复续接返回 409，容量全部忙时返回 429
-- 没有会话字段也会保留成功进程。唯一匹配到连续历史才复用；首次请求、匹配歧义或并发分支各自建立独立进程
-- 历史重试/编辑/截断、模型/effort/工具/schema/附件变化、进程失败或 TTL/LRU 回收时，使用完整历史建立新进程。失败和取消的半轮状态不会交给下一次请求
-- 成功且可复用的进程保持 stdin 打开；空闲回收时先关闭 stdin，让 CLI 正常退出。外部工具仍仅在客户端执行，私有工作目录/图片路径校验持续有效
+- 每个账号维护一个常驻 bridge host；host 只提供认证、`/_bridge` HTTP 服务和内部上游客户端，不保存对话状态。不同会话共享账号 host，但上下文完全由每轮提交的完整消息历史决定。
+- 代理每轮把完整历史、工具声明和配置重新组装为 `GetChatMessageRequest`；工具回传包含上一条 assistant 的调用 ID，便于关联真实工具结果。
+- 同一 host 同时只执行一轮；显式同会话重叠请求或自动识别出的在途重复续接返回 409，容量全部忙时返回 429。
+- 没有会话字段时按完整历史与上一轮实际回复匹配；首次请求、匹配歧义或并发分支按新会话处理，但只要账号相同仍复用该账号的 host。
+- 历史重试/编辑/截断、模型/effort/工具/schema/附件变化会按新会话处理；每轮仍发送完整历史，不依赖进程内残留状态。失败和取消的半轮状态不会交给下一次请求。
+- 空闲 host 按 `SESSION_TTL`/容量上限回收；外部工具只在客户端执行，代理不创建服务端工作目录。
 
-`prompt_cache_key` 本身可能跨会话共享，默认不作为身份；连续历史仍可自动复用。如果客户端原本支持明确的会话标识，可以消除内容完全一致的会话或克隆之间的歧义；无需为 dsh/pi 修改 headers 或缓存配置。协议证据与接入说明见 [Headless 分析](archive/headless-protocol-analysis-20261011.md)，自动会话关联和任务状态排查见 [本次修正记录](archive/session-continuity-and-todos-20261011.md)。
+`prompt_cache_key` 本身可能跨会话共享，默认不作为身份；连续历史仍可自动复用。如果客户端原本支持明确的会话标识，可以消除内容完全一致的会话或克隆之间的歧义；无需为 dsh/pi 修改 headers 或缓存配置。旧版 Headless/会话关联研究见 [Headless 分析](archive/headless-protocol-analysis-20261011.md) 和 [会话连续性记录](archive/session-continuity-and-todos-20261011.md)；其中描述的独立 PID/stdin 模型不适用于当前 bridge。
 
 ## 已知限制
 
-- **仍经过 agy 的 Agent 层**：客户端工具模式使用自定义主 Agent 限制工具；系统上下文、模型行为与原生模型 API 不完全相同。
+- **仍经过 agy 的内部 Chat 客户端**：代理直接组装 `GetChatMessageRequest`，不运行 CLI 的 agent loop；系统上下文、模型行为和工具协议仍受 agy 与上游约束，不等同于原生 Gemini/Claude API。
 - **Gemini 原生接口**支持图片 `inlineData` 与客户端 function calling，能力边界见[统一协议说明](unified-client-protocols.md)。工具/MCP 返回图片暂不支持；`temperature` 等采样参数仍不透传。
-- 四种推理协议的普通文本和工具请求都使用受限执行上下文；只允许提交结果，含图片时额外允许读取会话图片白名单。
-- 首次请求或会话重建有进程冷启动开销；连续历史可复用已有进程，预热可减少冷启动等待
+- 四种推理协议都只执行客户端工具；代理不提供 shell、MCP、文件系统或服务端工作目录。
+- 账号首次请求或 host 被回收后有冷启动开销；同一账号的后续请求复用常驻 host，但每轮仍重新发送完整消息历史。
+- bridge 需要 Linux 与可读的 `/proc` 来发现 CLI 的本地监听端口；非 Linux 环境返回 503。
 - 需遵守 Antigravity 服务条款与账号额度，本代理不做额外限流（按 key 只做统计，不做配额；可用 `MAX_SESSIONS` 约束并发）
 - 控制台用量只保留**最近 500 条**请求明细（更早的只进总量与按模型聚合），且首次启动前的历史不可追溯

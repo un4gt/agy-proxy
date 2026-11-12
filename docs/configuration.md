@@ -27,7 +27,7 @@ OAuth 配置用于账号查询模块；CLI 自身的登录与令牌刷新流程�
 | `PORT` | `8317` | Compose 的宿主机对外端口，映射到容器内 `8317` |
 | `AGY_PROXY_HOST` | `127.0.0.1` | 应用监听地址；Docker 镜像设为 `0.0.0.0` |
 | `AGY_PROXY_PORT` | `8317` | 应用内部监听端口；修改时须同步容器端口映射与健康检查 |
-| `AGY_PROXY_BIN` | `agy` | agy 可执行文件或命令行；bridge 镜像固定 `/opt/agy-bridge/agy`。原生诊断可临时追加 `--v=2` 或 `--vmodule=模块名=2`，详见[原生日志](agy-native-logging.md) |
+| `AGY_PROXY_BIN` | `agy` | agy 可执行文件或命令行；bridge 镜像固定 `/opt/agy-bridge/agy`。原生诊断可临时追加 `--v=2` 或 `--vmodule=模块名=2`；agy 1.3.4 的历史日志排查见[归档记录](archive/agy-native-logging-1.3.4.md) |
 | `AGY_PROXY_HTTP_PROXY` | 空 | 访问上游的出站代理，如 `http://host.docker.internal:7890`；无协议前缀时补 `http://` |
 | `AGY_PROXY_CWD` | 空 | agy 工作目录；建议为空目录，避免加载项目中的规则文件；镜像设为 `/workspace-empty` |
 
@@ -37,7 +37,7 @@ OAuth 配置用于账号查询模块；CLI 自身的登录与令牌刷新流程�
 
 ### Native bridge（固定 1.4.2）
 
-镜像使用由 [app/bridge/patcher.py](../app/bridge/patcher.py) 从固定 SHA `085f43e0…f455ef` 生成的副本 `/opt/agy-bridge/agy`（产物 SHA `636570d0…060649`）。patcher 在 Docker 构建时校验源文件与产物 SHA；任一不匹配都会让构建失败。它保留真实 CLI 登录/bootstrap 与 updater 代码，在 `setUpHTTPServeMux` 返回块注册 `/_bridge`，由代理发送 `GetChatMessageRequest` 并解析原始响应。main 不再包含 stream-json 聊天路径；旧实现保留在 `legay_stream_json_version` 分支。
+镜像使用由 [core/agy_proxy_core/bridge/patcher.py](../core/agy_proxy_core/bridge/patcher.py) 从固定 SHA `085f43e0…f455ef` 生成的副本 `/opt/agy-bridge/agy`（产物 SHA `636570d0…060649`）。patcher 在 Docker 构建时校验源文件与产物 SHA；任一不匹配都会让构建失败。它保留真实 CLI 登录/bootstrap 与 updater 代码，在 `setUpHTTPServeMux` 返回块注册 `/_bridge`，由代理发送 `GetChatMessageRequest` 并解析原始响应。main 不再包含 stream-json 聊天路径；旧实现保留在 `legay_stream_json_version` 分支。
 
 - 需要 Linux 与可读的 `/proc`（用于发现 CLI 的随机监听端口）。非 Linux 环境会返回 `503`。
 - 每个账号保留一个常驻 CLI host；请求之间不保存对话状态，代理每次发送完整消息历史。
@@ -51,9 +51,9 @@ OAuth 配置用于账号查询模块；CLI 自身的登录与令牌刷新流程�
 升级固定 CLI 的步骤：
 
 1. 更新 Dockerfile 的 `AGY_VERSION`/`AGY_URL`/`AGY_SHA512`，并确认源文件 SHA。
-2. 用新源运行 `python app/bridge/patcher.py --source <new> --dest <out> --allow-new`，记录产物 SHA；更新 `app/bridge/__init__.py`、patcher 的回退常量以及 `tests/test_bridge_protocol.py`。
-3. 重新提取该构建的 `Model` 目录并更新 `app/bridge/models.py`；旧枚举在新版本可能变化。
-4. 跑 `tests/test_bridge_protocol.py` 和真实 bridge 冒烟（文本、流式、工具续轮、图片、取消）。
+2. 用新源运行 `python core/agy_proxy_core/bridge/patcher.py --source <new> --dest <out> --allow-new`，记录产物 SHA；更新 `core/agy_proxy_core/bridge/__init__.py`、patcher 的回退常量以及 `core/tests/test_bridge_protocol.py`。
+3. 重新提取该构建的 `Model` 目录并更新 `core/agy_proxy_core/bridge/models.py`；旧枚举在新版本可能变化。
+4. 跑 `core/tests/test_bridge_protocol.py` 和真实 bridge 冒烟（文本、流式、工具续轮、图片、取消）。
 5. 重建镜像；`/update/start` 在 bridge 下始终返回 409，升级只通过镜像完成。
 
 ## 超时、缓存与进程
@@ -82,6 +82,6 @@ SSE 心跳用于维持 HTTP 连接，不表示模型生成了内容。`SESSION_T
 
 ## 链路计时与日志
 
-推理请求完成时默认输出脱敏的 `request_latency` JSON 日志，用 `X-Agy-Request-Id` 关联模型查询、会话锁等待、进程启动、各次生成、校验、恢复和 HTTP 发送。每请求一条、阶段数量有上限；不记录提示词、工具参数或模型正文。Compose 日志轮转默认每文件 20 MB、保留 5 份，无额外环境变量。
+推理请求完成时默认输出脱敏的 `request_latency` JSON 日志，用 `X-Agy-Request-Id` 关联模型查询、会话等待、bridge host 启动、首增量、校验和 HTTP 发送。每请求一条、阶段数量有上限；不记录提示词、工具参数或模型正文。Compose 日志轮转默认每文件 20 MB、保留 5 份，无额外环境变量。
 
-详见[链路耗时分析](latency-observability.md)，包含实际测试时间线、Perfetto 导出命令、字段定义及 CPU 采样与墙钟等待的区别。
+当前字段说明见[本地开发](development.md#延迟分析)。2026-10-14 的旧版评测和 Perfetto 时间线归档在[链路耗时历史记录](archive/latency-observability-20261014.md)，基于已移除的 agent/stream-json 后端，不能直接用于当前 bridge 性能对比。

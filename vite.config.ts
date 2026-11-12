@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
   build: {
-    outDir: "app/static",
+    outDir: "core/agy_proxy_core/static",
     emptyOutDir: false,
     rollupOptions: {
       output: {

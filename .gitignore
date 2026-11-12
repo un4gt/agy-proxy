@@ -14,6 +14,12 @@ wheels/
 .test.env
 .codex/
 
+# Local agent tooling and MCP configuration
+.agents/
+.claude/
+.mcp.json
+skills-lock.json
+
 # Local runtime data (API keys + usage) and preview artifacts
 .devdata/
 .scratch/

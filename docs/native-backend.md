@@ -1,6 +1,6 @@
-# 旧版原生后端（legacy）
+# Bridge 后端与旧版原生实现
 
-main 只保留固定 SHA 1.4.2 native bridge。此前的 stream-json、GDB 原生观察器、`AGY_PROXY_NATIVE_CHAT`、独立 `Dockerfile.native` 与 `docker-compose.native-*` 已从 main 移出，完整实现和当时的部署说明保存在本地分支 `legay_stream_json_version`。
+main 只保留固定 SHA 1.4.2 bridge。此前的 stream-json、GDB 原生观察器、`AGY_PROXY_NATIVE_CHAT`、独立 `Dockerfile.native` 与 `docker-compose.native-*` 已从 main 移出，完整实现和当时的部署说明保存在本地分支 `legay_stream_json_version`。
 
 - 当前部署与客户端配置请阅读[部署指南](deployment.md)、[客户端接入](usage.md)和[环境变量](configuration.md)。
 - main 的 bridge 使用 `GetChatMessageRequest`，不再启动 duplex stream-json 会话，也不再使用 GDB 观察器。

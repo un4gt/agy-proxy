@@ -106,7 +106,28 @@ import {
 } from "@/lib/api";
 
 let cachedAboutVersion: string | null = null;
+let cachedAboutEdition: string | null = null;
 let cachedAuthRequired: boolean | null = null;
+let aboutPromise: Promise<{ version: string; edition: string }> | null = null;
+type AboutInfo = { version: string; edition: string };
+
+function loadAbout(): Promise<AboutInfo> {
+  if (!aboutPromise) {
+    aboutPromise = api<{ version: string; edition?: string }>("/about")
+      .then((data) => {
+        const version = data.version;
+        const edition = data.edition || "core";
+        cachedAboutVersion = version;
+        cachedAboutEdition = edition;
+        return { version, edition };
+      })
+      .catch((error) => {
+        aboutPromise = null;
+        throw error;
+      });
+  }
+  return aboutPromise;
+}
 let cachedUpdateVersion = "";
 let cachedDashboard: Dashboard | null = null;
 let cachedModels: ModelGroup[] | null = null;
@@ -140,19 +161,49 @@ function useDelayedSkeleton(loading: boolean, delayMs = 180) {
   return loading && show;
 }
 
+function EditionBadge() {
+  const [edition, setEdition] = useState<string | null>(cachedAboutEdition);
+  useEffect(() => {
+    let alive = true;
+    loadAbout()
+      .then((data) => {
+        if (alive) setEdition(data.edition);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, []);
+  if (!edition) return null;
+  const full = edition === "full";
+  return (
+    <Badge
+      variant={full ? "default" : "secondary"}
+      className={full ? "shadow-xs" : undefined}
+      aria-label={`运行版本：${full ? "Full" : "Core"}`}
+      title={
+        full
+          ? "Full 版：Gemini + OpenAI / Responses / Anthropic 协议"
+          : "Core 版：仅 Gemini 协议"
+      }
+    >
+      {full ? "Full" : "Core"}
+    </Badge>
+  );
+}
+
 function Brand() {
   const [version, setVersion] = useState<string | null>(cachedAboutVersion);
   useEffect(() => {
-    const controller = new AbortController();
-    api<{ version: string }>("/about", { signal: controller.signal })
+    let alive = true;
+    loadAbout()
       .then((data) => {
-        if (!controller.signal.aborted) {
-          cachedAboutVersion = data.version;
-          setVersion(data.version);
-        }
+        if (alive) setVersion(data.version);
       })
       .catch(() => {});
-    return () => controller.abort();
+    return () => {
+      alive = false;
+    };
   }, []);
   return (
     <a
@@ -176,6 +227,7 @@ function Brand() {
           v{version}
         </Badge>
       )}
+      <EditionBadge />
     </a>
   );
 }

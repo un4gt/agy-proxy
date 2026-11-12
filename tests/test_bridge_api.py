@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from app.bridge.session import BridgeSessionManager
-from app.config import Config
+from agy_proxy_core.bridge.session import BridgeSessionManager
+from agy_proxy_core.config import Config
 
 
 class FakeSession:
@@ -22,7 +22,8 @@ class FakeSession:
 
 
 def test_chat_completions_uses_the_bridge(monkeypatch, tmp_path):
-    from app import agy, create_app, protocol_common
+    from agy_proxy_core import agy, protocol_common
+    from agy_proxy_adapters import create_full_app as create_app
 
     async def models(_cfg, **_kwargs):
         return ["gemini-3.8-flash-medium"]

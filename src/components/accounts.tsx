@@ -544,7 +544,7 @@ export function Accounts({ login }: { login: (accountId: string) => ReactNode })
             {accounts.map((account) => (
               <Card
                 key={account.id}
-                className="min-w-0 border-border/80 transition-shadow hover:shadow-sm"
+                className="min-w-0 border-border/80"
                 data-account-id={account.id}
               >
                 <CardHeader>

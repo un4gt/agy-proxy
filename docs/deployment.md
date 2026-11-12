@@ -4,9 +4,9 @@
 
 ## Docker 部署
 
-首次启动见 [README 快速开始](../README.md#docker-快速开始)。镜像发布于 `docker.io/tumuer/agy-proxy`，当前 Compose 固定为 `v0.0.17`，镜像使用官方固定下载地址与校验和，构建时校验 agy CLI 为 `1.4.2`。运行环境无需安装 Python、Node 或 agy。
+首次启动见 [README 快速开始](../README.md#docker-快速开始)。镜像发布于 `docker.io/tumuer/agy-proxy`，当前 Compose 固定为 `full-v0.0.17`（core + OpenAI/Responses/Anthropic 适配器），镜像使用官方固定下载地址与校验和，构建时校验 agy CLI 为 `1.4.2`。只要 Gemini 协议和账号/面板时，使用 `core-v0.0.17` 和 `docker-compose.core.yml`。运行环境无需安装 Python、Node 或 agy。`latest` 指向 full。
 
-升级前阅读 [v0.0.17 发布说明](releases/v0.0.17.md)。main 只使用固定 SHA 1.4.2 native bridge；不再提供 `docker-compose.native-*` 或 stream-json 部署。旧版实现保留在 `legay_stream_json_version` 分支，升级时不要混用两套镜像。
+升级前阅读 [core/adapters 拆分说明](releases/v0.0.17-core-adapters.md)。main 只使用固定 SHA 1.4.2 native bridge；不再提供 `docker-compose.native-*` 或 stream-json 部署。旧版实现保留在 `legay_stream_json_version` 分支，升级时不要混用两套镜像。
 
 服务器上保留 `docker-compose.yml` 和由 `.env.example` 创建的 `.env` 即可部署。至少设置 `AGY_PROXY_PASSWORD`；需要代理访问 Google 时配置 `AGY_PROXY_HTTP_PROXY`。查看启动状态：
 
@@ -16,7 +16,7 @@ docker compose logs -f
 curl http://127.0.0.1:8317/health
 ```
 
-`/health` 返回状态、版本及是否配置鉴权和登录；`/docs`、`/openapi.json` 已关闭。
+`/health` 返回状态、版本、`edition`（`core` 或 `full`）、是否配置鉴权和登录；`/docs`、`/openapi.json` 已关闭。
 
 也可使用 `docker run`，适用于新部署：
 
@@ -27,7 +27,19 @@ docker run -d --name agy-proxy -p 8317:8317 \
   -v agy-data:/root/.agy-proxy \
   --add-host=host.docker.internal:host-gateway \
   --restart unless-stopped \
-  tumuer/agy-proxy:v0.0.17
+  tumuer/agy-proxy:full-v0.0.17
+```
+
+core-only 镜像使用同一组卷和端口：
+
+```bash
+docker run -d --name agy-proxy-core -p 8317:8317 \
+  --env-file .env \
+  -v agy-gemini:/root/.gemini \
+  -v agy-data:/root/.agy-proxy \
+  --add-host=host.docker.internal:host-gateway \
+  --restart unless-stopped \
+  tumuer/agy-proxy:core-v0.0.17
 ```
 
 Compose 默认给卷名加项目名前缀，如 `agy-proxy_agy-data`；上例的 `agy-data` 是另一个卷。从 Compose 切换部署方式时，应显式复用原卷。
@@ -55,7 +67,7 @@ API 支持 `Authorization: Bearer <key>`、Basic（`curl -u :key`）、`x-api-ke
 
 控制台数据保存在 `AGY_PROXY_DATA_DIR/data.json`，页面每 5 秒刷新。管理接口包括 `GET /dashboard`、`GET /api/models`、`POST /api/keys`、`PATCH|DELETE /api/keys/{id}`。
 
-页面顶部品牌旁显示后端 `/about` 返回的 agy-proxy 部署版本；CLI 版本在更新页面单独显示。
+页面顶部品牌旁显示后端 `/about` 返回的 agy-proxy 部署版本，以及 `Core` / `Full` 运行版本标识；CLI 版本在更新页面单独显示。
 
 ## 添加账号与授权登录
 
@@ -118,8 +130,8 @@ docker compose up -d
 
 **升级后密钥与用量为空：** 先检查实际挂载、`data.json` 和日志中的 `loaded ... api key(s)`、`could not read`、`could not persist`。读取失败也可能表现为空列表；先备份和排查，再创建新数据。若旧容器已删除且无备份，重新拉取镜像无法恢复历史用量。客户端仍保存的旧 Key 可暂时加入 `AGY_PROXY_API_KEYS` 恢复鉴权，但不会恢复历史统计。
 
-## 容器内更新 agy CLI
+## CLI 版本与更新
 
-点击页头的 agy 版本徽章或访问 `/update`，选择「检查并更新」。代理执行官方 `agy update` 并展示进度；完成后新会话使用新版本。
+镜像固定 agy `1.4.2`，并设置 `AGY_CLI_DISABLE_AUTO_UPDATE=true`。控制台 `/update` 页面只展示当前 CLI 版本；`POST /update/start` 在 bridge 镜像中固定返回 `409`，避免后台更新替换固定 SHA 的 patched 二进制。
 
-更新前先结束空闲会话，进行中的请求继续使用原版本，结束后重建。`AGY_PROXY_HTTP_PROXY` 同样适用于更新进程。容器重新创建后恢复镜像内置的 CLI 版本；升级 CLI 后应重新核对[已验证的隔离行为](account-isolation.md)。相关接口为 `GET /update/status`、`POST /update/start`，使用控制台鉴权。
+升级 CLI 必须更新 Dockerfile 的版本、下载地址与校验和，重新提取内部模型枚举并更新 bridge patcher，然后重建并发布镜像。步骤见[环境变量的 Native bridge 章节](configuration.md)。不要在运行中的容器内执行 `agy update`，也不要只替换 `/opt/agy-bridge/agy` 而未同步模型枚举。

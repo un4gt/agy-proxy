@@ -4,12 +4,21 @@
 
 - 支持 Chat Completions、Responses、Messages、Gemini API，以及 SSE 流式响应。
 - 支持客户端工具调用、用户图片输入和 JSON Schema 输出，具体组合与限制见[接入文档](docs/usage.md)。
-- 内置控制台：管理账号与 API Key、查看用量和额度、启停模型、更新 agy CLI。
+- 内置控制台：管理账号与 API Key、查看用量和额度、启停模型、查看 Core/Full 运行版本。
 - 多账号独立保存凭据和安装标识；同一 API Key 固定使用同一账号，仅额度耗尽时切换。
+
+## 项目结构
+
+- `core/agy_proxy_core/`：账号登录/路由/隔离、机器标识、store、浏览器控制台、bridge、Gemini 协议服务。
+- `adapters/agy_proxy_adapters/`：OpenAI Chat Completions、Responses、Anthropic Messages 与 core 的协议转换；只依赖 core，不接触账号或 bridge。
+- `src/`：React 控制台源码；构建产物在 `core/agy_proxy_core/static/`。
+- `tests/`、`core/tests/`、`adapters/tests/`：单元测试、core/full 工厂测试和边界检查。
+
+`core-v*` 镜像只安装 core；`full-v*` 镜像安装 core + adapters。两个镜像共用数据卷和 `/health`，默认 Compose 仍是 full。
 
 ## Docker 快速开始
 
-镜像已内置 agy CLI，当前版本为 `tumuer/agy-proxy:v0.0.17`。需要 Docker Compose：
+镜像已内置 agy CLI，当前版本为 `tumuer/agy-proxy:full-v0.0.17`（core + OpenAI/Responses/Anthropic 适配器）。只要 Gemini 协议和账号/面板时，使用 `tumuer/agy-proxy:core-v0.0.17` 与 `docker-compose.core.yml`。`latest` 指向 full。需要 Docker Compose：
 
 ```bash
 git clone https://github.com/un4gt/agy-proxy.git
@@ -22,6 +31,14 @@ docker compose up -d
 1. 打开 `http://服务器IP:8317`，使用控制台密码登录。
 2. 进入「账号详情」，添加账号并在该账号卡片中完成 Google 授权。
 3. 在控制台创建 API Key，填入客户端后选择可用模型。
+
+compose 默认启动 full 镜像。只用 Gemini 协议时：
+
+```bash
+docker compose -f docker-compose.core.yml up -d
+```
+
+两个 compose 文件使用同一组 `agy-gemini` / `agy-data` 卷，切换镜像不会丢账号或用量。
 
 配置模板见 [.env.example](.env.example)。`agy-gemini` 和 `agy-data` 两个卷保存登录凭据、账号身份、绑定、密钥与用量，升级时保留并备份整个数据目录。登录流程、升级及恢复方法见[部署指南](docs/deployment.md)。
 
@@ -56,7 +73,7 @@ curl http://127.0.0.1:8317/v1/chat/completions \
 
 - 每个账号拥有独立目录和固定 `installation_id`；重启、重新授权及进程回收保留已有标识。
 - 同一客户端 API Key 的账号绑定持久化保存。只有明确额度耗尽才切换，普通 429、超时、网络或认证错误均不会换号；切到 B 后，A 恢复也不会自动切回。
-- 连续对话按客户端会话标识或完整历史匹配，复用对应的独立 agy 进程。不同会话保持隔离，账号绑定独立于会话的创建与回收。
+- 每个账号维护一个常驻 bridge host；host 只负责认证和上游客户端，请求之间不保存对话状态。代理按客户端会话标识或完整历史关联连续请求，并在每轮发送完整消息历史。
 
 账号数据结构、耗尽判定和验证范围见[多账号隔离说明](docs/account-isolation.md)。
 

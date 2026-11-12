@@ -14,7 +14,7 @@ _Avoid_: Hub 模式、headless 模式
 
 **Bridge**:
 代理与 agy 内部生成客户端之间的进程内转发层；代理组装 protojson，bridge 做 typed 转换、调用内部 client 并转发响应，agy 发包。
-_Avoid_: transport、upstream proxy
+_Avoid_: upstream proxy；不要用 transport 指代 bridge（transport 已废弃，见 Protocol adapter）
 
 **Endpoint discovery**:
 代理定位 bridge 本地监听端点的方式；不得靠猜端口。
@@ -27,6 +27,20 @@ _Avoid_: best-effort fallback
 **Session**:
 下游一次有身份边界的对话；上下文由完整消息历史决定，不由 `conversation_id` 决定。
 _Avoid_: 把 conversation_id 当 session key
+
+## 架构分层
+
+**Core**:
+`agy-proxy-core` 发行版；拥有账号生命周期、路由、环境隔离、机器标识（`installation_id`）和 Gemini 协议服务，不包含下游协议适配层。
+_Avoid_: 把 core 当作 bridge、CLI 或 dashboard 的同义词
+
+**Protocol adapter**:
+`agy-proxy-adapters` 发行版中的下游协议转换层；把 OpenAI Chat Completions、Responses、Anthropic Messages 与 Core 的 Gemini 契约互转，不接触账号、Bridge 或上游凭据。仓库目录 `adapters/`，import 包 `agy_proxy_adapters`。
+_Avoid_: transport、gateway、wrapper
+
+**Gemini contract**:
+Core 对 Protocol adapter 与外部 Gemini 客户端暴露的 `GenerateContentRequest` / `GenerateContentResponse` 形状；本次拆分的规范中间格式。
+_Avoid_: internal chat format、bridge request
 
 **conversation_id**:
 `GetChatMessageRequest` 的字段；不是 `sessionId`，不决定上下文；只在 `trajectory_id` 非空时进入 `requestId`。

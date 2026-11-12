@@ -1,7 +1,7 @@
 [project]
 name = "agy-proxy"
 version = "0.0.17"
-description = "Gemini / OpenAI compatible reverse proxy backed by the Antigravity CLI native bridge"
+description = "Development workspace for agy-proxy core and protocol adapters"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -14,9 +14,6 @@ dependencies = [
     "uvicorn>=0.30",
 ]
 
-[project.scripts]
-agy-proxy = "main:main"
-
 [dependency-groups]
 dev = [
     "pytest>=8.0",
@@ -24,9 +21,15 @@ dev = [
     "hpack==4.1.0",
 ]
 
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["core", "adapters"]
+
 [tool.pytest.ini_options]
-pythonpath = ["."]
-testpaths = ["tests"]
+pythonpath = [".", "core", "adapters"]
+testpaths = ["tests", "core/tests", "adapters/tests"]
 filterwarnings = [
     # asyncio subprocess pipe transports outlive the TestClient event loop on Windows
     "ignore::pytest.PytestUnraisableExceptionWarning",

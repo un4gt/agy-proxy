@@ -11,7 +11,7 @@ tests
 .preview
 
 # Frontend build chain — build-time only. The image ships the compiled
-# app/static/app.css via `COPY app ./app`, so no Node ever enters the image.
+# core/agy_proxy_core/static assets through the core wheel, so no Node enters the image.
 node_modules
 package.json
 package-lock.json
@@ -35,3 +35,6 @@ bin
 .ruff_cache
 test_sessions
 tools/archive
+
+# Local wayfinder/research notes
+.scratch

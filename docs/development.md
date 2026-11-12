@@ -2,6 +2,13 @@
 
 [返回 README](../README.md) · [配置](configuration.md) · [客户端接入](usage.md)
 
+## 包结构
+
+- `core/agy_proxy_core/`：账号、路由、隔离、store、控制台、bridge 和 Gemini 协议服务；对应发行版 `agy-proxy-core`。
+- `adapters/agy_proxy_adapters/`：OpenAI Chat Completions、Responses、Anthropic Messages 适配；只依赖 core，对应发行版 `agy-proxy-adapters`。
+- `main.py` 与 `python -m agy_proxy_adapters` 启动 full（core + adapters）；`python -m agy_proxy_core` 启动 core-only（只有 Gemini 协议）。
+- Docker 标签 `core-vX.Y.Z` / `full-vX.Y.Z`；`latest` 指向 full。
+
 ## 源码启动与测试
 
 需要 Python 3.12+、[uv](https://docs.astral.sh/uv/) 和 [Antigravity CLI](https://antigravity.google/docs/cli/)。先运行 `agy --version` 确认安装，再运行 `agy` 完成登录；真实请求使用账号的原生凭据。网页交互登录桥需要 Linux / Docker。
@@ -17,7 +24,7 @@ uv run main.py
 uv run pytest
 ```
 
-协议测试使用 `tests/fake_agy.py` 等模拟器，无需真实登录。真实客户端的 MCP、图片和 Skills 验收脚本分别是 `tests/mcp_smoke.py`、`tests/vision_smoke.py`、`tests/skills_smoke.py`，需要对应客户端和账号环境；接入方式见[使用文档](usage.md)。
+协议测试使用 `FakeSession`、临时目录和模拟凭据，不需要真实登录。MCP 与 Skills 冒烟脚本分别是 `tests/mcp_smoke.py`、`tests/skills_smoke.py`，需要对应客户端和账号环境；接入方式见[使用文档](usage.md)。浏览器回归目前没有随仓库保留的 smoke 脚本，界面变更请按 README 的桌面/移动检查清单人工验收。
 
 ## 前端构建
 
@@ -29,17 +36,9 @@ npm run build
 npm run dev
 ```
 
-`build` 先检查类型，再编译到 `app/static/`；`dev` 启动 Vite，将数据接口和登录 POST 请求代理到本机 8317。`npm run build:css` 是完整前端构建的兼容命令。
+`build` 先检查类型，再编译到 `core/agy_proxy_core/static/`；`dev` 启动 Vite，将数据接口和登录 POST 请求代理到本机 8317。`npm run build:css` 是完整前端构建的兼容命令。
 
-修改前端后重新构建，并一并提交 `app/static/index.html`、`app/static/app.css`、`app/static/assets/`。生产页面由 FastAPI 同源提供，不依赖 Node、CDN 或外部字体；Python 路由变更需要重启服务。
-
-浏览器回归检查使用临时数据和模拟 agy：
-
-```bash
-uv run --with playwright python tests/browser_smoke.py
-```
-
-默认使用本机 Edge；其他环境可设置 `UI_BROWSER_CHANNEL=chromium`，并先安装 Playwright Chromium。
+修改前端后重新构建，并一并提交 `core/agy_proxy_core/static/index.html`、`core/agy_proxy_core/static/app.css`、`core/agy_proxy_core/static/assets/`。生产页面由 FastAPI 同源提供，不依赖 Node、CDN 或外部字体；Python 路由变更需要重启服务。
 
 ## 工作原理
 
@@ -50,7 +49,7 @@ uv run --with playwright python tests/browser_smoke.py
                                                 └─ GetChatMessageRequest → 上游
 ```
 
-镜像在构建时用 [app/bridge/patcher.py](../app/bridge/patcher.py) 给固定 SHA 的 1.4.2 CLI 增加 `/_bridge` HTTP 入口。代理不解析 CLI 的 stream-json 输出；每轮把完整消息历史、工具定义和配置组装成 `GetChatMessageRequest`，再把上游的 `deltaText`、`deltaToolCalls` 和 usage 转成客户端协议。流式请求发送 SSE，并在等待期间发送心跳。
+镜像在构建时用 [core/agy_proxy_core/bridge/patcher.py](../core/agy_proxy_core/bridge/patcher.py) 给固定 SHA 的 1.4.2 CLI 增加 `/_bridge` HTTP 入口。代理不解析 CLI 的 stream-json 输出；每轮把完整消息历史、工具定义和配置组装成 `GetChatMessageRequest`，再把上游的 `deltaText`、`deltaToolCalls` 和 usage 转成客户端协议。流式请求发送 SSE，并在等待期间发送心跳。
 
 - 每账号一个常驻 host，请求之间不保存对话状态；会话隔离由代理按客户端会话标识维护。
 - 文本增量实时转发；工具调用等待完整参数后返回，工具由客户端执行。
@@ -62,29 +61,31 @@ uv run --with playwright python tests/browser_smoke.py
 
 ## 延迟分析
 
-请求日志记录分阶段耗时；流式响应末尾包含 SSE 注释 `: agy-profile ...`，非流式响应带 `X-Agy-Profile` 头。
+请求完成时输出一条脱敏的 `request_latency` JSON 日志，包含 `request_id`、协议、模型、账号、总耗时、attempts、marks/spans 和 usage。用响应头 `X-Agy-Request-Id` 关联客户端请求；日志不记录提示词、工具参数或模型正文。OpenAI Chat 流式响应末尾仍包含 `: agy-profile ...` 注释；Gemini SSE 不再发送注释行；非流式响应带 `X-Agy-Profile` 头。
 
-| 阶段 | 含义 | 排查方向 |
-|---|---|---|
-| `models_lookup` | 模型列表查询 | 缓存命中与后台刷新 |
-| `acquire` | 会话匹配或创建 | 会话关联与进程容量 |
-| `agy_boot` | 新进程冷启动 | 会话复用或模型预热 |
-| `think` | 首字符前的模型思考 | 模型选择、思考档位及上游负载 |
-| `stream` | 内容输出 | 上游生成与连接情况 |
+常见 span/mark：
 
-一次 Gemini 3.1 Pro High 测量中，冷启动约 6.3 秒、思考 28 秒、输出 7 秒；这些是单次观测值，具体耗时随模型和负载变化。
+| 名称 | 含义 |
+|---|---|
+| `models_lookup` | 模型列表查询或缓存读取 |
+| `session_acquire` | 选择账号并获取或启动 bridge host |
+| `first_delta` | 收到首个上游文本/工具增量 |
+| `session_ready` | bridge host 已可接受本轮请求 |
+
+完整字段和导出方式以当前代码及 `request_latency` 日志为准。2026-10-14 的旧版详细评测基于已移除的 agent/stream-json 后端，归档在[链路耗时历史记录](archive/latency-observability-20261014.md)，不能直接用于当前 bridge 性能对比。
 
 ## 主要代码
 
 | 位置 | 职责 |
 |---|---|
-| `app/config.py`、`app/auth.py` | 配置与鉴权 |
-| `app/account_pool.py`、`app/account.py`、`app/login.py` | 多账号隔离、额度查询与登录 |
-| `app/agy.py`、`app/runner.py`、`app/session_context.py` | CLI 进程、回合执行与会话关联 |
-| `app/openai_api.py`、`app/responses_api.py`、`app/anthropic_api.py`、`app/gemini_api.py` | API 协议适配 |
-| `app/external_tools.py`、`app/structured_output.py`、`app/tool_guard.py` | 客户端工具、结构化输出与执行限制 |
-| `app/images.py`、`app/streaming.py`、`app/json_codec.py` | 图片、SSE 与 JSON 编解码 |
-| `app/store.py`、`app/dashboard.py`、`app/model_policy.py` | 数据持久化、控制台与模型启停 |
-| `app/update.py` | agy CLI 更新 |
-| `src/`、`app/static/` | 前端源码与构建产物 |
-| `tests/` | 模拟器、协议测试与客户端验收脚本 |
+| `core/agy_proxy_core/config.py`、`auth.py` | 配置与鉴权 |
+| `core/agy_proxy_core/account_pool.py`、`account.py`、`login.py` | 多账号隔离、额度查询与登录 |
+| `core/agy_proxy_core/agy.py`、`runner.py`、`session_context.py` | CLI 进程、回合执行与会话关联 |
+| `core/agy_proxy_core/gemini_api.py`、`gemini_adapter.py` | Gemini 协议服务 |
+| `adapters/agy_proxy_adapters/openai_api.py`、`responses_api.py`、`anthropic_api.py` | Chat Completions / Responses / Messages 适配 |
+| `core/agy_proxy_core/external_tools.py`、`structured_output.py` | 客户端工具、结构化输出与执行限制 |
+| `core/agy_proxy_core/images.py`、`streaming.py`、`json_codec.py` | 图片、SSE 与 JSON 编解码 |
+| `core/agy_proxy_core/store.py`、`dashboard.py`、`model_policy.py` | 数据持久化、控制台与模型启停 |
+| `core/agy_proxy_core/update.py` | CLI 版本状态与固定 409 的更新接口 |
+| `src/`、`core/agy_proxy_core/static/` | 前端源码与构建产物 |
+| `tests/`、`core/tests/`、`adapters/tests/` | 模拟器、协议测试、core/full 工厂与边界检查 |

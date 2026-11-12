@@ -55,12 +55,12 @@ bridge 没有 stream-json 的自动恢复或重放。上游失败、参数错误
 
 ## 兼容用例与验证
 
-```powershell
-.venv/Scripts/python.exe -m pytest -q
+```bash
+uv run pytest -q
 ```
 
-- `tests/test_bridge_protocol.py`：模型映射、请求结构、签名、工具分片、usage、图片、结构化输出、签名持久化。
-- `tests/test_bridge_turn.py`：文本增量、工具重组、签名落盘、结构化结果校验。
+- `core/tests/test_bridge_protocol.py`：模型映射、请求结构、签名、工具分片、usage、图片、结构化输出、签名持久化。
+- `core/tests/test_bridge_turn.py`：文本增量、工具重组、签名落盘、结构化结果校验。
 - `tests/test_bridge_api.py`：Chat Completions 经 bridge-only 应用路由，健康接口报告 `chat_backend=bridge`。
 
 真实 bridge 冒烟需要 Linux 和已登录的固定 SHA 1.4.2 二进制；2026-11-11 在本地容器验证了文本、流式、原生工具调用、工具续轮、图片、取消和接近 1M 输入。旧 stream-json/GDB 实现及对应测试位于 `legay_stream_json_version` 分支。

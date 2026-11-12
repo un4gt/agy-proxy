@@ -18,13 +18,13 @@ RUN apt-get update \
     && rm /tmp/agy.tar.gz
 
 # The patcher is stdlib-only and imports emitter.py from its own directory.
-COPY app/bridge /patch/app/bridge
-RUN python /patch/app/bridge/patcher.py --source /opt/agy-bridge/agy \
+COPY core/agy_proxy_core/bridge /patch/agy_proxy_core/bridge
+RUN python /patch/agy_proxy_core/bridge/patcher.py --source /opt/agy-bridge/agy \
          --dest /opt/agy-bridge/agy \
     && test "$(/opt/agy-bridge/agy --version)" = "1.4.2"
 
 
-FROM python:3.12-slim
+FROM python:3.12-slim AS runtime-base
 
 # Runtime deps for agy (git for workspace detection, curl/ca-certs for OAuth)
 RUN apt-get update \
@@ -37,13 +37,8 @@ COPY --from=agy-patched /opt/agy-bridge/agy /opt/agy-bridge/agy
 ENV PATH="/opt/agy-bridge:/root/.local/bin:${PATH}" \
     PYTHONUNBUFFERED=1 \
     AGY_CLI_DISABLE_AUTO_UPDATE=true
+
 WORKDIR /app
-
-COPY pyproject.toml README.md ./
-COPY app ./app
-COPY main.py ./
-
-RUN pip install --no-cache-dir .
 
 # Neutral cwd so no workspace rules leak into bridge hosts
 RUN mkdir -p /workspace-empty
@@ -52,8 +47,22 @@ ENV AGY_PROXY_CWD=/workspace-empty \
     AGY_PROXY_DATA_DIR=/root/.agy-proxy \
     AGY_PROXY_BIN=/opt/agy-bridge/agy
 
-LABEL org.opencontainers.image.title="agy-proxy" \
-      org.opencontainers.image.description="Gemini / OpenAI compatible reverse proxy backed by the Antigravity CLI (agy) native bridge" \
+
+FROM runtime-base AS wheels
+
+COPY core ./core
+COPY adapters ./adapters
+RUN pip wheel --no-cache-dir ./core -w /wheels \
+    && pip wheel --no-cache-dir ./adapters --no-deps -w /wheels
+
+
+FROM runtime-base AS core
+
+COPY --from=wheels /wheels /wheels
+RUN pip install --no-cache-dir --no-index --find-links=/wheels agy-proxy-core==0.0.17
+
+LABEL org.opencontainers.image.title="agy-proxy-core" \
+      org.opencontainers.image.description="Account, routing and Gemini protocol core for agy-proxy" \
       org.opencontainers.image.version="0.0.17" \
       org.opencontainers.image.source="https://github.com/un4gt/agy-proxy"
 
@@ -61,4 +70,22 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
   CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8317/health', timeout=3)"]
 
 EXPOSE 8317
-CMD ["python", "main.py"]
+CMD ["python", "-m", "agy_proxy_core"]
+
+
+FROM runtime-base AS full
+
+COPY --from=wheels /wheels /wheels
+RUN pip install --no-cache-dir --no-index --find-links=/wheels \
+        agy-proxy-core==0.0.17 agy-proxy-adapters==0.0.17
+
+LABEL org.opencontainers.image.title="agy-proxy-full" \
+      org.opencontainers.image.description="Gemini, OpenAI, Responses and Anthropic protocol proxy backed by agy" \
+      org.opencontainers.image.version="0.0.17" \
+      org.opencontainers.image.source="https://github.com/un4gt/agy-proxy"
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8317/health', timeout=3)"]
+
+EXPOSE 8317
+CMD ["python", "-m", "agy_proxy_adapters"]

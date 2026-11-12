@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agy-proxy-core"
+version = "0.0.17"
+description = "Account, routing, isolation and Gemini protocol core for agy-proxy"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "httpx>=0.27,<1",
+    "jsonschema>=4.23,<5",
+    "orjson>=3.10,<4",
+    "pillow>=12.2,<13",
+    "pyte>=0.8.2,<0.9",
+    "uvicorn>=0.30",
+]
+
+[project.scripts]
+agy-proxy-core = "agy_proxy_core.__main__:main"
+
+[tool.setuptools]
+packages = ["agy_proxy_core", "agy_proxy_core.bridge"]
+
+[tool.setuptools.package-data]
+agy_proxy_core = ["static/*", "static/**/*"]

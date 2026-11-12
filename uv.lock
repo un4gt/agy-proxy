@@ -2,6 +2,13 @@ version = 1
 revision = 3
 requires-python = ">=3.12"
 
+[manifest]
+members = [
+    "agy-proxy",
+    "agy-proxy-adapters",
+    "agy-proxy-core",
+]
+
 [[package]]
 name = "agy-proxy"
 version = "0.0.17"
@@ -39,6 +46,42 @@ dev = [
     { name = "hpack", specifier = "==4.1.0" },
     { name = "httpx", specifier = ">=0.27" },
     { name = "pytest", specifier = ">=8.0" },
+]
+
+[[package]]
+name = "agy-proxy-adapters"
+version = "0.0.17"
+source = { editable = "adapters" }
+dependencies = [
+    { name = "agy-proxy-core" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "agy-proxy-core", editable = "core" }]
+
+[[package]]
+name = "agy-proxy-core"
+version = "0.0.17"
+source = { editable = "core" }
+dependencies = [
+    { name = "fastapi" },
+    { name = "httpx" },
+    { name = "jsonschema" },
+    { name = "orjson" },
+    { name = "pillow" },
+    { name = "pyte" },
+    { name = "uvicorn" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "fastapi", specifier = ">=0.115" },
+    { name = "httpx", specifier = ">=0.27,<1" },
+    { name = "jsonschema", specifier = ">=4.23,<5" },
+    { name = "orjson", specifier = ">=3.10,<4" },
+    { name = "pillow", specifier = ">=12.2,<13" },
+    { name = "pyte", specifier = ">=0.8.2,<0.9" },
+    { name = "uvicorn", specifier = ">=0.30" },
 ]
 
 [[package]]
