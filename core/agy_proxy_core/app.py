@@ -17,9 +17,10 @@ from .auth import panel_authorized, signin_router
 from .bridge.session import BridgeSessionManager
 from .config import Config, load_config
 from .json_codec import JSONResponse
+from .logging_setup import configure_logging
 from .store import Store
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+configure_logging()
 log = logging.getLogger("agy_proxy")
 
 

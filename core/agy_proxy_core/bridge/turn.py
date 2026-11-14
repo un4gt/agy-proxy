@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import logging
+import os
 import uuid
 from contextlib import aclosing
 from typing import AsyncIterator
@@ -87,6 +89,27 @@ class BridgeTurn:
                 )
             except BridgeProtocolError as exc:
                 raise AgyError(str(exc), status_code=400, code="invalid_request") from exc
+            system = request.payload.get("prompt") or ""
+            tool_defs = request.payload.get("tools") or []
+            log.trace(
+                "bridge payload model=%s effort=%s system_chars=%d system_sha256=%s "
+                "agy_marker=%s user_request_tag=%s prompts=%s tools=%d "
+                "tool_schema_chars=%d conversation_id=%s payload_keys=%s",
+                self.model,
+                self.effort or "-",
+                len(system),
+                hashlib.sha256(system.encode("utf-8")).hexdigest()[:16] if system else "-",
+                "You are Antigravity" in system,
+                "<USER_REQUEST>" in system,
+                [(p.get("source"), len(p.get("prompt") or ""),
+                  len(p.get("toolCalls") or [])) for p in request.payload.get("chatMessagePrompts", [])],
+                len(tool_defs),
+                sum(len(t.get("jsonSchemaString") or "") for t in tool_defs),
+                request.payload.get("conversationId") or "-",
+                sorted(request.payload),
+            )
+            if system and os.environ.get("AGY_PROXY_TRACE_PROMPTS") == "1":
+                log.trace("bridge system_prompt_preview=%r", system[:1000])
             log.info("bridge request model=%s prompts=%s tools=%d",
                      self.model, [(p.get("source"), len(p.get("prompt") or ""),
                                    len(p.get("toolCalls") or [])) for p in request.payload.get("chatMessagePrompts", [])],
