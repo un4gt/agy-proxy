@@ -6,7 +6,7 @@ on ``agy_proxy_core``. The core application never imports this package.
 
 from agy_proxy_core.api import CoreServices
 
-__version__ = "0.0.17"
+__version__ = "0.0.20"
 
 
 class GeminiModelsAliasMiddleware:

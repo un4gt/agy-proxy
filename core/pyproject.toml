@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agy-proxy-core"
-version = "0.0.17"
+version = "0.0.20"
 description = "Account, routing, isolation and Gemini protocol core for agy-proxy"
 requires-python = ">=3.12"
 dependencies = [

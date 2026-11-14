@@ -18,7 +18,6 @@ def test_versions_match_everywhere():
     adapters = _project(ROOT / "adapters" / "pyproject.toml")
     assert core["version"] == adapters["version"]
     version = core["version"]
-    assert version == "0.0.17"
 
     import agy_proxy_core
     import agy_proxy_adapters
@@ -35,10 +34,11 @@ def test_adapters_pin_core_exactly():
 
 def test_dockerfile_has_two_targets():
     text = (ROOT / "Dockerfile").read_text(encoding="utf-8")
+    version = _project(ROOT / "core" / "pyproject.toml")["version"]
     assert "FROM runtime-base AS core" in text
     assert "FROM runtime-base AS full" in text
-    assert "agy-proxy-core==0.0.17" in text
-    assert "agy-proxy-adapters==0.0.17" in text
+    assert f"agy-proxy-core=={version}" in text
+    assert f"agy-proxy-adapters=={version}" in text
     assert 'CMD ["python", "-m", "agy_proxy_core"]' in text
     assert 'CMD ["python", "-m", "agy_proxy_adapters"]' in text
 

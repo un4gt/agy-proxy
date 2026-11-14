@@ -75,7 +75,7 @@ def create_app(cfg: Config | None = None, *, core_only: bool = False) -> FastAPI
     app = FastAPI(
         title="agy-proxy-core",
         default_response_class=JSONResponse,
-        version="0.0.17",
+        version="0.0.20",
         lifespan=lifespan,
         docs_url=None,
         redoc_url=None,
@@ -188,7 +188,7 @@ def create_app(cfg: Config | None = None, *, core_only: bool = False) -> FastAPI
             {
                 "service": f"agy-proxy-{edition}",
                 "edition": edition,
-                "version": "0.0.17",
+                "version": "0.0.20",
                 "endpoints": endpoints,
             }
         )
@@ -199,7 +199,7 @@ def create_app(cfg: Config | None = None, *, core_only: bool = False) -> FastAPI
             {
                 "status": "ok",
                 "edition": getattr(app.state, "edition", "core"),
-                "version": "0.0.17",
+                "version": "0.0.20",
                 "auth_required": cfg.auth_enabled,
                 "chat_backend": "bridge",
                 "signed_in": (any(p.credentials.is_file() for p in cfg.account_pool.profiles())

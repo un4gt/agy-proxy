@@ -6,6 +6,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import tomllib
 import zipfile
 from pathlib import Path
 
@@ -38,14 +39,17 @@ def main() -> int:
                 errors.append("core wheel is missing bridge/patcher.py")
             if any("agy_proxy_adapters/" in name for name in names):
                 errors.append("core wheel contains adapters code")
+        core_version = tomllib.loads(
+            (ROOT / "core" / "pyproject.toml").read_text(encoding="utf-8")
+        )["project"]["version"]
         with zipfile.ZipFile(adapters) as archive:
             names = set(archive.namelist())
             if not any(name.endswith("agy_proxy_adapters/openai_api.py") for name in names):
                 errors.append("adapters wheel is missing openai_api.py")
             metadata_name = next(name for name in names if name.endswith(".dist-info/METADATA"))
             metadata = archive.read(metadata_name).decode("utf-8", "replace")
-            if not re.search(r"^Requires-Dist: agy-proxy-core==0\.0\.17$", metadata, re.M):
-                errors.append("adapters wheel does not pin agy-proxy-core==0.0.17")
+            if not re.search(rf"^Requires-Dist: agy-proxy-core=={re.escape(core_version)}$", metadata, re.M):
+                errors.append(f"adapters wheel does not pin agy-proxy-core=={core_version}")
         if errors:
             print("\n".join(errors), file=sys.stderr)
             return 1

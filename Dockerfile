@@ -59,11 +59,11 @@ RUN pip wheel --no-cache-dir ./core -w /wheels \
 FROM runtime-base AS core
 
 COPY --from=wheels /wheels /wheels
-RUN pip install --no-cache-dir --no-index --find-links=/wheels agy-proxy-core==0.0.17
+RUN pip install --no-cache-dir --no-index --find-links=/wheels agy-proxy-core==0.0.20
 
 LABEL org.opencontainers.image.title="agy-proxy-core" \
       org.opencontainers.image.description="Account, routing and Gemini protocol core for agy-proxy" \
-      org.opencontainers.image.version="0.0.17" \
+      org.opencontainers.image.version="0.0.20" \
       org.opencontainers.image.source="https://github.com/un4gt/agy-proxy"
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
@@ -77,11 +77,11 @@ FROM runtime-base AS full
 
 COPY --from=wheels /wheels /wheels
 RUN pip install --no-cache-dir --no-index --find-links=/wheels \
-        agy-proxy-core==0.0.17 agy-proxy-adapters==0.0.17
+        agy-proxy-core==0.0.20 agy-proxy-adapters==0.0.20
 
 LABEL org.opencontainers.image.title="agy-proxy-full" \
       org.opencontainers.image.description="Gemini, OpenAI, Responses and Anthropic protocol proxy backed by agy" \
-      org.opencontainers.image.version="0.0.17" \
+      org.opencontainers.image.version="0.0.20" \
       org.opencontainers.image.source="https://github.com/un4gt/agy-proxy"
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \

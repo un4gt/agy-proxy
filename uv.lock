@@ -11,7 +11,7 @@ members = [
 
 [[package]]
 name = "agy-proxy"
-version = "0.0.17"
+version = "0.0.20"
 source = { virtual = "." }
 dependencies = [
     { name = "fastapi" },
@@ -50,7 +50,7 @@ dev = [
 
 [[package]]
 name = "agy-proxy-adapters"
-version = "0.0.17"
+version = "0.0.20"
 source = { editable = "adapters" }
 dependencies = [
     { name = "agy-proxy-core" },
@@ -61,7 +61,7 @@ requires-dist = [{ name = "agy-proxy-core", editable = "core" }]
 
 [[package]]
 name = "agy-proxy-core"
-version = "0.0.17"
+version = "0.0.20"
 source = { editable = "core" }
 dependencies = [
     { name = "fastapi" },

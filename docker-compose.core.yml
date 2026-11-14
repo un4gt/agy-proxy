@@ -1,8 +1,9 @@
 # core-only：Gemini 协议 + 账号/面板；不安装 OpenAI/Responses/Anthropic 适配器。
 # 与 docker-compose.yml 共用同一组数据卷，切换镜像不会丢账号或用量。
+# 警告：镜像与 agy CLI 1.4.2 强绑定，不要执行 agy update 或替换镜像内 CLI；升级只能重建镜像。
 services:
   agy-proxy-core:
-    image: tumuer/agy-proxy:core-v0.0.17
+    image: tumuer/agy-proxy:core-v0.0.20
     container_name: agy-proxy-core
     ports:
       - "${PORT:-8317}:8317"
@@ -21,6 +22,7 @@ services:
       AGY_PROXY_STREAM_HEARTBEAT: ${AGY_PROXY_STREAM_HEARTBEAT:-10}
       AGY_PROXY_SESSION_TTL: ${AGY_PROXY_SESSION_TTL:-1800}
       AGY_PROXY_MODELS_TTL: ${AGY_PROXY_MODELS_TTL:-300}
+      AGY_PROXY_LOG_LEVEL: ${AGY_PROXY_LOG_LEVEL:-INFO}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped

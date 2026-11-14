@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agy-proxy-adapters"
-version = "0.0.17"
+version = "0.0.20"
 description = "OpenAI, Responses and Anthropic protocol adapters for agy-proxy-core"
 requires-python = ">=3.12"
 dependencies = [
-    "agy-proxy-core==0.0.17",
+    "agy-proxy-core==0.0.20",
 ]
 
 [project.scripts]
