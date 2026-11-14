@@ -85,12 +85,100 @@ def native_credentials(data: dict) -> dict:
 
 
 def quota_scope(model: str | None) -> str:
+    """Legacy broad scope used by records written before per-group quotas."""
     name = (model or "").lower()
     if name.startswith("gemini"):
         return "gemini"
     if name.startswith(("claude", "gpt")):
         return "third-party"
     return name if name and name != "auto" else "*"
+
+
+_SCOPE_SEPARATOR = re.compile(r"[^a-z0-9]+")
+_SCOPE_SUFFIX = re.compile(r"-(?:models?|model|quota|limit|weekly|monthly|daily|5h)$")
+# A dedicated bucket can report a tiny positive remainder after it is
+# effectively used up (the upstream also changes its wording from "hit your
+# weekly limit" to "used some").  Treat <=1% as exhausted for a dedicated
+# model group; broad groups keep the stricter exact-zero rule so one low
+# sub-bucket cannot block an entire provider.
+_DEDICATED_EXHAUSTED_FRACTION = 0.01
+
+
+def _scope_slug(text: object) -> str:
+    """Turn an upstream quota-group label into a model-family prefix."""
+    if not isinstance(text, str):
+        return ""
+    value = re.sub(r"\([^)]*\)", " ", text.lower())
+    value = _SCOPE_SEPARATOR.sub("-", value).strip("-")
+    while True:
+        stripped = _SCOPE_SUFFIX.sub("", value)
+        if stripped == value:
+            return value
+        value = stripped
+
+
+def _scope_match(family: str, patterns: list[str]) -> bool:
+    """Match a model family against family prefixes ("gemini-4-argon").
+
+    A family can carry version segments between the family words
+    ("gemini-3.8-flash"), so a pattern such as "gemini-flash" also matches
+    when all of its tokens appear in the family.
+    """
+    parts = family.split("-")
+    for pattern in patterns:
+        if not isinstance(pattern, str) or not pattern:
+            continue
+        if family == pattern or family.startswith(pattern + "-"):
+            return True
+        tokens = pattern.split("-")
+        if len(tokens) > 1 and all(token in parts for token in tokens):
+            return True
+    return False
+
+
+def _group_scope(group: dict) -> dict | None:
+    """Map one upstream quota group to the model families it covers.
+
+    Groups whose description says "Models within this group:" are broad
+    provider buckets (Gemini Flash/Pro, Claude/GPT).  Groups with an explicit
+    model-family name such as "Gemini 4 Argon" own a separate bucket and must
+    not be merged into the broad Gemini bucket.  Keep this discovery driven by
+    the upstream labels: new independent model quotas get their own scope
+    without another hard-coded model list.
+    """
+    name = group.get("name")
+    if not isinstance(name, str) or not name.strip():
+        return None
+    description = group.get("description")
+    description = description if isinstance(description, str) else ""
+    models = group.get("models")
+    models = models if isinstance(models, str) else ""
+    lowered = f"{name} {models}".lower()
+    generic = (
+        description.lstrip().lower().startswith("models within this group:")
+        or name.strip().lower().endswith((" models", " model"))
+    )
+    if generic:
+        include: list[str] = []
+        if "gemini" in lowered:
+            include.append("gemini")
+        if any(word in lowered for word in ("claude", "opus", "sonnet")):
+            include.append("claude")
+        if any(word in lowered for word in ("gpt", "openai")):
+            include.append("gpt")
+        if not include:
+            return None
+        if include == ["gemini"]:
+            scope = "gemini"
+        elif set(include) <= {"claude", "gpt"}:
+            scope = "third-party"
+        else:
+            scope = _scope_slug(name) or "models"
+        return {"scope": scope, "include": include, "generic": True}
+    slug = _scope_slug(name)
+    if not slug:
+        return None
+    return {"scope": slug, "include": [slug], "generic": False}
 
 
 def quota_exhausted(message: object) -> bool:
@@ -360,9 +448,27 @@ class AccountPool:
 
     def _blocked(self, account_id: str, model: str | None) -> bool:
         records = self.data["exhausted"].get(account_id, {})
-        for scope in ("*", quota_scope(model)):
-            record = records.get(scope)
-            if record and (record.get("until") is None or record["until"] > time.time()):
+        now = time.time()
+        family = _family(model) if model else None
+        for scope, record in records.items():
+            if not isinstance(record, dict):
+                continue
+            until = record.get("until")
+            if until is not None and until <= now:
+                continue
+            if scope == "*":
+                return True
+            include = record.get("include")
+            if isinstance(include, list) and include:
+                if family is None or not _scope_match(family, include):
+                    continue
+                exclude = record.get("exclude")
+                if isinstance(exclude, list) and exclude and _scope_match(family, exclude):
+                    continue
+                return True
+            # Records written before per-group scopes still use the broad
+            # gemini/third-party keys.
+            elif family is not None and scope == quota_scope(model):
                 return True
         return False
 
@@ -438,66 +544,102 @@ class AccountPool:
     def mark_exhausted(self, account_id: str, model: str | None) -> None:
         with self._lock:
             self.get(account_id)
-            self.data["exhausted"].setdefault(account_id, {})[quota_scope(model)] = {
-                "observed_at": time.time(), "until": None,
-            }
+            family = _family(model) if model else None
+            scope = family or "*"
+            record = {"observed_at": time.time(), "until": None}
+            if family:
+                record["label"] = family
+                record["include"] = [family]
+            self.data["exhausted"].setdefault(account_id, {})[scope] = record
             self._save()
 
     def observe_quota(self, account_id: str, usage: dict | None) -> None:
-        """Only fresh, explicit quota numbers can affect routing or clear a failure."""
+        """Only fresh, explicit quota numbers can affect routing or clear a failure.
+
+        Each upstream group is evaluated as its own bucket.  A group such as
+        "Gemini 4 Argon" owns a model-family scope, while the broad "Gemini
+        Models" group excludes every family that has a dedicated group.  This
+        keeps an exhausted Argon bucket from blocking Flash/Pro, and lets new
+        independent model buckets work without a hard-coded model list.
+        """
         if not usage or not isinstance(usage.get("groups"), list):
             return
         observed = usage.get("fetched_at", 0)
         now = time.time()
         if type(observed) not in (int, float) or not math.isfinite(observed) or not 0 <= now - observed < 65:
             return
-        grouped: dict[str, list[dict]] = {}
+        scoped: list[tuple[dict, dict]] = []
         for group in usage["groups"]:
-            description = (group.get("name", "") + " " + group.get("models", "")).lower()
-            scopes = []
-            if "gemini" in description:
-                scopes.append("gemini")
-            if any(word in description for word in ("claude", "gpt", "third-party", "third party")):
-                scopes.append("third-party")
-            for scope in scopes:
-                grouped.setdefault(scope, []).extend(group.get("buckets", []))
+            if not isinstance(group, dict):
+                continue
+            info = _group_scope(group)
+            if info is not None:
+                scoped.append((group, info))
+        specific = [info["include"][0] for _, info in scoped
+                    if not info["generic"] and info["include"]]
         with self._lock:
             self.get(account_id)
             records = self.data["exhausted"].setdefault(account_id, {})
             before = json.dumps(records)
-            for scope, buckets in grouped.items():
+            generic_buckets: list[dict] = []
+            for group, info in scoped:
+                buckets = group.get("buckets")
+                buckets = buckets if isinstance(buckets, list) else []
+                if info["generic"]:
+                    generic_buckets.extend(buckets)
+                scope = info["scope"]
+                include = info["include"]
+                exclude = [prefix for prefix in specific
+                           if info["generic"] and _scope_match(prefix, include)]
                 previous = records.get(scope)
-                if previous and observed < previous["observed_at"]:
+                if isinstance(previous, dict) and observed < previous.get("observed_at", 0):
                     continue
-                valid = [b for b in buckets if type(b.get("remaining_fraction")) in (int, float)
+                valid = [b for b in buckets if isinstance(b, dict)
+                         and type(b.get("remaining_fraction")) in (int, float)
                          and math.isfinite(b["remaining_fraction"]) and 0 <= b["remaining_fraction"] <= 1
                          and (b.get("reset_at") is None or b["reset_at"] > now)]
-                empty = [b for b in valid if b["remaining_fraction"] == 0]
+                limit = 0.0 if info["generic"] else _DEDICATED_EXHAUSTED_FRACTION
+                empty = [b for b in valid if b["remaining_fraction"] <= limit]
                 if empty:
                     resets = [b.get("reset_at") for b in empty]
-                    records[scope] = {"observed_at": observed,
-                                      "until": max(resets) if all(r is not None for r in resets) else None}
-                elif buckets and len(valid) == len(buckets) and all(b["remaining_fraction"] > 0 for b in valid):
+                    record = {
+                        "observed_at": observed,
+                        "until": max(resets) if all(r is not None for r in resets) else None,
+                        "label": group.get("name") if isinstance(group.get("name"), str) else scope,
+                        "include": include,
+                    }
+                    if exclude:
+                        record["exclude"] = exclude
+                    records[scope] = record
+                elif buckets and len(valid) == len(buckets) and all(b["remaining_fraction"] > limit for b in valid):
                     records.pop(scope, None)
             # An auto/default-model error has unknown scope. Clear it only when
-            # every reported bucket is fresh and positive; never infer recovery
-            # from one healthy model group or an empty/unknown quota response.
+            # every generic bucket is fresh and positive; a dedicated empty
+            # bucket has its own record and must not keep the wildcard alive.
             wildcard = records.get("*")
-            buckets = [b for group in usage["groups"] for b in group.get("buckets", [])]
-            if wildcard and observed >= wildcard["observed_at"] and buckets and all(
-                type(b.get("remaining_fraction")) in (int, float)
-                and math.isfinite(b["remaining_fraction"]) and 0 < b["remaining_fraction"] <= 1
-                and (b.get("reset_at") is None or b["reset_at"] > now) for b in buckets
-            ):
-                records.pop("*", None)
+            if isinstance(wildcard, dict) and observed >= wildcard.get("observed_at", 0):
+                buckets = generic_buckets or [
+                    b for group in usage["groups"] if isinstance(group, dict)
+                    for b in (group.get("buckets") if isinstance(group.get("buckets"), list) else [])
+                    if isinstance(b, dict)
+                ]
+                if buckets and all(
+                    type(b.get("remaining_fraction")) in (int, float)
+                    and math.isfinite(b["remaining_fraction"]) and 0 < b["remaining_fraction"] <= 1
+                    and (b.get("reset_at") is None or b["reset_at"] > now) for b in buckets
+                ):
+                    records.pop("*", None)
             if before != json.dumps(records):
                 self._save()
 
     def public(self, account_id: str) -> dict:
         with self._lock:
             profile = self.get(account_id)
+            now = time.time()
+            records = self.data["exhausted"].get(account_id, {})
             return {"id": profile.id, "name": profile.name, "isolated": True,
                     "disabled_models": list(profile.disabled_models),
                     "bound_clients": sum(v == account_id for v in self.data["bindings"].values()),
-                    "exhausted_scopes": [scope for scope in self.data["exhausted"].get(account_id, {})
-                                         if self._blocked(account_id, scope)]}
+                    "exhausted_scopes": [scope for scope, record in records.items()
+                                         if isinstance(record, dict)
+                                         and (record.get("until") is None or record["until"] > now)]}

@@ -29,7 +29,7 @@ _HOSTS = ("daily-cloudcode-pa.googleapis.com", "cloudcode-pa.googleapis.com")
 # Cloud Code gates current model variants on a versioned CLI client identity.
 # Keep the compatibility version aligned with the CLI pinned in Dockerfile;
 # the proxy suffix identifies the caller without hiding CLI-only models.
-_ACCOUNT_USER_AGENT = "antigravity/cli/1.4.2 agy-proxy/0.0.17"
+_ACCOUNT_USER_AGENT = "antigravity/cli/1.4.2 agy-proxy/0.0.20"
 
 
 def credentials_path() -> Path:
@@ -167,6 +167,7 @@ def normalize_quota(raw: dict) -> list[dict]:
         groups.append(
             {
                 "name": name,
+                "description": description,
                 "models": description.removeprefix("Models within this group:").strip(),
                 "buckets": buckets,
             }

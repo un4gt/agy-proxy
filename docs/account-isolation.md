@@ -51,7 +51,7 @@ DATA_DIR/
 
 首次选择按账号添加顺序取有凭据、未确认耗尽的账号。后续优先严格保留绑定。只有当前账号的相关额度耗尽才能从下一个账号继续查找，绑定立即原子保存，A 恢复后也不会把健康 B 的绑定抢回。
 
-额度判定有两类证据：上游终止错误中明确的 quota exhausted / quota exceeded / 周期用量上限描述；以及近 65 秒的账号额度快照中明确的剩余 0。Gemini 与 Claude/GPT 组分别记录；未知默认模型的终止额度错误保守记为整个账号。未知数值、过期的快照/重置时间、低于某阈值但仍大于零的余额、一般 HTTP 429 或 RESOURCE_EXHAUSTED 不足以判定耗尽。频率、并发和容量限制不触发切换。
+额度判定有两类证据：上游终止错误中明确的 quota exhausted / quota exceeded / 周期用量上限描述；以及近 65 秒的账号额度快照中明确的剩余 0。上游额度分组各自成为 scope：通用 Gemini、Claude/GPT，以及独立模型组（如 `Gemini 4 Argon` → `gemini-4-argon`）。独立组只阻断该组覆盖的模型，通用组会排除已有独立组的模型；因此 Argon 耗尽不会误伤同一账号的 Flash/Pro，通用 Gemini 耗尽也不影响仍有余额的 Argon。只有同一分组内的 weekly/5h 桶耗尽才阻断该组。独立模型组的剩余比例 ≤1% 也按不可用处理：上游可能把已耗尽的桶报成很小的正数（实测 Argon 为 0.55%），而通用组仍只认精确的 0，避免一个低子桶阻断整个厂商。未知默认模型的终止额度错误保守记为整个账号。未知数值、过期的快照/重置时间、通用组中低于某阈值但仍大于零的余额、一般 HTTP 429 或 RESOURCE_EXHAUSTED 不足以判定耗尽。频率、并发和容量限制不触发切换。旧版本写入的宽泛 `gemini` / `third-party` 记录仍按原语义生效；下一次额度快照会按实际分组替换或清除它们。
 
 如果本轮还没有向适配器交付 delta/result，也没有产生无法撤销的客户端副作用，可以在另一个账号的 bridge host 上重放完整客户端历史。ready 事件只发一次；任何部分输出都会关闭本轮自动重试。旧账号的 host 不能被新账号复用，进程容量繁忙也不允许通过换号绕开限制。
 
@@ -63,4 +63,4 @@ DATA_DIR/
 
 ## 验证范围
 
-`core/tests/test_account.py` 覆盖账号私有目录、凭据和状态、稳定安装 ID、绑定跨回收/重启保持、额度失败后的完整历史重放、并发切换、无额度可用、普通错误不换号、额度查询、模型缓存分区、登录桥目标及旧账号迁移；`tests/test_app_factory.py`、`tests/test_boundaries.py` 和 `core/tests/test_bridge_*` 覆盖 core/full 装配、边界与 bridge 行为。真实 CLI 探针只调用模型列表并使用无效测试凭据，不执行真实模型生成。
+`core/tests/test_account.py` 覆盖账号私有目录、凭据和状态、稳定安装 ID、绑定跨回收/重启保持、额度失败后的完整历史重放、并发切换、无额度可用、普通错误不换号、额度查询、模型缓存分区、登录桥目标及旧账号迁移；`core/tests/test_account_pool.py` 覆盖独立额度 scope、通用组排除、旧宽泛记录迁移和额度恢复；`tests/test_app_factory.py`、`tests/test_boundaries.py` 和 `core/tests/test_bridge_*` 覆盖 core/full 装配、边界与 bridge 行为。真实 CLI 探针只调用模型列表并使用无效测试凭据，不执行真实模型生成。
