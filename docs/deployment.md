@@ -4,7 +4,7 @@
 
 ## Docker 部署
 
-首次启动见 [README 快速开始](../README.md#docker-快速开始)。镜像发布于 `docker.io/tumuer/agy-proxy`，当前 Compose 固定为 `full-v0.0.17`（core + OpenAI/Responses/Anthropic 适配器），镜像使用官方固定下载地址与校验和，构建时校验 agy CLI 为 `1.4.2`。只要 Gemini 协议和账号/面板时，使用 `core-v0.0.17` 和 `docker-compose.core.yml`。运行环境无需安装 Python、Node 或 agy。`latest` 指向 full。
+首次启动见 [README 快速开始](../README.md#docker-快速开始)。镜像发布于 `docker.io/tumuer/agy-proxy`，当前 Compose 固定为 `full-v0.0.20`（core + OpenAI/Responses/Anthropic 适配器），镜像使用官方固定下载地址与校验和，构建时校验 agy CLI 为 `1.4.2`。只要 Gemini 协议和账号/面板时，使用 `core-v0.0.20` 和 `docker-compose.core.yml`。运行环境无需安装 Python、Node 或 agy。`latest` 指向 full。
 
 升级前阅读 [core/adapters 拆分说明](releases/v0.0.17-core-adapters.md)。main 只使用固定 SHA 1.4.2 native bridge；不再提供 `docker-compose.native-*` 或 stream-json 部署。旧版实现保留在 `legay_stream_json_version` 分支，升级时不要混用两套镜像。
 
@@ -27,7 +27,7 @@ docker run -d --name agy-proxy -p 8317:8317 \
   -v agy-data:/root/.agy-proxy \
   --add-host=host.docker.internal:host-gateway \
   --restart unless-stopped \
-  tumuer/agy-proxy:full-v0.0.17
+  tumuer/agy-proxy:full-v0.0.20
 ```
 
 core-only 镜像使用同一组卷和端口：
@@ -39,7 +39,7 @@ docker run -d --name agy-proxy-core -p 8317:8317 \
   -v agy-data:/root/.agy-proxy \
   --add-host=host.docker.internal:host-gateway \
   --restart unless-stopped \
-  tumuer/agy-proxy:core-v0.0.17
+  tumuer/agy-proxy:core-v0.0.20
 ```
 
 Compose 默认给卷名加项目名前缀，如 `agy-proxy_agy-data`；上例的 `agy-data` 是另一个卷。从 Compose 切换部署方式时，应显式复用原卷。
@@ -132,6 +132,27 @@ docker compose up -d
 
 ## CLI 版本与更新
 
-镜像固定 agy `1.4.2`，并设置 `AGY_CLI_DISABLE_AUTO_UPDATE=true`。控制台 `/update` 页面只展示当前 CLI 版本；`POST /update/start` 在 bridge 镜像中固定返回 `409`，避免后台更新替换固定 SHA 的 patched 二进制。
+> [!WARNING]
+> **agy CLI 版本是本项目的硬依赖，不要随意升级。**
+> 聊天后端不是调用任意版本的 `agy`，而是对固定 Linux 构建打补丁后注册 `/_bridge`。补丁与版本严格对应：`patcher.py` 只接受源 SHA256 `085f43e0…f455ef`，并要求产物 SHA256 为 `636570d0…060649`；`emitter.py` 写死了该构建的函数地址与二进制偏移。其他版本要么在构建时被拒绝，要么无法正常工作。
 
-升级 CLI 必须更新 Dockerfile 的版本、下载地址与校验和，重新提取内部模型枚举并更新 bridge patcher，然后重建并发布镜像。步骤见[环境变量的 Native bridge 章节](configuration.md)。不要在运行中的容器内执行 `agy update`，也不要只替换 `/opt/agy-bridge/agy` 而未同步模型枚举。
+镜像固定 agy `1.4.2`，Dockerfile 使用固定下载地址并校验 SHA512，构建时还断言 `agy --version` 等于 `1.4.2`；运行环境设置 `AGY_CLI_DISABLE_AUTO_UPDATE=true`（1.4.2 只认精确的 `true`）。控制台 `/update` 页面只展示当前 CLI 版本；`POST /update/start` 在 bridge 镜像中固定返回 `409`，避免后台更新替换固定 SHA 的 patched 二进制。
+
+以下是硬性约束：
+
+- 不要执行 `agy update`，也不要通过任何方式让容器内 CLI 自更新。
+- 不要在运行中的容器内替换 `/opt/agy-bridge/agy`；不要在 Dockerfile 中只改 `AGY_VERSION` / `AGY_URL` / `AGY_SHA512` 就发布。
+- 不要使用系统或上游发布的其他 agy 版本替代镜像内二进制；源码运行同样必须让 `AGY_PROXY_BIN` 指向 patcher 生成的 1.4.2 副本。
+- CLI 升级属于一次独立的、需要完整回归的变更，不能跟随上游推送自动进行。
+
+升级 CLI 必须按以下顺序完成，缺一不可：
+
+1. 更新 Dockerfile 的 `AGY_VERSION` / `AGY_URL` / `AGY_SHA512`，并确认新源文件 SHA256。
+2. 重新逆向新构建，更新 `core/agy_proxy_core/bridge/patcher.py`、`emitter.py` 的地址、偏移与 SHA 常量；用 `--allow-new` 生成产物并记录新的产物 SHA。
+3. 同步 `core/agy_proxy_core/bridge/__init__.py`、patcher 的回退常量及 `core/tests/test_bridge_protocol.py`。
+4. 重新提取该构建的模型目录，更新 `core/agy_proxy_core/bridge/models.py`；旧枚举在新版本可能变化。
+5. 验证 CLI 登录/凭据文件行为、额度查询、模型目录、隔离账号目录结构；CLI 内部行为变化会影响多账号隔离。
+6. 跑 `core/tests/test_bridge_protocol.py` 与真实 bridge 冒烟：文本、流式、工具续轮、图片、取消、客户端断连。
+7. 重建并发布 core/full 镜像，更新 Compose、README 与部署记录中的 CLI 版本。
+
+具体变量与 bridge 约束见[环境变量的 Native bridge 章节](configuration.md#native-bridge固定-142)。

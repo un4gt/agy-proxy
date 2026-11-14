@@ -57,6 +57,8 @@ PR 描述说明问题、修改后的行为、验证命令与结果；有对应 i
 
 正式更新通过已发布镜像交付，不在服务器构建镜像、复制源码补丁或直接修改运行中容器。
 
+**agy CLI 版本锁定：** 本项目与 agy CLI 版本强绑定，镜像固定 1.4.2，bridge 补丁依赖该构建的固定 SHA、地址与偏移。不要在当前任务未明确要求时升级 CLI、修改 Dockerfile 的 `AGY_VERSION` / `AGY_URL` / `AGY_SHA512`、替换 `/opt/agy-bridge/agy` 或执行 `agy update`。确需升级时，先更新 `core/agy_proxy_core/bridge/patcher.py` 与 `emitter.py` 的地址/偏移/SHA，重新提取 `models.py`，并按 `docs/deployment.md#cli-版本与更新` 完成全部回归。
+
 ## 配置、安全与协作
 
 源码启动读取进程环境变量，不自动加载 `.env`；配置项见 `docs/configuration.md`。密钥、账号凭据、私有会话和临时验证脚本留在忽略的 `.devdata/`，不要写入提交或日志。部署前备份并保留数据卷。

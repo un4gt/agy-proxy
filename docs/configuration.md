@@ -37,13 +37,16 @@ OAuth 配置用于账号查询模块；CLI 自身的登录与令牌刷新流程�
 
 ### Native bridge（固定 1.4.2）
 
+> [!WARNING]
+> **bridge 与 agy CLI 版本强绑定，不要随意升级。** `/opt/agy-bridge/agy` 是专门为 1.4.2 构建的补丁副本；patcher 校验源/产物 SHA，`emitter.py` 依赖该构建的固定地址与偏移。替换 CLI 版本会让补丁失效或产出不可用二进制。不要在容器内执行 `agy update`，也不要只改 Dockerfile 的版本变量；升级步骤和回归清单见[部署指南](deployment.md#cli-版本与更新)。
+
 镜像使用由 [core/agy_proxy_core/bridge/patcher.py](../core/agy_proxy_core/bridge/patcher.py) 从固定 SHA `085f43e0…f455ef` 生成的副本 `/opt/agy-bridge/agy`（产物 SHA `636570d0…060649`）。patcher 在 Docker 构建时校验源文件与产物 SHA；任一不匹配都会让构建失败。它保留真实 CLI 登录/bootstrap 与 updater 代码，在 `setUpHTTPServeMux` 返回块注册 `/_bridge`，由代理发送 `GetChatMessageRequest` 并解析原始响应。main 不再包含 stream-json 聊天路径；旧实现保留在 `legay_stream_json_version` 分支。
 
 - 需要 Linux 与可读的 `/proc`（用于发现 CLI 的随机监听端口）。非 Linux 环境会返回 `503`。
 - 每个账号保留一个常驻 CLI host；请求之间不保存对话状态，代理每次发送完整消息历史。
 - 模型 slug 到内部枚举的映射固定于 1.4.2 目录（如 `gemini-3.8-flash-medium → 1319`）；升级 CLI 必须重新提取目录并更新 patcher，不能只替换二进制。
 - 工具调用是原生 function calling。Gemini 的 `thinkingSignature` 由代理按 tool call ID 缓存，并持久化到数据目录的 `bridge-signatures.json`（7 天/最多 4096 条，0600）；容器重启后仍可续轮。升级 CLI 或清空数据目录会使旧签名失效。
-- 图片输入已接入 bridge：代理把已验证的 PNG/JPEG/WebP/GIF 以 `media.inlineData` 发送；数量、字节和像素限制与旧路径相同（最多 8 张、20 MiB、32 MP）。图片 URL 仍由代理先下载并校验。
+- 图片输入已接入 bridge：代理把已验证的 PNG/JPEG/WebP/GIF 以 `media.inlineData` 发送。代理只做单图解码安全校验（10 MiB、1600 万像素）；图片数量和总量交给 agy/上游处理。bridge 单次请求仍有 16 MiB 上限，图片编码与文本共享该预算。图片 URL 仍由代理先下载并校验。
 - bridge 处理器使用 `(*http.Request).Context()` 调用上游；客户端断开时取消信号会传入 `GetChatMessage`。2026-11-11 实测 3 秒断连后 `raw.Err`/`Close` 在约 3 秒内命中，后续请求正常。
 - `/update/start` 固定返回 `409`，避免 `agy update` 覆盖固定 SHA 副本；升级通过重建镜像完成。
 - 只支持 Linux 与可读的 `/proc`；源码运行必须指向已打补丁的 1.4.2 二进制，否则启动 bridge host 失败。
@@ -78,10 +81,12 @@ SSE 心跳用于维持 HTTP 连接，不表示模型生成了内容。`SESSION_T
 | `AGY_PROXY_MODEL_MAP` | 空 | JSON 模型别名映射，如 `{"my-model":"gemini-3.8-flash-high"}` |
 | `AGY_PROXY_EFFORT` | 空 | 请求未指定时使用的默认思考级别 |
 
-模型别名与默认映射仍受模型禁用设置约束。代理不设置模型上下文窗口或提示字符上限；消息历史和工具定义完整交给 bridge，由 AGY 与上游模型处理上下文容量。HTTP 请求体的 32 MiB 传输限制及图片数量、字节和像素限制独立保留。客户端的 `contextWindow` 用于客户端自身的上下文管理，不由代理修改；bridge 的上游目录支持接近 1M 的输入，实测见[客户端接入](usage.md#模型上下文与输出上限)。
+模型别名与默认映射仍受模型禁用设置约束。代理不设置模型上下文窗口或提示字符上限；消息历史和工具定义完整交给 bridge，由 AGY 与上游模型处理上下文容量。HTTP 请求体的 32 MiB 传输限制和单图解码限制独立保留；图片数量与总预算不由代理限制。客户端 `contextWindow` 用于客户端自身的上下文管理，不由代理修改；bridge 的上游目录支持接近 1M 的输入，实测见[客户端接入](usage.md#模型上下文与输出上限)。
 
 ## 链路计时与日志
 
 推理请求完成时默认输出脱敏的 `request_latency` JSON 日志，用 `X-Agy-Request-Id` 关联模型查询、会话等待、bridge host 启动、首增量、校验和 HTTP 发送。每请求一条、阶段数量有上限；不记录提示词、工具参数或模型正文。Compose 日志轮转默认每文件 20 MB、保留 5 份，无额外环境变量。
+
+`AGY_PROXY_LOG_LEVEL=TRACE` 会额外输出 bridge payload 的结构信息：系统提示长度与短 hash、是否含 `You are Antigravity` / `<USER_REQUEST>` 标记、消息与工具数量、工具 schema 字符数。默认不记录提示词正文；本地排查时可再设置 `AGY_PROXY_TRACE_PROMPTS=1`，输出最多 1000 字符的系统提示预览。该预览可能包含敏感内容，只应在本地临时开启。
 
 当前字段说明见[本地开发](development.md#延迟分析)。2026-10-14 的旧版评测和 Perfetto 时间线归档在[链路耗时历史记录](archive/latency-observability-20261014.md)，基于已移除的 agent/stream-json 后端，不能直接用于当前 bridge 性能对比。

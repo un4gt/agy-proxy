@@ -7,6 +7,13 @@
 - 内置控制台：管理账号与 API Key、查看用量和额度、启停模型、查看 Core/Full 运行版本。
 - 多账号独立保存凭据和安装标识；同一 API Key 固定使用同一账号，仅额度耗尽时切换。
 
+> [!WARNING]
+> **本项目与 agy CLI 版本强绑定，不要随意升级 agy CLI。**
+> 镜像固定使用 agy CLI **1.4.2**（固定下载地址 + SHA512 校验）；聊天后端是对该版本 Linux 二进制打补丁后注册的 `/_bridge`，补丁依赖这一构建的固定文件 SHA、函数地址和二进制偏移。换一个 CLI 版本，补丁会在构建时直接拒绝，或产出无法工作的二进制。
+>
+> - 不要执行 `agy update`；不要在容器内替换 `/opt/agy-bridge/agy`；不要单独修改 Dockerfile 的 `AGY_VERSION`、`AGY_URL`、`AGY_SHA512` 后直接发布。
+> - 任何 CLI 升级都必须重新逆向并更新 `core/agy_proxy_core/bridge/patcher.py` 与 `emitter.py`，重新提取模型枚举，并完成 bridge、登录、额度、模型目录和客户端协议回归，再重建镜像。步骤见[部署指南](docs/deployment.md#cli-版本与更新)。
+
 ## 项目结构
 
 - `core/agy_proxy_core/`：账号登录/路由/隔离、机器标识、store、浏览器控制台、bridge、Gemini 协议服务。
@@ -18,7 +25,7 @@
 
 ## Docker 快速开始
 
-镜像已内置 agy CLI，当前版本为 `tumuer/agy-proxy:full-v0.0.17`（core + OpenAI/Responses/Anthropic 适配器）。只要 Gemini 协议和账号/面板时，使用 `tumuer/agy-proxy:core-v0.0.17` 与 `docker-compose.core.yml`。`latest` 指向 full。需要 Docker Compose：
+镜像已内置固定版本 agy CLI `1.4.2`，当前版本为 `tumuer/agy-proxy:full-v0.0.20`（core + OpenAI/Responses/Anthropic 适配器）。只要 Gemini 协议和账号/面板时，使用 `tumuer/agy-proxy:core-v0.0.20` 与 `docker-compose.core.yml`。`latest` 指向 full。需要 Docker Compose：
 
 ```bash
 git clone https://github.com/un4gt/agy-proxy.git
@@ -88,7 +95,7 @@ curl http://127.0.0.1:8317/v1/chat/completions \
 | [本地开发](docs/development.md) | 源码启动、前端构建、测试与性能分析 |
 | [历史归档](docs/archive/README.md) | 阶段性研究与客户端验收记录 |
 
-源码运行需要 Python 3.12+、[uv](https://docs.astral.sh/uv/) 和已登录的 agy CLI：
+源码运行需要 Python 3.12+、[uv](https://docs.astral.sh/uv/) 和已登录的 agy CLI。注意：源码运行同样只支持固定 `1.4.2`，必须用 `AGY_PROXY_BIN` 指向 [patcher](core/agy_proxy_core/bridge/patcher.py) 生成的副本，不能直接使用系统里任意版本的 `agy`；升级 CLI 前先阅读[部署指南的版本说明](docs/deployment.md#cli-版本与更新)。
 
 ```bash
 uv sync

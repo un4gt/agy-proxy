@@ -11,9 +11,16 @@
 
 ## 源码启动与测试
 
-需要 Python 3.12+、[uv](https://docs.astral.sh/uv/) 和 [Antigravity CLI](https://antigravity.google/docs/cli/)。先运行 `agy --version` 确认安装，再运行 `agy` 完成登录；真实请求使用账号的原生凭据。网页交互登录桥需要 Linux / Docker。
+需要 Python 3.12+、[uv](https://docs.astral.sh/uv/) 和 [Antigravity CLI](https://antigravity.google/docs/cli/) **1.4.2**。bridge 与网页交互登录桥只支持 Linux（原生 Linux 或 Docker）；真实请求使用账号的原生凭据。
+
+> [!WARNING]
+> **不要用系统里任意版本的 `agy` 做源码运行，也不要随意升级 CLI。** 聊天后端要求 `AGY_PROXY_BIN` 指向由 [patcher](../core/agy_proxy_core/bridge/patcher.py) 从固定 SHA 1.4.2 生成的补丁副本；直接使用未打补丁或其他版本的 CLI 无法启动 bridge host。升级 CLI 需要同步更新 patcher、emitter 地址与模型枚举，完整步骤见[部署指南](deployment.md#cli-版本与更新)。
+
+先生成补丁副本并让它完成登录，再把 `AGY_PROXY_BIN` 指向该文件。`--source` 必须是 Dockerfile 固定 URL 下载的 Linux x64 1.4.2 构建，patcher 会校验源 SHA：
 
 ```bash
+python core/agy_proxy_core/bridge/patcher.py --source /path/to/agy-1.4.2 --dest .devdata/agy-bridge
+export AGY_PROXY_BIN="$PWD/.devdata/agy-bridge"
 uv sync
 uv run main.py
 ```
